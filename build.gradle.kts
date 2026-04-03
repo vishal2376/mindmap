@@ -1,0 +1,56 @@
+plugins {
+    id("java")
+    id("org.jetbrains.kotlin.jvm") version "2.1.20"
+    id("org.jetbrains.intellij.platform") version "2.3.0"
+}
+
+group = "com.mindmap.plugin"
+version = "1.0-SNAPSHOT"
+
+repositories {
+    mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
+}
+
+dependencies {
+    intellijPlatform {
+        intellijIdeaCommunity("2024.3")
+
+        bundledPlugin("com.intellij.java")
+        bundledPlugin("org.jetbrains.kotlin")
+
+        pluginVerifier()
+        zipSigner()
+    }
+
+    implementation("com.google.code.gson:gson:2.11.0")
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
+    }
+}
+
+configurations.all {
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
+}
+
+tasks {
+    withType<JavaCompile> {
+        sourceCompatibility = "21"
+        targetCompatibility = "21"
+    }
+
+    patchPluginXml {
+        sinceBuild.set("243")
+        untilBuild.set("253.*")
+    }
+
+    runIde {
+        // Force sandbox IDE to not see Java 25 on system PATH
+        environment("JAVA_HOME", project.property("org.gradle.java.home").toString())
+    }
+}
