@@ -52,14 +52,14 @@ An IntelliJ IDEA / Android Studio plugin that generates interactive call graph v
 
 ### From Disk
 
-1. Download the latest `.zip` from [Releases](https://github.com/user/mindmap/releases)
+1. Download the latest `.zip` from [Releases](https://github.com/vishal2376/mindmap/releases)
 2. Open **Settings** → **Plugins** → ⚙️ → **Install Plugin from Disk**
 3. Select the downloaded `.zip` → Restart IDE
 
 ### Build from Source
 
 ```bash
-git clone https://github.com/user/mindmap.git
+git clone https://github.com/vishal2376/mindmap.git
 cd mindmap
 ./gradlew buildPlugin
 ```
@@ -91,6 +91,28 @@ src/main/
 - **Input validation** — Node IDs are validated with regex + length caps
 - **Message size limits** — JS→Kotlin bridge rejects messages >2KB
 - **Scoped search** — Reference search is limited to project source files only
+
+## ❓ Troubleshooting
+
+### "JCEF Not Available" in Android Studio
+
+Android Studio may ship with a JBR (JetBrains Runtime) that doesn't include JCEF. To fix:
+
+1. Go to **Help → Find Action** (or `Cmd+Shift+A`)
+2. Search for **"Choose Boot Java Runtime"**
+3. Select a runtime that includes **JCEF** (typically labeled with `JCEF`)
+4. Click **OK** and **restart** the IDE
+
+> **Note:** IntelliJ IDEA includes JCEF by default — this only affects some Android Studio versions.
+
+### Alt+G shortcut not working
+
+If another plugin (like IdeaVIM) intercepts the shortcut:
+1. Go to **Settings → Keymap**
+2. Search for **"Generate Mindmap"**
+3. Assign a different shortcut
+
+Or use **right-click → Generate Mindmap** from the editor context menu.
 
 ## 📄 License
 
