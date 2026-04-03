@@ -71,7 +71,7 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 .thb-d{width:7px;height:7px;border-radius:50%}
 .thb-t{font:600 10.5px/1 inherit;color:var(--tx);letter-spacing:.2px}
 .thb-c{font:10px/1 inherit;color:var(--tx4);margin-left:auto}
-.tg{padding:2px 0}
+.tg{padding:0}
 .tgl{padding:3px 16px;font:700 8px/1 inherit;text-transform:uppercase;letter-spacing:.8px;color:var(--tx5);display:flex;align-items:center;gap:5px}
 .tgl-d{width:4px;height:4px;border-radius:50%}
 .tgl-c{margin-left:auto;font-weight:500;color:var(--bd2);font-size:8px}
@@ -87,6 +87,7 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 .tr.rt::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--root)}
 .tri{flex-shrink:0;position:relative}
 .tgi{position:absolute;top:0;bottom:0;width:1px;background:var(--bd)}
+.tgi-l{position:absolute;top:0;height:50%;width:1px;background:var(--bd)}
 .tgh{position:absolute;top:50%;height:1px;background:var(--bd)}
 .trc{width:14px;height:30px;display:grid;place-items:center;flex-shrink:0;color:var(--bd2);font-size:7px;transition:transform .12s}
 .trc.e{transform:rotate(90deg);color:var(--tx4)}
@@ -319,22 +320,21 @@ $bfw.addEventListener('click',()=>{if(window.jbCefQuery)window.jbCefQuery(JSON.s
 let nodeMap={};
 
 // ── Node/Edge Builders (CallFlow-Visualizer style: box nodes, hierarchical LR) ──
-function mkN(n){
+function mkN(n,isDup){
     const c=gc(n.type,n.depth,n.isLibrary);
     const isRoot=n.type==='ROOT';
     // Solid dark backgrounds per type
     const bgs={ROOT:'#352840',OUTBOUND:'#1e2a3d',INBOUND:'#1e3028'};
     const bg=n.isLibrary?'#2a2a30':(bgs[n.type]||'#252636');
-    // Label with type badge prefix
-    const badge=isRoot?'ROOT':n.type==='OUTBOUND'?'CHILD':'PARENT';
     const label=isRoot?(n.name||'anonymous'):(n.name||'anon');
-    return{id:n.id,label:label,shape:'box',
+    const fullLabel=isDup&&n.fileName?label+'\n_'+n.fileName+'_':label;
+    return{id:n.id,label:fullLabel,shape:'box',
         color:{background:bg,border:c,highlight:{background:'#363750',border:c},hover:{background:'#2d2e44',border:c}},
         borderWidth:isRoot?3:1.5,borderWidthSelected:3,
-        font:{color:n.isLibrary?'#8888a0':'#e0e0f0',size:isRoot?13:11,face:"'JetBrains Mono','SF Mono','Fira Code',monospace",bold:{color:c,size:isRoot?8:7,face:"'JetBrains Mono',monospace",mod:'bold'},multi:'md'},
+        font:{color:n.isLibrary?'#8888a0':'#e0e0f0',size:isRoot?13:11,face:"'JetBrains Mono','SF Mono','Fira Code',monospace",bold:{color:c,size:isRoot?8:7,face:"'JetBrains Mono',monospace",mod:'bold'},ital:{color:'#7f849c',size:8,face:"'JetBrains Mono',monospace"},multi:'md'},
         margin:{top:isRoot?10:7,bottom:isRoot?10:7,left:isRoot?16:12,right:isRoot?16:12},
         shapeProperties:{borderRadius:isRoot?10:6},
-        widthConstraint:{minimum:isRoot?120:80,maximum:200},
+        widthConstraint:{minimum:isRoot?120:80,maximum:220},
         shadow:{enabled:true,color:isRoot?'rgba(245,194,231,.12)':'rgba(0,0,0,.25)',size:isRoot?8:4,x:0,y:isRoot?3:2},
         opacity:n.isLibrary?.45:1,
         _data:n}
@@ -402,7 +402,9 @@ function _buildNet(){
     const visNodes=D.nodes.filter(n=>showLib||!n.isLibrary);
     const visIds=new Set(visNodes.map(n=>n.id));
     nodeMap={};for(const n of visNodes)nodeMap[n.id]=n;
-    nds=new vis.DataSet(visNodes.map(mkN));
+    // Detect duplicate function names to show filename on ambiguous nodes
+    const nc={};for(const n of visNodes)nc[n.name]=(nc[n.name]||0)+1;
+    nds=new vis.DataSet(visNodes.map(n=>mkN(n,nc[n.name]>1)));
     eds=new vis.DataSet(D.edges.filter(e=>visIds.has(e.from)&&visIds.has(e.to)).map(mkE));
     // Apply search filter
     if(sf){const up=[];nds.forEach(n=>{if(!isVis(n._data))up.push({id:n.id,hidden:true})});if(up.length)nds.update(up)}
@@ -446,52 +448,57 @@ function rTree(){
     const hb=document.createElement('div');hb.className='thb';
     hb.innerHTML=`<div class="thb-d" style="background:var(--root)"></div><div class="thb-t">${esc(root.name||'anonymous')}</div><div class="thb-c">${D.nodes.length} nodes</div>`;
     $tc.appendChild(hb);
-    $tc.appendChild(mkTR(root,0,false));
-    rSub($tc,root.id,nm,cm,pm,0,new Set([root.id]));
+    $tc.appendChild(mkTR(root,0,false,false,false,[]));
+    rSub($tc,root.id,nm,cm,pm,0,new Set([root.id]),[]);
 }
 
-function rSub(ct,nid,nm,cm,pm,dep,vis){
+function rSub(ct,nid,nm,cm,pm,dep,vis,cont){
     const pName=nm[nid]?.name||'anonymous';
     const cids=(cm[nid]||[]).filter(id=>nm[id]&&!vis.has(id)&&(showLib||!nm[id]?.isLibrary)&&mS(nm[id]));
+    const pids=(pm[nid]||[]).filter(id=>nm[id]&&!vis.has(id)&&(showLib||!nm[id]?.isLibrary)&&mS(nm[id]));
     if(cids.length>0){
-        ct.appendChild(mkSL(pName+' calls','var(--child)',cids.length,dep));
+        ct.appendChild(mkSL(pName+' calls','var(--child)',cids.length,dep,cont));
         const g=document.createElement('div');g.className='tg';
-        for(const cid of cids){
-            const n=nm[cid];if(!n)continue;const cl=tColl.has(cid);
+        for(let ci=0;ci<cids.length;ci++){
+            const cid=cids[ci];const n=nm[cid];if(!n)continue;
+            const isLast=ci===cids.length-1&&pids.length===0;
+            const cl=tColl.has(cid);
             const hc=(cm[cid]||[]).some(id=>nm[id]&&!vis.has(id)&&(showLib||!nm[id]?.isLibrary));
             const hp=(pm[cid]||[]).some(id=>nm[id]&&!vis.has(id)&&(showLib||!nm[id]?.isLibrary));
             const hk=hc||hp;
-            g.appendChild(mkTR(n,dep+1,hk,cl));
-            if(hk&&!cl){const nv=new Set(vis);nv.add(cid);rSub(g,cid,nm,cm,pm,dep+1,nv)}
+            const lastInGroup=ci===cids.length-1;
+            g.appendChild(mkTR(n,dep+1,hk,cl,lastInGroup,cont));
+            if(hk&&!cl){const nv=new Set(vis);nv.add(cid);rSub(g,cid,nm,cm,pm,dep+1,nv,[...cont,!lastInGroup])}
         }
         ct.appendChild(g);
     }
-    const pids=(pm[nid]||[]).filter(id=>nm[id]&&!vis.has(id)&&(showLib||!nm[id]?.isLibrary)&&mS(nm[id]));
     if(pids.length>0){
-        ct.appendChild(mkSL(pName+' called by','var(--parent)',pids.length,dep));
+        ct.appendChild(mkSL(pName+' called by','var(--parent)',pids.length,dep,cont));
         const g=document.createElement('div');g.className='tg';
-        for(const pid of pids){
-            const n=nm[pid];if(!n)continue;const cl=tColl.has(pid);
+        for(let pi=0;pi<pids.length;pi++){
+            const pid=pids[pi];const n=nm[pid];if(!n)continue;
+            const cl=tColl.has(pid);
             const hc=(cm[pid]||[]).some(id=>nm[id]&&!vis.has(id)&&(showLib||!nm[id]?.isLibrary));
             const hp=(pm[pid]||[]).some(id=>nm[id]&&!vis.has(id)&&(showLib||!nm[id]?.isLibrary));
             const hk=hc||hp;
-            g.appendChild(mkTR(n,dep+1,hk,cl));
-            if(hk&&!cl){const nv=new Set(vis);nv.add(pid);rSub(g,pid,nm,cm,pm,dep+1,nv)}
+            const lastInGroup=pi===pids.length-1;
+            g.appendChild(mkTR(n,dep+1,hk,cl,lastInGroup,cont));
+            if(hk&&!cl){const nv=new Set(vis);nv.add(pid);rSub(g,pid,nm,cm,pm,dep+1,nv,[...cont,!lastInGroup])}
         }
         ct.appendChild(g);
     }
 }
 
-function mkSL(t,c,cnt,dep){
+function mkSL(t,c,cnt,dep,cont){
     const el=document.createElement('div');el.className='tsl';
     el.style.paddingLeft=(20+dep*14)+'px';
     let guides='';
-    for(let i=0;i<dep;i++) guides+=`<span class="tgi" style="left:${20+i*14}px"></span>`;
+    for(let i=0;i<dep;i++){if(cont[i])guides+=`<span class="tgi" style="left:${20+i*14}px"></span>`}
     el.innerHTML=guides+`<span class="tsl-d" style="background:${c}"></span>${t}<span class="tsl-c">${cnt}</span>`;
     return el;
 }
 
-function mkTR(n,dep,hk,cl){
+function mkTR(n,dep,hk,cl,isLast,cont){
     const row=document.createElement('div');
     row.className='tr'+(n.type==='ROOT'?' rt':'')+(sel===n.id?' sel':'');
     const c=gc(n.type,n.depth,n.isLibrary);
@@ -499,8 +506,8 @@ function mkTR(n,dep,hk,cl){
     const bc=n.isLibrary?'bg-l':n.type==='ROOT'?'bg-r':n.type==='OUTBOUND'?'bg-o':'bg-i';
     const bl=n.isLibrary?'LIB':n.type==='ROOT'?'ROOT':n.type==='OUTBOUND'?'CHILD':'PARENT';
     let guides='';
-    for(let i=0;i<dep;i++) guides+=`<span class="tgi" style="left:${20+i*14}px"></span>`;
-    if(dep>0) guides+=`<span class="tgh" style="left:${20+(dep-1)*14}px;width:${10}px"></span>`;
+    for(let i=0;i<dep-1;i++){if(cont[i])guides+=`<span class="tgi" style="left:${20+i*14}px"></span>`}
+    if(dep>0){const lx=20+(dep-1)*14;guides+=`<span class="${isLast?'tgi-l':'tgi'}" style="left:${lx}px"></span><span class="tgh" style="left:${lx}px;width:10px"></span>`}
     row.innerHTML=`<div class="tri" style="width:${16+dep*14}px">${guides}</div><span class="trc ${cc}">&#9654;</span><div class="trb" style="background:${c}"></div><div class="trl" style="background:${c}">${(n.name||'F')[0].toUpperCase()}</div><span class="trn">${esc(n.name||'anon')}</span>${n.fileName?`<span class="trf">${esc(n.fileName)}</span>`:''}<div class="trr"><span class="trg ${bc}">${bl}</span>${n.loc>0?`<span class="trloc">${n.loc}L</span>`:''}</div>`;
     row.addEventListener('click',e=>{
         sel=n.id;updateShortcuts();document.querySelectorAll('.tr.sel').forEach(r=>r.classList.remove('sel'));row.classList.add('sel');
