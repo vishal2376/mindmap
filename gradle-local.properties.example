@@ -1,0 +1,5 @@
+# Local machine overrides (not committed to git)
+# Copy this to gradle-local.properties and fill in your values
+
+# Path to JBR 17 for running the sandbox IDE
+org.gradle.java.home=/path/to/your/jdk17

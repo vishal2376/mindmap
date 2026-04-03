@@ -56,8 +56,9 @@ tasks {
     }
 
     runIde {
-        // Force sandbox IDE to not see Java 25 on system PATH
-        environment("JAVA_HOME", project.property("org.gradle.java.home").toString())
+        if (project.hasProperty("org.gradle.java.home")) {
+            environment("JAVA_HOME", project.property("org.gradle.java.home").toString())
+        }
     }
 
     buildSearchableOptions {

@@ -5,6 +5,7 @@ out/
 # Gradle
 .gradle/
 gradle/wrapper/gradle-wrapper.jar
+gradle-local.properties
 
 # IntelliJ
 .idea/
@@ -19,5 +20,17 @@ gradle/wrapper/gradle-wrapper.jar
 Thumbs.db
 nohup.out
 
-# Claude
+# Secrets / Signing
+*.pem
+*.key
+*.jks
+*.keystore
+token.txt
+
+# AI tools
 .claude/
+.gemini/
+.agents/
+
+# Internal docs
+PUBLISHING.md
