@@ -1,0 +1,43 @@
+<idea-plugin>
+    <id>com.mindmap.plugin</id>
+    <name>Mindmap</name>
+    <vendor email="mindmap@plugin.dev" url="https://github.com/mindmap-plugin">Mindmap Plugin</vendor>
+
+    <description><![CDATA[
+    <h2>Mindmap — Kotlin Call Graph Visualizer</h2>
+    <p>Visualize Kotlin function call graphs as interactive mind maps inside your IDE.</p>
+    <ul>
+        <li><b>Interactive Force-Directed Graph</b> — drag, zoom, pan, collapse/expand</li>
+        <li><b>Bidirectional Analysis</b> — outbound calls + inbound callers</li>
+        <li><b>Click-to-Navigate</b> — single click jumps to source code</li>
+        <li><b>Double-Click-to-Expand</b> — lazy expansion of deeper call trees</li>
+        <li><b>Search & Filter</b> — filter nodes by name, toggle library code</li>
+        <li><b>Catppuccin Mocha Theme</b> — premium dark UI</li>
+        <li><b>Keyboard Shortcut</b> — Alt+G / Option+G to trigger</li>
+    </ul>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>org.jetbrains.kotlin</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="Mindmap" secondary="true"
+                    icon="AllIcons.General.Web" anchor="right"
+                    factoryClass="com.mindmap.plugin.ui.GraphToolWindowFactory"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="org.jetbrains.kotlin">
+        <supportsKotlinPluginMode supportsK1="true" supportsK2="true"/>
+    </extensions>
+
+    <actions>
+        <action id="ShowCallGraphAction"
+                class="com.mindmap.plugin.actions.ShowCallGraphAction"
+                text="Generate Mindmap"
+                description="Generate a call graph mindmap for the selected function">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="alt G"/>
+        </action>
+    </actions>
+</idea-plugin>
