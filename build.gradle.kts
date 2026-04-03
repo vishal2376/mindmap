@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.mindmap.plugin"
-version = "1.0-SNAPSHOT"
+version = "1.0.0"
 
 repositories {
     mavenCentral()
@@ -38,6 +38,12 @@ configurations.all {
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
 }
 
+intellijPlatform {
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
+    }
+}
+
 tasks {
     withType<JavaCompile> {
         sourceCompatibility = "21"
@@ -52,5 +58,9 @@ tasks {
     runIde {
         // Force sandbox IDE to not see Java 25 on system PATH
         environment("JAVA_HOME", project.property("org.gradle.java.home").toString())
+    }
+
+    buildSearchableOptions {
+        enabled = false
     }
 }
