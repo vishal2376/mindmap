@@ -1,21 +1,66 @@
 <idea-plugin>
     <id>com.mindmap.plugin</id>
-    <name>Mindmap</name>
-    <vendor email="mindmap@plugin.dev" url="https://github.com/mindmap-plugin">Mindmap Plugin</vendor>
+    <name>Mindmap — Kotlin Call Graph</name>
+    <vendor email="vishalsingh2376@gmail.com" url="https://github.com/vishal2376">Vishal Singh</vendor>
 
     <description><![CDATA[
     <h2>Mindmap — Kotlin Call Graph Visualizer</h2>
-    <p>Visualize Kotlin function call graphs as interactive mind maps inside your IDE.</p>
+    <p>Visualize Kotlin function call graphs as interactive mind maps inside your IDE. Place your cursor on any function, press <b>Alt+G</b>, and instantly see the full call chain — who calls it, what it calls, and how deep it goes.</p>
+
+    <h3>🎯 Key Features</h3>
     <ul>
-        <li><b>Interactive Force-Directed Graph</b> — drag, zoom, pan, collapse/expand</li>
-        <li><b>Bidirectional Analysis</b> — outbound calls + inbound callers</li>
+        <li><b>Interactive Graph View</b> — hierarchical left-to-right layout with drag, zoom, and pan</li>
+        <li><b>Tree View</b> — collapsible tree with SVG icons and continuous connector lines</li>
+        <li><b>Bidirectional Analysis</b> — outbound calls (children) + inbound callers (parents)</li>
         <li><b>Click-to-Navigate</b> — single click jumps to source code</li>
-        <li><b>Double-Click-to-Expand</b> — lazy expansion of deeper call trees</li>
-        <li><b>Search & Filter</b> — filter nodes by name, toggle library code</li>
-        <li><b>Catppuccin Mocha Theme</b> — premium dark UI</li>
-        <li><b>Keyboard Shortcut</b> — Alt+G / Option+G to trigger</li>
+        <li><b>Double-Click Trace</b> — merge a node's call graph into the current view without losing position</li>
+        <li><b>Cmd+Click Expand</b> — re-center the graph on any node</li>
+        <li><b>Box Selection</b> — drag on empty canvas to select and move multiple nodes together</li>
+        <li><b>Navigation History</b> — back/forward through explored functions (Alt+← / Alt+→)</li>
+        <li><b>Search &amp; Filter</b> — filter nodes by name across both views</li>
+        <li><b>Library Code Toggle</b> — show or hide library/SDK function calls</li>
+        <li><b>Smart Labels</b> — duplicate function names automatically show their file name</li>
+        <li><b>Hover Info Cards</b> — rich tooltips with signature, file, depth, and LOC</li>
+        <li><b>Zoom Controls</b> — scroll wheel, +/- keys, fit-all, center-on-node</li>
+        <li><b>Catppuccin Mocha Theme</b> — premium dark UI with polished aesthetics</li>
     </ul>
+
+    <h3>⚡ Quick Start</h3>
+    <ol>
+        <li>Place cursor inside any Kotlin function</li>
+        <li>Press <b>Alt+G</b> (or right-click → <em>Generate Mindmap</em>)</li>
+        <li>Explore the interactive call graph in the Mindmap tool window</li>
+    </ol>
+
+    <h3>🖱️ Controls</h3>
+    <ul>
+        <li><b>Left-drag</b> on empty space → box select multiple nodes</li>
+        <li><b>Right-drag / Middle-drag</b> → pan the view</li>
+        <li><b>Scroll</b> → zoom in/out</li>
+        <li><b>Drag node</b> → move freely in any direction</li>
+    </ul>
+
+    <p><em>Supports K1 and K2 Kotlin compiler modes. Works with IntelliJ IDEA 2024.3+ and Android Studio Ladybug+.</em></p>
     ]]></description>
+
+    <change-notes><![CDATA[
+    <h3>1.0.0</h3>
+    <ul>
+        <li>Initial release</li>
+        <li>Interactive graph view with hierarchical layout</li>
+        <li>Tree view with SVG icons and continuous connectors</li>
+        <li>Box/marquee selection for multi-node movement</li>
+        <li>Right-click / middle-click drag for panning</li>
+        <li>Navigation history (back/forward)</li>
+        <li>Double-click trace with position preservation</li>
+        <li>Smart duplicate name detection with filename</li>
+        <li>Bidirectional analysis (outbound + inbound calls)</li>
+        <li>Large file optimization (300 node cap, batch limits)</li>
+        <li>Crash-proof error handling across all entry points</li>
+        <li>JCEF fallback panel for Android Studio</li>
+        <li>Catppuccin Mocha dark theme</li>
+    </ul>
+    ]]></change-notes>
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
