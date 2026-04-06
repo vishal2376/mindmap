@@ -430,6 +430,12 @@ function _buildNet(focusId){
         interaction:{hover:true,tooltipDelay:99999,zoomView:true,dragView:false,dragNodes:true,multiselect:false,selectConnectedEdges:true,navigationButtons:false,keyboard:{enabled:true}},
         layout:{hierarchical:{direction:'LR',sortMethod:'directed',levelSeparation:200,nodeSpacing:85,treeSpacing:120,parentCentralization:true,blockShifting:true,edgeMinimization:true,shakeTowards:'roots'}}
     });
+    
+    // Unlock X-axis dragging: wait for layout to draw once, then disable hierarchical constraint
+    net.once('afterDrawing', () => {
+        net.setOptions({ layout: { hierarchical: { enabled: false } } });
+    });
+    
     net.on('click',onClk);net.on('doubleClick',onDbl);
     net.on('hoverNode',onHov(net,nds));net.on('blurNode',onBlr(nds));
     net.on('dragStart',()=>{drag=true;hideTip()});net.on('dragEnd',()=>{drag=false});
