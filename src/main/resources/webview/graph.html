@@ -446,7 +446,7 @@ function _buildNet(){
         edges:{smooth:{enabled:true,type:'cubicBezier',forceDirection:'horizontal',roundness:.35}},
         physics:{enabled:false},
         interaction:{hover:true,tooltipDelay:99999,zoomView:true,dragView:true,dragNodes:true,multiselect:false,selectConnectedEdges:true,navigationButtons:false,keyboard:{enabled:true}},
-        layout:{hierarchical:{direction:'LR',sortMethod:'directed',levelSeparation:160,nodeSpacing:55,treeSpacing:100,parentCentralization:true,blockShifting:true,edgeMinimization:true,shakeTowards:'roots'}}
+        layout:{hierarchical:{direction:'LR',sortMethod:'directed',levelSeparation:200,nodeSpacing:85,treeSpacing:120,parentCentralization:true,blockShifting:true,edgeMinimization:true,shakeTowards:'roots'}}
     });
     net.on('click',onClk);net.on('doubleClick',onDbl);
     net.on('hoverNode',onHov(net,nds));net.on('blurNode',onBlr(nds));
