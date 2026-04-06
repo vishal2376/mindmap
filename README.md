@@ -4,7 +4,7 @@
 
 # **Mindmap**
 
-An IntelliJ IDEA / Android Studio plugin that generates interactive call graph visualizations for Kotlin functions. Place your cursor on any function, press **Alt+G**, and instantly see who calls it, what it calls, and how deep the chain goes.
+An IntelliJ IDEA / Android Studio plugin that generates interactive call graph visualizations for Kotlin functions. Place your cursor on any function and press **Alt+G** to view the call chain - callers, callees, and function depth.
 
 <br/>
 
@@ -31,31 +31,31 @@ An IntelliJ IDEA / Android Studio plugin that generates interactive call graph v
 ## ✨ Features
 
 ### Graph View
-- **Hierarchical Layout** — callers on the left, root in the center, callees on the right
-- **Box Selection** — drag on empty canvas to select multiple nodes (like 3D software)
-- **Multi-node Move** — drag any selected node to move all selected together
-- **Free Positioning** — move nodes anywhere in both horizontal and vertical axes
-- **Smart Labels** — duplicate function names automatically show their file name as subtitle
-- **Pan** — right-click drag or middle-click drag to pan the viewport
-- **Zoom** — scroll wheel, `+`/`-` keys, or zoom buttons
+- **Hierarchical Layout** - Callers on the left, root in the center, callees on the right
+- **Box Selection** - Drag on empty canvas to select multiple nodes
+- **Multi-node Move** - Drag any selected node to move all selected together
+- **Free Positioning** - Move nodes freely in both horizontal and vertical axes
+- **Smart Labels** - Duplicate function names show their file name as subtitle
+- **Pan** - Right-click drag or middle-click drag to pan the viewport
+- **Zoom** - Scroll wheel, `+`/`-` keys, or zoom buttons
 
 ### Tree View
-- **Collapsible Tree** — expand/collapse with chevron icons
-- **IDE Native** — strict nesting with standard padding for an integrated professional look
-- **SVG Icons** — function icons, file icons, directional arrows for calls/callers
-- **Section Headers** — `→ fetchUser calls` / `← fetchUser called by` with count badges
+- **Collapsible Tree** - Expand/collapse with chevron icons
+- **IDE Native** - Strict nesting with standard padding for an integrated look
+- **SVG Icons** - Function icons, file icons, directional arrows for calls/callers
+- **Section Headers** - `→ fetchUser calls` / `← fetchUser called by` with count badges
 
 ### Analysis
-- **Bidirectional** — outbound calls (children) + inbound callers (parents)
-- **Trace** — double-click a node to merge its call graph without overlapping
-- **Expand** — Cmd+Click to re-center the entire graph on a different function
-- **Library Toggle** — show/hide library/SDK calls with one click
+- **Bidirectional** - Outbound calls (children) + inbound callers (parents)
+- **Trace** - Double-click a node to merge its call graph into the view
+- **Expand** - Cmd+Click to re-center the entire graph on a different function
+- **Library Toggle** - Show/hide library/SDK calls with one click
 
 ### Navigation
-- **History** — back/forward through explored functions (`Alt+←` / `Alt+→`)
-- **Click-to-Navigate** — single click jumps to source code in the editor
-- **Search Filter** — filter nodes by name across both views
-- **Hover Info Cards** — signature, file location, depth, and LOC count
+- **History** - Navigate back/forward through explored functions (`Alt+←` / `Alt+→`)
+- **Click-to-Navigate** - Single click jumps to source code in the editor
+- **Search Filter** - Filter nodes by name across both views
+- **Hover Info Cards** - Signature, file location, depth, and LOC count
 
 
 ## 🖱️ Mouse Controls
@@ -63,8 +63,8 @@ An IntelliJ IDEA / Android Studio plugin that generates interactive call graph v
 | Action | Effect |
 |---|---|
 | **Left-click** node | Navigate to source code |
-| **Cmd+Click** node | Expand — re-center graph on that function |
-| **Double-click** node | Trace — merge its call graph into current view |
+| **Cmd+Click** node | Expand - re-center graph on that function |
+| **Double-click** node | Trace - merge its call graph into current view |
 | **Left-drag** on empty space | Box/marquee selection |
 | **Left-drag** selected node | Move all selected nodes freely |
 | **Right-drag** / **Middle-drag** | Pan the viewport |
@@ -130,15 +130,15 @@ src/main/
 
 ## 🔒 Security
 
-- **No external network calls** — CSP blocks all connections except vis-network CDN.
-- **Base64 encoding** — graph data is Base64-encoded before JS injection (prevents XSS).
-- **Message size limits** — JS→Kotlin bridge rejects messages >2KB.
+- **No external network calls** - CSP blocks all connections except vis-network CDN.
+- **Base64 encoding** - Graph data is Base64-encoded before JS injection.
+- **Message size limits** - JS→Kotlin bridge rejects messages >2KB.
 
 ## ⚡ Performance
 
-- **300 node cap** — prevents graph explosion on large codebases.
-- **50 calls/function limit** — limits outbound analysis per function body.
-- **Lazy tool window** — only initializes when triggered (won't slow down IDE startup).
+- **300 node cap** - Prevents graph explosion on large codebases.
+- **50 calls/function limit** - Limits outbound analysis per function body.
+- **Lazy tool window** - Only initializes when triggered.
 
 
 ## ❓ Troubleshooting
@@ -156,7 +156,7 @@ If another plugin (like IdeaVIM) intercepts the shortcut, go to **Settings → K
 
 ## 👤 Author
 
-**Vishal Singh** — [@vishal2376](https://github.com/vishal2376) 
+**Vishal Singh** - [@vishal2376](https://github.com/vishal2376) 
 
 
 ## 📄 License

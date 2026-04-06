@@ -4,25 +4,24 @@
     <vendor email="vishalsingh2376@gmail.com" url="https://vishal2376.github.io">Vishal Singh</vendor>
 
     <description><![CDATA[
-    <h2>Mindmap — Kotlin Call Graph Visualizer</h2>
-    <p>Visualize Kotlin function call graphs as interactive mind maps inside your IDE. Place your cursor on any function, press <b>Alt+G</b>, and instantly see the full call chain — who calls it, what it calls, and how deep it goes.</p>
+    <h2>Mindmap - Kotlin Call Graph Visualizer</h2>
+    <p>Visualize Kotlin function call graphs as interactive mind maps inside your IDE. Place your cursor on any function and press <b>Alt+G</b> to view the call chain - callers, callees, and function depth.</p>
 
     <h3>🎯 Key Features</h3>
     <ul>
-        <li><b>Interactive Graph View</b> — hierarchical left-to-right layout with drag, zoom, and pan</li>
-        <li><b>Tree View</b> — collapsible tree with SVG icons and continuous connector lines</li>
-        <li><b>Bidirectional Analysis</b> — outbound calls (children) + inbound callers (parents)</li>
-        <li><b>Click-to-Navigate</b> — single click jumps to source code</li>
-        <li><b>Double-Click Trace</b> — merge a node's call graph into the current view without losing position</li>
-        <li><b>Cmd+Click Expand</b> — re-center the graph on any node</li>
-        <li><b>Box Selection</b> — drag on empty canvas to select and move multiple nodes together</li>
-        <li><b>Navigation History</b> — back/forward through explored functions (Alt+← / Alt+→)</li>
-        <li><b>Search &amp; Filter</b> — filter nodes by name across both views</li>
-        <li><b>Library Code Toggle</b> — show or hide library/SDK function calls</li>
-        <li><b>Smart Labels</b> — duplicate function names automatically show their file name</li>
-        <li><b>Hover Info Cards</b> — rich tooltips with signature, file, depth, and LOC</li>
-        <li><b>Zoom Controls</b> — scroll wheel, +/- keys, fit-all, center-on-node</li>
-        <li><b>Catppuccin Mocha Theme</b> — premium dark UI with polished aesthetics</li>
+        <li><b>Interactive Graph View</b> - Hierarchical layout with drag, zoom, and pan</li>
+        <li><b>Tree View</b> - Collapsible tree with SVG icons</li>
+        <li><b>Bidirectional Analysis</b> - Outbound calls (children) + inbound callers (parents)</li>
+        <li><b>Click-to-Navigate</b> - Click a node to jump to source code</li>
+        <li><b>Double-Click Trace</b> - Merge a node's call graph into the view</li>
+        <li><b>Cmd+Click Expand</b> - Re-center the graph on a node</li>
+        <li><b>Box Selection</b> - Drag on empty canvas to select and move multiple nodes</li>
+        <li><b>Navigation History</b> - Navigate back/forward (Alt+← / Alt+→)</li>
+        <li><b>Search &amp; Filter</b> - Filter nodes by name</li>
+        <li><b>Library Code Toggle</b> - Toggle library/SDK function calls</li>
+        <li><b>Hover Info Cards</b> - Node tooltips with signature, file, depth, and LOC</li>
+        <li><b>Zoom Controls</b> - Scroll wheel, zoom keys, fit view, center</li>
+        <li><b>Dark Theme</b> - Catppuccin Mocha theme interface</li>
     </ul>
 
     <h3>⚡ Quick Start</h3>
