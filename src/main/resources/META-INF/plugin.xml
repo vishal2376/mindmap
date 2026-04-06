@@ -43,6 +43,13 @@
     ]]></description>
 
     <change-notes><![CDATA[
+    <h3>1.0.1</h3>
+    <ul>
+        <li>Fixed Android Studio tool window icon collision</li>
+        <li>Added Keyboard Shortcuts help modal (<kbd>?</kbd>)</li>
+        <li>Keyboard focus persists correctly in Tool Window after code navigation</li>
+    </ul>
+
     <h3>1.0.0</h3>
     <ul>
         <li>Initial release</li>
