@@ -67,43 +67,33 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 #tc.on{display:block}
 
 /* ── TREE ── */
-.thb{padding:10px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bd);background:linear-gradient(180deg,rgba(30,30,46,.95),rgba(24,24,37,.98));position:sticky;top:0;z-index:10;backdrop-filter:blur(8px)}
-.thb-i{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;flex-shrink:0}
-.thb-i svg{width:13px;height:13px}
-.thb-t{font:600 11px/1.2 inherit;color:var(--tx);letter-spacing:.2px}
-.thb-s{font:400 9.5px/1 inherit;color:var(--tx5)}
-.thb-c{font:10px/1 'JetBrains Mono',monospace;color:var(--tx5);margin-left:auto;background:var(--sf);padding:3px 8px;border-radius:10px;border:1px solid var(--bd)}
-.tg{padding:0}
+.thb{padding:4px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bd2);background:var(--bg-s);position:sticky;top:0;z-index:10;height:30px;box-sizing:border-box}
+.thb-i{width:16px;height:16px;display:grid;place-items:center;flex-shrink:0;color:var(--root)}
+.thb-i svg{width:14px;height:14px}
+.thb-t{font:600 12px/1 'JetBrains Mono',monospace;color:var(--tx)}
+.thb-s{font:400 11px/1 inherit;color:var(--tx4)}
+.thb-c{font:11px/1 inherit;color:var(--tx5);margin-left:auto}
+.tg{padding:0;position:relative}
 
-.tsl{padding:4px 0;font:600 8.5px/1 inherit;letter-spacing:.3px;color:var(--tx5);display:flex;align-items:center;gap:5px;opacity:.8;position:relative;text-transform:uppercase}
-.tsl svg{width:8px;height:8px;opacity:.6;flex-shrink:0}
-.tsl-c{margin-left:auto;color:var(--bd2);font:500 8px/1 'JetBrains Mono',monospace;background:var(--sf);padding:2px 6px;border-radius:8px}
+.tsl{padding:0 10px;height:24px;font:500 11px/1 inherit;color:var(--tx4);display:flex;align-items:center;cursor:default;position:relative}
+.tsl svg{width:12px;height:12px;opacity:0.8;margin-right:6px}
+.tsl-t{margin-right:auto}
+.tsl-c{color:var(--tx5);font:11px/1 'JetBrains Mono',monospace}
 
-.tr{display:flex;align-items:center;height:32px;padding:0 16px 0 0;cursor:pointer;transition:background .15s,border-color .15s;position:relative;border-left:2px solid transparent}
-.tr:hover{background:linear-gradient(90deg,rgba(205,214,244,.04),transparent)}
-.tr.sel{background:linear-gradient(90deg,rgba(137,180,250,.08),transparent);border-left-color:var(--accent)}
-.tr.rt{background:linear-gradient(90deg,rgba(245,194,231,.04),transparent);border-left-color:var(--root)}
-.tri{flex-shrink:0;position:relative}
-.tgi{position:absolute;top:0;bottom:0;width:1px;background:var(--bd);opacity:.5}
-.tgi-l{position:absolute;top:0;height:50%;width:1px;background:var(--bd);opacity:.5}
-.tgh{position:absolute;top:50%;height:1px;background:var(--bd);opacity:.5;border-radius:0 1px 1px 0}
-.trc{width:16px;height:32px;display:grid;place-items:center;flex-shrink:0;color:var(--bd2);transition:transform .15s ease,color .15s}
-.trc svg{width:10px;height:10px}
+.tr{display:flex;align-items:center;height:24px;padding:0 10px 0 0;cursor:pointer;transition:none;position:relative;box-sizing:border-box}
+.tr:hover{background:var(--sf)}
+.tr.sel{background:rgba(137,180,250,0.15)}
+.trc{width:18px;height:24px;display:grid;place-items:center;flex-shrink:0;color:var(--tx5);transition:transform 0.1s}
+.trc svg{width:12px;height:12px}
 .trc.e{transform:rotate(90deg);color:var(--tx3)}
-.trc.l{color:transparent}
-.trb{width:2px;height:16px;border-radius:1px;margin:0 6px 0 2px;flex-shrink:0;opacity:.6}
-.trl{width:22px;height:22px;border-radius:5px;display:grid;place-items:center;margin-right:8px;flex-shrink:0;position:relative}
-.trl svg{width:12px;height:12px}
-.trn{font:500 11px/1.2 'JetBrains Mono','SF Mono',monospace;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
-.trf{display:inline-flex;align-items:center;gap:3px;font:10px/1 inherit;color:var(--tx5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;margin-left:6px;opacity:.7}
-.trf svg{width:9px;height:9px;flex-shrink:0;opacity:.5}
-.trr{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:auto;padding-left:10px}
-.trg{font:700 7px/1 inherit;padding:2.5px 6px;border-radius:10px;letter-spacing:.4px;text-transform:uppercase}
-.bg-r{background:rgba(245,194,231,.12);color:var(--root)}
-.bg-o{background:rgba(137,180,250,.12);color:var(--child)}
-.bg-i{background:rgba(166,227,161,.12);color:var(--parent)}
-.bg-l{background:rgba(108,112,134,.12);color:var(--lib)}
-.trloc{font:9px/1 'JetBrains Mono',monospace;color:var(--tx5);min-width:28px;text-align:right;opacity:.6}
+.trc.l{opacity:0;pointer-events:none}
+.tri-c{width:18px;height:24px;display:grid;place-items:center;flex-shrink:0;margin-right:4px}
+.tri-c svg{width:14px;height:14px}
+.trn{font:400 12px/1 'JetBrains Mono',monospace;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.trf{font:400 11px/1 inherit;color:var(--tx4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;margin-left:8px}
+.trr{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:auto}
+.trloc{font:10px/1 'JetBrains Mono',monospace;color:var(--tx5);opacity:0.8}
+.t-guide{position:absolute;top:0;bottom:0;width:1px;background:var(--bd);opacity:0.3;pointer-events:none}
 
 /* ── TOOLTIP ── */
 #ntip{position:fixed;z-index:2000;pointer-events:none;background:var(--bg-s);border:1px solid var(--bd2);border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.4);opacity:0;transform:translateY(8px) scale(.98);transition:opacity .35s cubic-bezier(.16,1,.3,1),transform .35s cubic-bezier(.16,1,.3,1);min-width:180px;max-width:300px;overflow:hidden}
@@ -482,7 +472,7 @@ function rTree(){
     const cm={},pm={};
     for(const e of D.edges){(cm[e.from]=cm[e.from]||[]).push(e.to);(pm[e.to]=pm[e.to]||[]).push(e.from)}
     const hb=document.createElement('div');hb.className='thb';
-    hb.innerHTML=`<div class="thb-i" style="background:var(--root)">${_iFn}</div><div><div class="thb-t">${esc(root.name||'anonymous')}</div><div class="thb-s">${root.fileName||''}</div></div><div class="thb-c">${D.nodes.length} nodes</div>`;
+    hb.innerHTML=`<div class="thb-i">${_iFn}</div><div class="thb-t">${esc(root.name||'anonymous')}</div><div class="thb-s">${root.fileName||''}</div><div class="thb-c">${D.nodes.length} nodes</div>`;
     $tc.appendChild(hb);
     $tc.appendChild(mkTR(root,0,false,false,false,[]));
     rSub($tc,root.id,nm,cm,pm,0,new Set([root.id]),[]);
@@ -534,26 +524,46 @@ const _iArrUp='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke
 
 function mkSL(t,c,cnt,dep,cont,isCall){
     const el=document.createElement('div');el.className='tsl';
-    el.style.paddingLeft=(20+dep*14)+'px';
+    const indent=10+dep*16;
+    el.style.paddingLeft=indent+'px';
     let guides='';
-    for(let i=0;i<dep;i++){if(cont[i])guides+=`<span class="tgi" style="left:${20+i*14}px"></span>`}
+    for(let i=0;i<dep;i++){if(cont[i])guides+=`<div class="t-guide" style="left:${18+i*16}px"></div>`}
     const arrow=isCall?_iArr:_iArrUp;
-    el.innerHTML=guides+`<span style="color:${c};display:flex">${arrow}</span>${t}<span class="tsl-c">${cnt}</span>`;
+    el.innerHTML=guides+`<span style="color:${c};display:flex">${arrow}</span><span class="tsl-t" style="color:${c}">${t}</span><span class="tsl-c">${cnt}</span>`;
     return el;
 }
 
 function mkTR(n,dep,hk,cl,isLast,cont){
     const row=document.createElement('div');
-    row.className='tr'+(n.type==='ROOT'?' rt':'')+(sel===n.id?' sel':'');
+    row.className='tr'+(sel===n.id?' sel':'');
     const c=gc(n.type,n.depth,n.isLibrary);
     const cc=hk?(cl?'':'e'):'l';
-    const bc=n.isLibrary?'bg-l':n.type==='ROOT'?'bg-r':n.type==='OUTBOUND'?'bg-o':'bg-i';
-    const bl=n.isLibrary?'LIB':n.type==='ROOT'?'ROOT':n.type==='OUTBOUND'?'CHILD':'PARENT';
+    
+    const indent=10+dep*16;
+    row.style.paddingLeft=indent+'px';
+    
     let guides='';
-    for(let i=0;i<dep-1;i++){if(cont[i])guides+=`<span class="tgi" style="left:${20+i*14}px"></span>`}
-    if(dep>0){const lx=20+(dep-1)*14;guides+=`<span class="${isLast?'tgi-l':'tgi'}" style="left:${lx}px"></span><span class="tgh" style="left:${lx}px;width:10px"></span>`}
-    const fileHtml=n.fileName?`<span class="trf">${_iFile}${esc(n.fileName)}</span>`:'';
-    row.innerHTML=`<div class="tri" style="width:${16+dep*14}px">${guides}</div><span class="trc ${cc}">${_iChev}</span><div class="trb" style="background:${c}"></div><div class="trl" style="background:${c}">${_iFn}</div><span class="trn">${esc(n.name||'anon')}</span>${fileHtml}<div class="trr"><span class="trg ${bc}">${bl}</span>${n.loc>0?`<span class="trloc">${n.loc}L</span>`:''}</div>`;
+    // We only draw vertical guides up to current depth based on `cont` array
+    for(let i=0;i<=dep;i++){
+        if(i===dep){
+            // Not drawing horizontal guides anymore, just the indentation handles it
+            if(!isLast&&dep>0)guides+=`<div class="t-guide" style="left:${18+i*16}px;bottom:0;height:100%"></div>`;
+            else if(isLast&&dep>0)guides+=`<div class="t-guide" style="left:${18+i*16}px;bottom:50%;height:50%"></div>`;
+        }else if(cont[i]){
+            guides+=`<div class="t-guide" style="left:${18+i*16}px"></div>`;
+        }
+    }
+    
+    row.innerHTML=guides+`
+        <span class="trc ${cc}">${_iChev}</span>
+        <span class="tri-c" style="color:${c}">${n.type==='ROOT'?_iFn:_iFn}</span>
+        <span class="trn">${esc(n.name||'anon')}</span>
+        ${n.fileName?`<span class="trf">${esc(n.fileName)}</span>`:''}
+        <div class="trr">
+            ${n.loc>0?`<span class="trloc">${n.loc} lines</span>`:''}
+        </div>
+    `;
+    
     row.addEventListener('click',e=>{
         sel=n.id;updateShortcuts();document.querySelectorAll('.tr.sel').forEach(r=>r.classList.remove('sel'));row.classList.add('sel');
         if((e.metaKey||e.ctrlKey)&&window.jbCefQuery){
