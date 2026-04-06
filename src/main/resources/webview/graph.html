@@ -131,6 +131,9 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 .lc{width:8px;height:8px;border-radius:2px;flex-shrink:0}
 .ln{font:10px/1 'JetBrains Mono',monospace;color:var(--tx5);margin-left:auto}
 
+/* ── SELECTION BOX ── */
+#selbox{position:fixed;pointer-events:none;border:1.5px solid rgba(137,180,250,.6);background:rgba(137,180,250,.08);border-radius:2px;z-index:100;display:none}
+
 /* ── STATUS ── */
 #sb{height:30px;background:var(--bg-s);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 10px;gap:10px;font:10px/1 inherit;color:var(--tx5);user-select:none}
 .si{display:flex;align-items:center;gap:2px}
@@ -233,6 +236,7 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 </div>
 <div class="tt" id="ttip"></div>
 <div id="toast"><span class="td" id="tdot"></span><span id="ttx"></span></div>
+<div id="selbox"></div>
 
 <script>
 // ── State ──
@@ -302,7 +306,7 @@ function updateShortcuts(){
     if(cv==='graph'){
         if(selCount>1) h+=_sk(selCount+' selected','Drag to move');
         if(nd&&nd.type!=='ROOT') h+=_sk('Cmd+Click','Expand');
-        h+=_sk('Ctrl+Click','Multi-select');
+        h+=_sk('Drag','Box select');
         h+=_sk('F','Fit');
     } else if(nd&&nd.type!=='ROOT'){
         h+=_sk('Dbl','Trace');
@@ -441,7 +445,7 @@ function _buildNet(){
         nodes:{fixed:false},
         edges:{smooth:{enabled:true,type:'cubicBezier',forceDirection:'horizontal',roundness:.35}},
         physics:{enabled:false},
-        interaction:{hover:true,tooltipDelay:99999,zoomView:true,dragView:true,dragNodes:true,multiselect:true,selectConnectedEdges:true,navigationButtons:false,keyboard:{enabled:true}},
+        interaction:{hover:true,tooltipDelay:99999,zoomView:true,dragView:true,dragNodes:true,multiselect:false,selectConnectedEdges:true,navigationButtons:false,keyboard:{enabled:true}},
         layout:{hierarchical:{direction:'LR',sortMethod:'directed',levelSeparation:160,nodeSpacing:55,treeSpacing:100,parentCentralization:true,blockShifting:true,edgeMinimization:true,shakeTowards:'roots'}}
     });
     net.on('click',onClk);net.on('doubleClick',onDbl);
@@ -449,6 +453,7 @@ function _buildNet(){
     net.on('dragStart',()=>{drag=true;hideTip()});net.on('dragEnd',()=>{drag=false});
     net.on('selectNode',()=>{selCount=net.getSelectedNodes().length;updateShortcuts()});
     net.on('deselectNode',()=>{selCount=net.getSelectedNodes().length;updateShortcuts()});
+    _initBoxSel();
     setTimeout(()=>{$ld.classList.add('h');if(net){net.fit({animation:{duration:300,easingFunction:'easeInOutQuad'}});setTimeout(updateZoomLabel,320)}},200);
     if(cv==='graph')$zc.classList.remove('h');
     uLeg();uSt();updateShortcuts();
@@ -660,6 +665,71 @@ document.addEventListener('keydown',e=>{
 
 // Track zoom level on scroll
 $gc.addEventListener('wheel',()=>{setTimeout(updateZoomLabel,50)},{passive:true});
+
+// ── Box / Marquee Selection ──
+const $selbox=$('selbox');
+let _bx=null; // active box state
+function _initBoxSel(){
+    if(!net)return;
+    const canvas=$gc.querySelector('canvas');
+    if(!canvas)return;
+    canvas.addEventListener('pointerdown',_bxDown,true);
+}
+function _bxDown(e){
+    if(e.button!==0||!net||cv!=='graph')return;
+    // Only start box-select on empty canvas (no node under cursor)
+    const rect=$gc.getBoundingClientRect();
+    const dp={x:e.clientX-rect.left,y:e.clientY-rect.top};
+    if(net.getNodeAt(dp))return; // clicking a node — let vis handle it
+    // Disable pan while box-selecting
+    net.setOptions({interaction:{dragView:false}});
+    _bx={x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,active:false};
+    document.addEventListener('pointermove',_bxMove);
+    document.addEventListener('pointerup',_bxUp);
+}
+function _bxMove(e){
+    if(!_bx)return;
+    _bx.x=e.clientX;_bx.y=e.clientY;
+    const dx=Math.abs(_bx.x-_bx.x0),dy=Math.abs(_bx.y-_bx.y0);
+    if(!_bx.active&&(dx>4||dy>4))_bx.active=true;
+    if(_bx.active){
+        const l=Math.min(_bx.x0,_bx.x),t=Math.min(_bx.y0,_bx.y);
+        $selbox.style.left=l+'px';$selbox.style.top=t+'px';
+        $selbox.style.width=dx+'px';$selbox.style.height=dy+'px';
+        $selbox.style.display='block';
+    }
+}
+function _bxUp(e){
+    document.removeEventListener('pointermove',_bxMove);
+    document.removeEventListener('pointerup',_bxUp);
+    $selbox.style.display='none';
+    if(!_bx||!net){_bx=null;net&&net.setOptions({interaction:{dragView:true}});return}
+    if(_bx.active){
+        // Find nodes inside the box
+        const rect=$gc.getBoundingClientRect();
+        const x1=Math.min(_bx.x0,_bx.x)-rect.left,y1=Math.min(_bx.y0,_bx.y)-rect.top;
+        const x2=Math.max(_bx.x0,_bx.x)-rect.left,y2=Math.max(_bx.y0,_bx.y)-rect.top;
+        const ids=[];
+        nds.forEach(n=>{
+            if(n.hidden)return;
+            const p=net.canvasToDOM(net.getPositions([n.id])[n.id]);
+            if(p&&p.x>=x1&&p.x<=x2&&p.y>=y1&&p.y<=y2)ids.push(n.id);
+        });
+        if(ids.length>0){
+            net.selectNodes(ids);
+            selCount=ids.length;updateShortcuts();
+            toast(ids.length+' nodes selected','var(--accent)');
+        } else {
+            net.unselectAll();selCount=0;updateShortcuts();
+        }
+    } else {
+        // Tiny drag = click on empty = deselect
+        net.unselectAll();selCount=0;updateShortcuts();
+    }
+    _bx=null;
+    // Re-enable pan
+    setTimeout(()=>{if(net)net.setOptions({interaction:{dragView:true}})},50);
+}
 </script>
 </body>
 </html>
