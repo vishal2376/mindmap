@@ -1,0 +1,16 @@
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Connectors -->
+  <path d="M5.5 8 L7.5 8" stroke="#6c7086" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M9.5 7 L12.5 4" stroke="#6c7086" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M9.5 9 L12.5 12" stroke="#6c7086" stroke-width="1.2" stroke-linecap="round"/>
+
+  <!-- Parent (Inbound) -->
+  <circle cx="3.5" cy="8" r="2" fill="#a6e3a1"/>
+  
+  <!-- Root -->
+  <circle cx="8.5" cy="8" r="3" fill="#f5c2e7"/>
+  
+  <!-- Children (Outbound) -->
+  <circle cx="13.5" cy="3" r="2" fill="#89b4fa"/>
+  <circle cx="13.5" cy="13" r="2" fill="#89b4fa"/>
+</svg>
