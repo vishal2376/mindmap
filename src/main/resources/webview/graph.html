@@ -295,11 +295,14 @@ function hideTip(){$ntip.classList.remove('v')}
 
 // ── Dynamic Shortcuts ──
 function _sk(kbd,label){return`<div class="sk"><kbd>${kbd}</kbd><span>${label}</span></div>`}
+let selCount=0;
 function updateShortcuts(){
     if(!D){$sh.innerHTML='';return}
     let h='';const nd=sel?D.nodes.find(n=>n.id===sel):null;
     if(cv==='graph'){
+        if(selCount>1) h+=_sk(selCount+' selected','Drag to move');
         if(nd&&nd.type!=='ROOT') h+=_sk('Cmd+Click','Expand');
+        h+=_sk('Ctrl+Click','Multi-select');
         h+=_sk('F','Fit');
     } else if(nd&&nd.type!=='ROOT'){
         h+=_sk('Dbl','Trace');
@@ -435,15 +438,17 @@ function _buildNet(){
     if(sf){const up=[];nds.forEach(n=>{if(!isVis(n._data))up.push({id:n.id,hidden:true})});if(up.length)nds.update(up)}
     if(net)net.destroy();
     net=new vis.Network($gc,{nodes:nds,edges:eds},{
-        nodes:{},
+        nodes:{fixed:false},
         edges:{smooth:{enabled:true,type:'cubicBezier',forceDirection:'horizontal',roundness:.35}},
         physics:{enabled:false},
-        interaction:{hover:true,tooltipDelay:99999,zoomView:true,dragView:true,navigationButtons:false,keyboard:{enabled:true}},
+        interaction:{hover:true,tooltipDelay:99999,zoomView:true,dragView:true,dragNodes:true,multiselect:true,selectConnectedEdges:true,navigationButtons:false,keyboard:{enabled:true}},
         layout:{hierarchical:{direction:'LR',sortMethod:'directed',levelSeparation:160,nodeSpacing:55,treeSpacing:100,parentCentralization:true,blockShifting:true,edgeMinimization:true,shakeTowards:'roots'}}
     });
     net.on('click',onClk);net.on('doubleClick',onDbl);
     net.on('hoverNode',onHov(net,nds));net.on('blurNode',onBlr(nds));
     net.on('dragStart',()=>{drag=true;hideTip()});net.on('dragEnd',()=>{drag=false});
+    net.on('selectNode',()=>{selCount=net.getSelectedNodes().length;updateShortcuts()});
+    net.on('deselectNode',()=>{selCount=net.getSelectedNodes().length;updateShortcuts()});
     setTimeout(()=>{$ld.classList.add('h');if(net){net.fit({animation:{duration:300,easingFunction:'easeInOutQuad'}});setTimeout(updateZoomLabel,320)}},200);
     if(cv==='graph')$zc.classList.remove('h');
     uLeg();uSt();updateShortcuts();
@@ -631,6 +636,9 @@ document.addEventListener('keydown',e=>{
     // History (Alt+Arrow)
     if(e.altKey&&e.key==='ArrowLeft'){e.preventDefault();$bbk.click();return}
     if(e.altKey&&e.key==='ArrowRight'){e.preventDefault();$bfw.click();return}
+
+    // Escape = deselect all nodes
+    if(e.key==='Escape'&&cv==='graph'&&net){net.unselectAll();selCount=0;updateShortcuts();return}
 
     // Graph-only keys (no Alt/Cmd modifier)
     if(cv==='graph'&&!e.altKey&&!e.metaKey&&!e.ctrlKey){
