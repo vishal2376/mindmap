@@ -168,6 +168,24 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 ::-webkit-scrollbar-track{background:0}
 ::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
 ::-webkit-scrollbar-thumb:hover{background:var(--bd2)}
+
+/* ── MODAL ── */
+#mOy{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(30,30,46,.7);backdrop-filter:blur(4px);z-index:5000;display:none;place-items:center}
+#mOy.s{display:grid}
+.mdl{background:var(--bg-s);border:1px solid var(--bd);border-radius:8px;box-shadow:0 12px 32px rgba(0,0,0,.5);width:320px;max-width:90%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;transform:scale(.95);opacity:0;transition:all .2s var(--ease)}
+#mOy.s .mdl{transform:scale(1);opacity:1}
+.mh{padding:12px 16px;border-bottom:1px solid var(--bd2);display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:13px}
+.mc{background:0;border:0;color:var(--tx4);cursor:pointer;display:grid;place-items:center;transition:.15s}
+.mc:hover{color:var(--tx)}
+.mc svg{width:14px;height:14px}
+.mb{padding:16px;overflow-y:auto}
+.sg{margin-bottom:16px}
+.sg:last-child{margin-bottom:0}
+.st{font-size:10px;text-transform:uppercase;color:var(--tx5);font-weight:600;margin-bottom:8px;letter-spacing:.5px}
+.sr{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11px;color:var(--tx3)}
+.skk{display:flex;gap:4px;align-items:center}
+.skk kbd{background:var(--sf);border:1px solid var(--bd);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx)}
+.skk span{color:var(--tx5);font-size:9px;padding:0 2px}
 </style>
 </head>
 <body>
@@ -185,8 +203,9 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 <div id="bc"><span class="bci">&#9679;</span><span class="bcn" id="bcn">No function selected</span></div>
 <button class="sb" id="sbn" data-t="Search" data-k="/"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg><input id="sin" placeholder="Filter nodes…"/></button>
 <div class="sep"></div>
-<button class="tb" id="tlib" data-t="Library code"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="6" rx="1"/><rect x="9" y="2" width="5" height="6" rx="1"/><rect x="2" y="10" width="12" height="4" rx="1"/></svg></button>
+<button class="tb" id="tlib" data-t="Library code" data-k="L"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="6" rx="1"/><rect x="9" y="2" width="5" height="6" rx="1"/><rect x="2" y="10" width="12" height="4" rx="1"/></svg></button>
 <button class="tb" id="bfit" data-t="Fit view" data-k="F"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,6 2,2 6,2"/><polyline points="10,2 14,2 14,6"/><polyline points="14,10 14,14 10,14"/><polyline points="6,14 2,14 2,10"/></svg></button>
+<button class="tb" id="bhelp" data-t="Shortcuts" data-k="?"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6" /><path d="M6 6c0-1.1.9-2 2-2s2 .9 2 2c0 1.5-2 2-2 2v1" /><circle cx="8" cy="12" r="0.8" fill="currentColor" stroke="none" /></svg></button>
 </div>
 
 <div id="main">
@@ -229,6 +248,31 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 <div id="toast"><span class="td" id="tdot"></span><span id="ttx"></span></div>
 <div id="selbox"></div>
 
+<div id="mOy">
+<div class="mdl">
+<div class="mh">Keyboard Shortcuts <button class="mc" id="mCl"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg></button></div>
+<div class="mb">
+<div class="sg"><div class="st">Global</div>
+<div class="sr">Search node<div class="skk"><kbd>/</kbd></div></div>
+<div class="sr">Switch Graph/Tree<div class="skk"><kbd>1</kbd><span>or</span><kbd>2</kbd></div></div>
+<div class="sr">History Back/Fwd<div class="skk"><kbd>Alt</kbd><kbd>←</kbd><span>/</span><kbd>→</kbd></div></div>
+<div class="sr">Toggle Library<div class="skk"><kbd>L</kbd></div></div>
+<div class="sr">Show Shortcuts<div class="skk"><kbd>?</kbd></div></div>
+</div>
+<div class="sg"><div class="st">Graph Navigation</div>
+<div class="sr">Center on select<div class="skk"><kbd>C</kbd></div></div>
+<div class="sr">Fit all<div class="skk"><kbd>F</kbd></div></div>
+<div class="sr">Zoom in/out<div class="skk"><kbd>+</kbd><span>/</span><kbd>-</kbd></div></div>
+<div class="sr">Box selection<div class="skk"><kbd>Drag</kbd></div></div>
+<div class="sr">Pan canvas<div class="skk"><kbd>Right/Mid Drag</kbd></div></div>
+</div>
+<div class="sg"><div class="st">Interaction</div>
+<div class="sr">Open in Editor<div class="skk"><kbd>Click</kbd><span>or</span><kbd>Enter</kbd></div></div>
+<div class="sr">Expand node<div class="skk"><kbd>Cmd/Ctrl+Click</kbd></div></div>
+<div class="sr">Trace function<div class="skk"><kbd>Dbl Click</kbd></div></div>
+</div>
+</div></div></div>
+
 <script>
 // ── State ──
 let net=null,nds=null,eds=null,D=null;
@@ -240,12 +284,13 @@ const $=id=>document.getElementById(id);
 const $gc=$('gc'),$tc=$('tc'),$ld=$('ld'),$es=$('es');
 const $bg=$('bg'),$bt=$('bt'),$bbk=$('bbk'),$bfw=$('bfw'),$hbg=$('hbg');
 const $bcn=$('bcn'),$sbn=$('sbn'),$sin=$('sin');
-const $tlib=$('tlib'),$bfit=$('bfit');
+const $tlib=$('tlib'),$bfit=$('bfit'),$bhelp=$('bhelp');
 const $bzi=$('bzi'),$bzo=$('bzo'),$bzf=$('bzf'),$bzc=$('bzc'),$zlv=$('zlv'),$zc=$('zc');
 const $sn=$('sn'),$se=$('se'),$sdp=$('sdp'),$sm=$('sm'),$sh=$('sh');
 const $leg=$('leg'),$li=$('li');
 const $ntip=$('ntip'),$ti=$('ti'),$tn=$('tn'),$tp=$('tp'),$tsg=$('tsg'),$tfl=$('tfl'),$tss=$('tss');
 const $ttip=$('ttip'),$toast=$('toast'),$tdot=$('tdot'),$ttx=$('ttx');
+const $mOy=$('mOy'),$mCl=$('mCl');
 
 // ── Helpers ──
 function gc(t,d,l){return l?'#6c7086':t==='ROOT'?'#f5c2e7':t==='INBOUND'?'#a6e3a1':t==='OUTBOUND'?'#89b4fa':'#cba6f7'}
@@ -268,6 +313,11 @@ $sbn.addEventListener('click',e=>{if(!sOpen){sOpen=true;$sbn.classList.add('op')
 $sin.addEventListener('click',e=>e.stopPropagation());
 $sin.addEventListener('input',e=>{clearTimeout(_sf);_sf=setTimeout(()=>{sf=e.target.value;filtAll()},80)});
 document.addEventListener('click',e=>{if(sOpen&&!$sbn.contains(e.target)){sOpen=false;$sbn.classList.remove('op');sf='';$sin.value='';filtAll()}});
+
+// ── Help Modal ──
+$bhelp.addEventListener('click',()=>$mOy.classList.add('s'));
+$mCl.addEventListener('click',()=>$mOy.classList.remove('s'));
+$mOy.addEventListener('click',e=>{if(e.target===$mOy)$mOy.classList.remove('s')});
 
 // ── Tooltip ──
 function showTip(e,n){
@@ -657,7 +707,20 @@ function centerOnSel(){
 
 // ── Keyboard ──
 document.addEventListener('keydown',e=>{
-    if(e.target.tagName==='INPUT'){if(e.key==='Escape'){sOpen=false;$sbn.classList.remove('op');sf='';$sin.value='';$sin.blur();filtAll()}return}
+    if(e.target.tagName==='INPUT'){
+        if(e.key==='Escape'){sOpen=false;$sbn.classList.remove('op');sf='';$sin.value='';$sin.blur();filtAll()}
+        return;
+    }
+
+    if(e.key==='Escape'){
+        if($mOy.classList.contains('s')){$mOy.classList.remove('s');return}
+        if(sOpen){sOpen=false;$sbn.classList.remove('op');sf='';$sin.value='';$sin.blur();filtAll();return}
+        if(cv==='graph'&&net){net.unselectAll();selCount=0;updateShortcuts();return}
+        return;
+    }
+
+    if(e.key==='?'||e.key==='¿'){$mOy.classList.add('s');return}
+    if(e.key==='l'||e.key==='L'){$tlib.click();return}
 
     // Search
     if(e.key==='/'||e.key==='f'){e.preventDefault();if(!sOpen){sOpen=true;$sbn.classList.add('op');setTimeout(()=>$sin.focus(),250)}else $sin.focus();return}

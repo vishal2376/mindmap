@@ -82,7 +82,9 @@ An IntelliJ IDEA / Android Studio plugin that generates interactive call graph v
 | `C` | Center on selected node |
 | `+` / `-` | Zoom in / out |
 | `/` | Open search filter |
-| `Escape` | Deselect all nodes |
+| `L` | Toggle Library API calls |
+| `?` | Show Keyboard Shortcuts modal |
+| `Escape` | Deselect all nodes or close modals |
 | `Enter` | Navigate to selected node's source |
 | `Arrow keys` | Navigate between connected nodes |
 

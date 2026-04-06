@@ -263,7 +263,8 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
 
                     ApplicationManager.getApplication().invokeLater {
                         try {
-                            FileEditorManager.getInstance(project).openTextEditor(descriptor, true)
+                            FileEditorManager.getInstance(project).openTextEditor(descriptor, false)
+                            browser.component.requestFocusInWindow()
                         } catch (e: Exception) {
                             LOG.error("Failed to open editor", e)
                         }
