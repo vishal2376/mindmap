@@ -446,7 +446,7 @@ function _buildNet(){
         nodes:{fixed:false},
         edges:{smooth:{enabled:true,type:'cubicBezier',forceDirection:'horizontal',roundness:.35}},
         physics:{enabled:false},
-        interaction:{hover:true,tooltipDelay:99999,zoomView:true,dragView:true,dragNodes:true,multiselect:false,selectConnectedEdges:true,navigationButtons:false,keyboard:{enabled:true}},
+        interaction:{hover:true,tooltipDelay:99999,zoomView:true,dragView:false,dragNodes:true,multiselect:false,selectConnectedEdges:true,navigationButtons:false,keyboard:{enabled:true}},
         layout:{hierarchical:{direction:'LR',sortMethod:'directed',levelSeparation:200,nodeSpacing:85,treeSpacing:120,parentCentralization:true,blockShifting:true,edgeMinimization:true,shakeTowards:'roots'}}
     });
     net.on('click',onClk);net.on('doubleClick',onDbl);
@@ -691,8 +691,6 @@ function _bxDown(e){
     const rect=$gc.getBoundingClientRect();
     const dp={x:e.clientX-rect.left,y:e.clientY-rect.top};
     if(net.getNodeAt(dp))return; // clicking a node — let vis handle it
-    // Disable pan while box-selecting
-    net.setOptions({interaction:{dragView:false}});
     _bx={x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,active:false};
     document.addEventListener('pointermove',_bxMove);
     document.addEventListener('pointerup',_bxUp);
@@ -713,7 +711,7 @@ function _bxUp(e){
     document.removeEventListener('pointermove',_bxMove);
     document.removeEventListener('pointerup',_bxUp);
     $selbox.style.display='none';
-    if(!_bx||!net){_bx=null;net&&net.setOptions({interaction:{dragView:true}});return}
+    if(!_bx||!net){_bx=null;return}
     if(_bx.active){
         // Find nodes inside the box
         const rect=$gc.getBoundingClientRect();
@@ -737,8 +735,35 @@ function _bxUp(e){
         net.unselectAll();selCount=0;updateShortcuts();
     }
     _bx=null;
-    // Re-enable pan
-    setTimeout(()=>{if(net)net.setOptions({interaction:{dragView:true}})},50);
+}
+
+// ── Disable browser context menu ──
+document.addEventListener('contextmenu',e=>e.preventDefault());
+
+// ── Right-click / Middle-click Pan ──
+let _pan=null;
+$gc.addEventListener('pointerdown',e=>{
+    if(!net||cv!=='graph')return;
+    if(e.button===1||e.button===2){ // middle or right click
+        e.preventDefault();
+        _pan={x:e.clientX,y:e.clientY,pos:net.getViewPosition(),scale:net.getScale()};
+        $gc.style.cursor='grabbing';
+        document.addEventListener('pointermove',_panMove);
+        document.addEventListener('pointerup',_panUp);
+    }
+});
+function _panMove(e){
+    if(!_pan||!net)return;
+    const dx=(e.clientX-_pan.x)/_pan.scale;
+    const dy=(e.clientY-_pan.y)/_pan.scale;
+    net.moveTo({position:{x:_pan.pos.x-dx,y:_pan.pos.y-dy}});
+}
+function _panUp(e){
+    if(!_pan)return;
+    document.removeEventListener('pointermove',_panMove);
+    document.removeEventListener('pointerup',_panUp);
+    _pan=null;
+    $gc.style.cursor='';
 }
 </script>
 </body>
