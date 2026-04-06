@@ -24,6 +24,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Mindmap" secondary="true"
                     icon="AllIcons.General.Web" anchor="right"
+                    doNotActivateOnStart="true"
                     factoryClass="com.mindmap.plugin.ui.GraphToolWindowFactory"/>
     </extensions>
 

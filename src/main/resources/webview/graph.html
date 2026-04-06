@@ -592,68 +592,6 @@ function centerOnSel(){
     net.moveTo({position:pos,scale:net.getScale(),animation:{duration:300,easingFunction:'easeInOutQuad'}});
 }
 
-// ── Focus / Select Node (visual highlight) ──
-function focusNode(nid){
-    if(!nid||!net||!nds)return;
-    sel=nid;
-    net.selectNodes([nid]);updateShortcuts();
-    // Navigate to file
-    if(window.jbCefQuery)window.jbCefQuery(JSON.stringify({type:'navigate',id:nid}));
-    centerOnSel();
-}
-
-// ── Arrow Key Navigation ──
-// Get all visible (non-hidden) node IDs in layout order
-function getVisibleNodeIds(){
-    if(!nds)return[];
-    const ids=[];
-    nds.forEach(n=>{if(!n.hidden)ids.push(n.id)});
-    return ids;
-}
-
-function arrowNav(key){
-    if(!net||!D||cv!=='graph')return false;
-    const visible=getVisibleNodeIds();
-    if(!visible.length)return false;
-
-    // If nothing selected, select root or first node
-    if(!sel||!visible.includes(sel)){
-        const root=D.nodes.find(n=>n.type==='ROOT');
-        focusNode(root?root.id:visible[0]);
-        return true;
-    }
-
-    const connected=net.getConnectedNodes(sel);
-    if(!connected||!connected.length)return false;
-
-    // Build directional neighbors using node positions
-    const myPos=net.getPositions([sel])[sel];
-    if(!myPos)return false;
-
-    const positions=net.getPositions(connected.filter(id=>visible.includes(id)));
-    let left=[],right=[],above=[],below=[];
-    for(const [id,pos] of Object.entries(positions)){
-        const dx=pos.x-myPos.x, dy=pos.y-myPos.y;
-        if(dx<-20)left.push({id,pos});
-        if(dx>20)right.push({id,pos});
-        if(dy<-20)above.push({id,pos});
-        if(dy>20)below.push({id,pos});
-    }
-
-    // Sort by distance to pick closest
-    const byDist=(a,b)=>{const da=Math.hypot(a.pos.x-myPos.x,a.pos.y-myPos.y);const db=Math.hypot(b.pos.x-myPos.x,b.pos.y-myPos.y);return da-db};
-    left.sort(byDist);right.sort(byDist);above.sort(byDist);below.sort(byDist);
-
-    let target=null;
-    if(key==='ArrowLeft'&&left.length)target=left[0].id;
-    else if(key==='ArrowRight'&&right.length)target=right[0].id;
-    else if(key==='ArrowUp'&&above.length)target=above[0].id;
-    else if(key==='ArrowDown'&&below.length)target=below[0].id;
-
-    if(target){focusNode(target);return true}
-    return false;
-}
-
 // ── Keyboard ──
 document.addEventListener('keydown',e=>{
     if(e.target.tagName==='INPUT'){if(e.key==='Escape'){sOpen=false;$sbn.classList.remove('op');sf='';$sin.value='';$sin.blur();filtAll()}return}
@@ -671,12 +609,6 @@ document.addEventListener('keydown',e=>{
 
     // Graph-only keys (no Alt/Cmd modifier)
     if(cv==='graph'&&!e.altKey&&!e.metaKey&&!e.ctrlKey){
-        // Arrow key navigation between nodes
-        if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
-            e.preventDefault();
-            arrowNav(e.key);
-            return;
-        }
         // Enter = open file for selected node
         if(e.key==='Enter'&&sel){
             e.preventDefault();

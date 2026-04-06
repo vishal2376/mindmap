@@ -1,5 +1,6 @@
 package com.mindmap.plugin.ui
 
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
@@ -8,7 +9,13 @@ import com.intellij.ui.jcef.JBCefApp
 import java.awt.*
 import javax.swing.*
 
-class GraphToolWindowFactory : ToolWindowFactory {
+class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
+
+    override fun shouldBeAvailable(project: Project): Boolean = true
+
+    override fun init(toolWindow: ToolWindow) {
+        toolWindow.setToHideOnEmptyContent(true)
+    }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         if (!JBCefApp.isSupported()) {
