@@ -7,6 +7,17 @@
     <h2>Mindmap - Kotlin Call Graph Visualizer</h2>
     <p>Visualize Kotlin function call graphs as interactive mind maps inside your IDE. Place your cursor on any function and press <b>Alt+G</b> to view the call chain - callers, callees, and function depth.</p>
 
+    <br/>
+    <b>Graph View</b><br/>
+    <img src="https://raw.githubusercontent.com/vishal2376/mindmap/master/showcase/screenshots/graph_view.png" alt="Graph View" width="600"/><br/><br/>
+    <b>Tree View</b><br/>
+    <img src="https://raw.githubusercontent.com/vishal2376/mindmap/master/showcase/screenshots/tree_view.png" alt="Tree View" width="600"/><br/><br/>
+    <b>Keyboard Shortcuts</b><br/>
+    <img src="https://raw.githubusercontent.com/vishal2376/mindmap/master/showcase/screenshots/keyboard_shortcuts.png" alt="Keyboard Shortcuts" width="600"/><br/><br/>
+    <b>Context Menu</b><br/>
+    <img src="https://raw.githubusercontent.com/vishal2376/mindmap/master/showcase/screenshots/context_menu.png" alt="Context Menu" width="600"/><br/><br/>
+
+
     <h3>🎯 Key Features</h3>
     <ul>
         <li><b>Interactive Graph View</b> - Hierarchical layout with drag, zoom, and pan</li>

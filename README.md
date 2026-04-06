@@ -28,6 +28,22 @@ An IntelliJ IDEA / Android Studio plugin that generates interactive call graph v
 
 ---
 
+## 📸 Showcase
+
+**Graph View**<br/>
+<img src="showcase/screenshots/graph_view.png" width="800"/>
+
+**Tree View**<br/>
+<img src="showcase/screenshots/tree_view.png" width="800"/>
+
+**Keyboard Shortcuts**<br/>
+<img src="showcase/screenshots/keyboard_shortcuts.png" width="800"/>
+
+**Context Menu**<br/>
+<img src="showcase/screenshots/context_menu.png" width="800"/>
+
+---
+
 ## ✨ Features
 
 ### Graph View
