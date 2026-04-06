@@ -408,12 +408,5 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         }
     }
 
-    override fun removeNotify() {
-        try {
-            dispose()
-        } catch (e: Exception) {
-            LOG.error("Error during removeNotify", e)
-        }
-        super.removeNotify()
-    }
+    // Removed removeNotify() completely to allow IDE's ContentManager to handle lifecycle
 }
