@@ -42,6 +42,9 @@ An IntelliJ IDEA / Android Studio plugin that generates interactive call graph v
 **Context Menu**<br/>
 <img src="showcase/screenshots/context_menu.png" width="800"/>
 
+**Tooltip Info**<br/>
+<img src="showcase/screenshots/tooltip_info.png" width="800"/>
+
 ---
 
 ## ✨ Features
