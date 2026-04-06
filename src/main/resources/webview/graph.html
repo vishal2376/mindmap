@@ -393,33 +393,24 @@ function drawGraph(json){
     _buildNet();
 }
 
-// ── Merge Graph (trace: add new nodes while keeping existing positions) ──
+// ── Merge Graph (trace: add new nodes while perfectly layouting) ──
 function mergeGraph(json){
     try{D=typeof json==='string'?JSON.parse(json):json}catch(e){return}
     if(!D||!Array.isArray(D.nodes)||!Array.isArray(D.edges))return;
-    // Save existing positions + viewport before rebuild
-    const savedPos={};
-    let savedView=null;
-    if(net){
-        savedView={scale:net.getScale(),position:net.getViewPosition()};
-        nds.forEach(n=>{const p=net.getPositions([n.id]);if(p[n.id])savedPos[n.id]=p[n.id]});
-    }
+    
+    // Remember the node that was double clicked to trace
+    const focusId = sel;
+    
     $es.classList.add('h');$ld.classList.remove('h');
     const root=D.nodes.find(n=>n.type==='ROOT');
-    if(root){$bcn.textContent=root.name||'anonymous';sel=root.id;}
-    _buildNet();
-    // Restore saved positions for existing nodes
-    if(net&&Object.keys(savedPos).length>0){
-        const updates=[];
-        nds.forEach(n=>{if(savedPos[n.id])updates.push({id:n.id,x:savedPos[n.id].x,y:savedPos[n.id].y})});
-        if(updates.length>0)nds.update(updates);
-        // Restore viewport so the view doesn't jump
-        if(savedView){net.moveTo({position:savedView.position,scale:savedView.scale})}
-    }
+    if(root){$bcn.textContent=root.name||'anonymous';} // keep sel as focusId
+    
+    // Rebuild completely. Hierarchical layout prevents overlaps.
+    _buildNet(focusId);
 }
 
-// Rebuild network from D with current showLib/sf filters — excludes library nodes at dataset level
-function _buildNet(){
+// Rebuild network from D with current filters, perfectly spacing all nodes to avoid overlap
+function _buildNet(focusId){
     if(!D)return;
     // Filter library nodes out of the dataset entirely (cleaner hierarchical layout, no phantom gaps)
     const visNodes=D.nodes.filter(n=>showLib||!n.isLibrary);
@@ -445,7 +436,18 @@ function _buildNet(){
     net.on('selectNode',()=>{selCount=net.getSelectedNodes().length;updateShortcuts()});
     net.on('deselectNode',()=>{selCount=net.getSelectedNodes().length;updateShortcuts()});
     _initBoxSel();
-    setTimeout(()=>{$ld.classList.add('h');if(net){net.fit({animation:{duration:300,easingFunction:'easeInOutQuad'}});setTimeout(updateZoomLabel,320)}},200);
+    setTimeout(()=>{
+        $ld.classList.add('h');
+        if(net){
+            if(focusId && nds.get(focusId)){
+                net.selectNodes([focusId]);
+                net.focus(focusId, {scale: 1.0, animation: {duration: 300, easingFunction: 'easeInOutQuad'}});
+            } else {
+                net.fit({animation:{duration:300,easingFunction:'easeInOutQuad'}});
+            }
+            setTimeout(updateZoomLabel,320);
+        }
+    },200);
     if(cv==='graph')$zc.classList.remove('h');
     uLeg();uSt();updateShortcuts();
     if(cv==='tree')rTree();
