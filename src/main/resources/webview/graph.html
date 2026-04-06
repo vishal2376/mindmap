@@ -395,6 +395,31 @@ function drawGraph(json){
     _buildNet();
 }
 
+// ── Merge Graph (trace: add new nodes while keeping existing positions) ──
+function mergeGraph(json){
+    try{D=typeof json==='string'?JSON.parse(json):json}catch(e){return}
+    if(!D||!Array.isArray(D.nodes)||!Array.isArray(D.edges))return;
+    // Save existing positions + viewport before rebuild
+    const savedPos={};
+    let savedView=null;
+    if(net){
+        savedView={scale:net.getScale(),position:net.getViewPosition()};
+        nds.forEach(n=>{const p=net.getPositions([n.id]);if(p[n.id])savedPos[n.id]=p[n.id]});
+    }
+    $es.classList.add('h');$ld.classList.remove('h');
+    const root=D.nodes.find(n=>n.type==='ROOT');
+    if(root){$bcn.textContent=root.name||'anonymous';sel=root.id;}
+    _buildNet();
+    // Restore saved positions for existing nodes
+    if(net&&Object.keys(savedPos).length>0){
+        const updates=[];
+        nds.forEach(n=>{if(savedPos[n.id])updates.push({id:n.id,x:savedPos[n.id].x,y:savedPos[n.id].y})});
+        if(updates.length>0)nds.update(updates);
+        // Restore viewport so the view doesn't jump
+        if(savedView){net.moveTo({position:savedView.position,scale:savedView.scale})}
+    }
+}
+
 // Rebuild network from D with current showLib/sf filters — excludes library nodes at dataset level
 function _buildNet(){
     if(!D)return;
