@@ -81,8 +81,7 @@
         <action id="ShowCallGraphAction"
                 class="com.mindmap.plugin.actions.ShowCallGraphAction"
                 text="Generate Mindmap"
-                description="Generate a call graph mindmap for the selected function"
-                icon="/META-INF/pluginIcon.svg">
+                description="Generate a call graph mindmap for the selected function">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             <keyboard-shortcut keymap="$default" first-keystroke="alt G"/>
         </action>
