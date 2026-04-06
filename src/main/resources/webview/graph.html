@@ -406,7 +406,7 @@ function mergeGraph(json){
     if(root){$bcn.textContent=root.name||'anonymous';} // keep sel as focusId
     
     // Rebuild completely. Hierarchical layout prevents overlaps.
-    _buildNet(focusId);
+    _buildNet();
 }
 
 // Rebuild network from D with current filters, perfectly spacing all nodes to avoid overlap
