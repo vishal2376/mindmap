@@ -1,4 +1,4 @@
-# Mindmap — Kotlin Call Graph Visualizer
+# <img src="src/main/resources/META-INF/pluginIcon.svg" width="32" height="32" align="center" /> Mindmap — Kotlin Call Graph Visualizer
 
 An IntelliJ IDEA / Android Studio plugin that generates interactive call graph visualizations for Kotlin functions. Place your cursor on any function, press **Alt+G**, and instantly see who calls it, what it calls, and how deep the chain goes.
 
