@@ -34,27 +34,40 @@ class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
         val panel = JPanel(GridBagLayout())
         panel.background = Color(30, 30, 46)
 
-        val inner = JPanel().apply {
+        val inner = object : JPanel() {
+            override fun paintComponent(g: Graphics) {
+                super.paintComponent(g)
+                val g2 = g.create() as Graphics2D
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+                g2.color = Color(49, 50, 68) // Surface1
+                g2.fillRoundRect(0, 0, width, height, 16, 16)
+                g2.color = Color(88, 91, 112) // Surface2
+                g2.stroke = BasicStroke(1.0f)
+                g2.drawRoundRect(0, 0, width - 1, height - 1, 16, 16)
+                g2.dispose()
+            }
+        }.apply {
+            isOpaque = false
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
-            background = Color(30, 30, 46)
-            border = BorderFactory.createEmptyBorder(20, 40, 20, 40)
+            border = BorderFactory.createEmptyBorder(28, 36, 28, 36)
         }
 
         val title = JLabel("JCEF Not Available").apply {
             foreground = Color(243, 139, 168)
-            font = Font("SansSerif", Font.BOLD, 15)
+            font = Font("SansSerif", Font.BOLD, 16)
             alignmentX = Component.CENTER_ALIGNMENT
         }
 
         val msg = JLabel(
-            "<html><div style='text-align:center;width:320px;color:#cdd6f4;'>" +
-            "Mindmap requires JCEF (Chromium Embedded Framework) to render the interactive graph.<br><br>" +
-            "<b style='color:#89b4fa;'>To fix this in Android Studio:</b><br>" +
-            "1. Go to <b>Help → Find Action</b><br>" +
-            "2. Search <b>\"Choose Boot Java Runtime\"</b><br>" +
-            "3. Select a runtime with <b>JCEF</b><br>" +
-            "4. Restart the IDE<br><br>" +
-            "<span style='color:#a6adc8;'>IntelliJ IDEA includes JCEF by default.</span>" +
+            "<html><div style='text-align:center;width:260px;color:#cdd6f4;font-family:sans-serif;font-size:12px;line-height:1.6;'>" +
+            "Mindmap requires <b style='color:#bac2de;'>Chromium (JCEF)</b>.<br><br>" +
+            "<div style='text-align:left;display:inline-block;'>" +
+            "<b style='color:#89b4fa;'>1. Go to <b>Help → Find Action</b><br>" +
+            "<b style='color:#89b4fa;'>2.</b> Search: <i>\"Choose Boot Java Runtime\"</i><br>" +
+            "<b style='color:#89b4fa;'>3.</b> Select latest runtime with <b>JCEF</b><br>" +
+            "<b style='color:#89b4fa;'>4.</b> Restart IDE<br>" +
+            "</div><br><br>" +
+            "<span style='color:#6c7086;font-size:11px;'>(IntelliJ IDEA includes JCEF by default)</span>" +
             "</div></html>"
         ).apply {
             alignmentX = Component.CENTER_ALIGNMENT
