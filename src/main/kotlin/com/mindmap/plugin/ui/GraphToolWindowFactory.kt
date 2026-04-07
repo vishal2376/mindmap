@@ -60,9 +60,19 @@ class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
             alignmentX = Component.CENTER_ALIGNMENT
         }
 
+        val link = com.intellij.ui.components.BrowserLink(
+            "Not working? Checkout help",
+            "https://vishal2376.github.io/mindmap#troubleshoot"
+        ).apply {
+            alignmentX = Component.CENTER_ALIGNMENT
+            foreground = Color(137, 180, 250) // Catppuccin Blue
+        }
+
         inner.add(title)
         inner.add(Box.createVerticalStrut(12))
         inner.add(msg)
+        inner.add(Box.createVerticalStrut(16))
+        inner.add(link)
         panel.add(inner)
         return panel
     }

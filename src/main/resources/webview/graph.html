@@ -126,11 +126,12 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 #selbox{position:fixed;pointer-events:none;border:1.5px solid rgba(137,180,250,.6);background:rgba(137,180,250,.08);border-radius:2px;z-index:100;display:none}
 
 /* ── STATUS ── */
-#sb{height:30px;background:var(--bg-s);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 10px;gap:10px;font:10px/1 inherit;color:var(--tx5);user-select:none}
-.si{display:flex;align-items:center;gap:2px}
+#sb{height:30px;background:var(--bg-s);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 10px;gap:10px;font:10px/1 inherit;color:var(--tx5);user-select:none;overflow:hidden}
+.si{display:flex;align-items:center;gap:2px;flex-shrink:0}
 .sd{width:4px;height:4px;border-radius:50%}
 .ss{color:var(--bd)}
-.sh{margin-left:auto;display:flex;gap:4px}
+.sh{margin-left:auto;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.sh::-webkit-scrollbar{display:none}
 .sk{display:flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;background:var(--sf);border:1px solid var(--bd);font:9.5px/1 inherit;color:var(--tx4);white-space:nowrap}
 .sk svg{width:10px;height:10px;flex-shrink:0;opacity:.7}
 .sk kbd{font:700 8.5px/1 'JetBrains Mono',monospace;background:var(--sf2);padding:1px 4px;border-radius:3px;border:1px solid var(--bd2);color:var(--tx3);margin:0 1px}
@@ -389,37 +390,25 @@ let selCount=0;
 function updateShortcuts(){
     if(!D){$sh.innerHTML='';return}
     let h='';const nd=sel?D.nodes.find(n=>n.id===sel):null;
+    
     if(cv==='graph'){
         if(panMode){
-            // Pan mode hints
             h+=_sk('Drag','Pan');
-            h+=_sk('Pinch / Ctrl+Scroll','Zoom');
-            if(nd){
-                h+=_sk('Click','Navigate');
-                h+=_sk('Dbl','Trace');
-                if(nd.type!=='ROOT')h+=_sk('Cmd+Click','Expand');
-            }
             h+=_sk('V','Select mode');
         } else {
-            // Select mode hints
-            if(selCount>1){
-                h+=_sk(selCount+' selected','Drag to move');
-                h+=_sk('Esc','Deselect');
-            } else if(nd){
-                h+=_sk('Click','Navigate');
-                h+=_sk('Dbl','Trace');
-                if(nd.type!=='ROOT')h+=_sk('Cmd+Click','Expand');
-            } else {
-                h+=_sk('Drag','Box select');
-            }
-            h+=_sk('F','Fit');
+            h+=_sk('Drag','Box select');
             h+=_sk('H','Pan mode');
         }
+        h+=_sk('Scroll/Pinch','Zoom');
+        
+        if(nd){
+            h+=_sk('Double-click','Trace');
+            if(nd.type!=='ROOT') h+=_sk('Cmd+Click','Expand');
+        }
     } else if(cv==='tree'){
-        if(nd&&nd.type!=='ROOT')h+=_sk('Dbl','Trace');
+        if(nd&&nd.type!=='ROOT')h+=_sk('Double-click','Trace');
         if(nd)h+=_sk('Click','Navigate');
     }
-    h+=_sk('/','Search');
     $sh.innerHTML=h;
 }
 
@@ -463,7 +452,6 @@ function mkE(e){
         arrows:{to:{enabled:true,scaleFactor:.5,type:'arrow'}},
         color:{color:ii?'rgba(166,227,161,.4)':'rgba(137,180,250,.4)',highlight:'#f38ba8',hover:ii?'rgba(166,227,161,.75)':'rgba(137,180,250,.75)'},
         width:1.5,
-        smooth:{enabled:true,type:'cubicBezier',forceDirection:'horizontal',roundness:.35},
         hoverWidth:.5}
 }
 
@@ -537,15 +525,32 @@ function _buildNet(focusId){
     const nc={};for(const n of visNodes)nc[n.name]=(nc[n.name]||0)+1;
     nds=new vis.DataSet(visNodes.map(n=>mkN(n,nc[n.name]>1)));
     eds=new vis.DataSet(D.edges.filter(e=>visIds.has(e.from)&&visIds.has(e.to)).map(mkE));
+    // Detect graph size for performance optimizations
+    const isLarge = visNodes.length > 150;
+    
     // Apply search filter
     if(sf){const up=[];nds.forEach(n=>{if(!isVis(n._data))up.push({id:n.id,hidden:true})});if(up.length)nds.update(up)}
     if(net)net.destroy();
     net=new vis.Network($gc,{nodes:nds,edges:eds},{
         nodes:{fixed:false},
-        edges:{smooth:{enabled:true,type:'cubicBezier',forceDirection:'horizontal',roundness:.35}},
+        edges:{
+            smooth: isLarge ? false : {enabled:true,type:'cubicBezier',forceDirection:'horizontal',roundness:.35}
+        },
         physics:{enabled:false},
-        interaction:{hover:true,tooltipDelay:99999,zoomView:false,dragView:false,dragNodes:false,multiselect:false,selectConnectedEdges:true,navigationButtons:false,keyboard:{enabled:false}},
-        layout:{hierarchical:{direction:'LR',sortMethod:'directed',levelSeparation:200,nodeSpacing:85,treeSpacing:120,parentCentralization:true,blockShifting:true,edgeMinimization:true,shakeTowards:'roots'}}
+        interaction:{hover:true,tooltipDelay:99999,zoomView:false,dragView:false,dragNodes:!panMode,multiselect:false,selectConnectedEdges:true,navigationButtons:false,keyboard:{enabled:false}},
+        layout:{
+            hierarchical:{
+                direction:'LR',
+                sortMethod:'directed',
+                levelSeparation:200,
+                nodeSpacing:isLarge ? 60 : 85,
+                treeSpacing:isLarge ? 80 : 120,
+                parentCentralization:true,
+                blockShifting:!isLarge,
+                edgeMinimization:!isLarge,
+                shakeTowards:'roots'
+            }
+        }
     });
     
     // Unlock X-axis dragging: wait for layout to draw once, then disable hierarchical constraint
@@ -752,10 +757,14 @@ $bfit.addEventListener('click',()=>doFit());
 
 // ── Tool Mode ──
 function setPanMode(on,temp){
+    const wasPan = panMode;
     panMode=on;
     if(!temp){
         $bpan.classList.toggle('on',on);
         $bsel.classList.toggle('on',!on);
+        if(wasPan !== on && wasPan !== undefined) {
+            toast(on ? 'Pan mode' : 'Select mode', 'var(--tx3)');
+        }
     }
     $gc.classList.toggle('pan-mode',on);
     $gc.classList.toggle('sel-mode',!on);
@@ -820,6 +829,46 @@ document.addEventListener('keydown',e=>{
     // History (Alt+Arrow)
     if(e.altKey&&e.key==='ArrowLeft'){e.preventDefault();$bbk.click();return}
     if(e.altKey&&e.key==='ArrowRight'){e.preventDefault();$bfw.click();return}
+
+    // Graph Keyboard Navigation
+    if(cv==='graph' && sel && e.key.startsWith('Arrow') && !e.altKey && !e.metaKey && !e.ctrlKey){
+        e.preventDefault();
+        let newSel = null;
+        if(e.key==='ArrowRight'){
+            // Go to first child (outbound edge from sel)
+            const edge = D.edges.find(ed=>ed.from===sel);
+            if(edge) newSel=edge.to;
+        } else if(e.key==='ArrowLeft'){
+            // Go to first parent (inbound edge to sel)
+            const edge = D.edges.find(ed=>ed.to===sel);
+            if(edge) newSel=edge.from;
+        } else if(e.key==='ArrowDown' || e.key==='ArrowUp'){
+            // Sibling: finding the parent of this node first
+            const pEdge = D.edges.find(ed=>ed.to===sel);
+            if(pEdge){
+                // Get all children of this parent
+                const siblings = D.edges.filter(ed=>ed.from===pEdge.from).map(ed=>ed.to);
+                const idx = siblings.indexOf(sel);
+                if(idx !== -1){
+                    const ni = e.key==='ArrowDown' ? (idx+1)%siblings.length : (idx-1+siblings.length)%siblings.length;
+                    newSel = siblings[ni];
+                }
+            } else {
+                // If it's a Root node, we could jump to the first inbound node (just a fallback)
+                const edge = D.edges.find(ed=>ed.from===sel);
+                if(edge) newSel=edge.to;
+            }
+        }
+        if(newSel){
+            net.unselectAll();
+            net.selectNodes([newSel]);
+            sel = newSel;
+            selCount = 1;
+            updateShortcuts();
+            centerOnSel();
+        }
+        return;
+    }
 
     // Escape = deselect all nodes
     if(e.key==='Escape'&&cv==='graph'&&net){net.unselectAll();selCount=0;updateShortcuts();return}
