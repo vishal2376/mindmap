@@ -142,9 +142,15 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 .zb{width:28px;height:28px;display:grid;place-items:center;background:0;border:1px solid transparent;border-radius:5px;color:var(--tx4);cursor:pointer;transition:all .12s;font:600 14px/1 inherit}
 .zb:hover{color:var(--tx);background:var(--sf);border-color:var(--bd)}
 .zb:active{background:var(--sf2)}
+.zb.on{color:var(--accent);background:rgba(137,180,250,.10);border-color:rgba(137,180,250,.25)}
 .zb svg{width:14px;height:14px}
 .zs{height:1px;background:var(--bd);margin:1px 3px}
 #zlv{font:700 8px/1 'JetBrains Mono',monospace;color:var(--tx5);text-align:center;padding:1px 0;letter-spacing:-.3px}
+
+/* Tool mode cursors */
+#gc.pan-mode{cursor:grab}
+#gc.pan-mode.panning{cursor:grabbing}
+#gc.sel-mode{cursor:default}
 
 /* ── EMPTY ── */
 #es{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--tx4);display:flex;flex-direction:column;align-items:center;gap:8px}
@@ -152,8 +158,10 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 .ei{width:40px;height:40px;color:var(--bd2)}
 .et{font:600 13px/1 inherit;color:var(--tx3)}
 .ed{font:11.5px/1.4 inherit;max-width:240px}
-.ek{font:11px/1 inherit;margin-top:2px}
+.ek{display:flex;align-items:center;gap:5px;margin-top:2px;justify-content:center;flex-wrap:wrap}
 .ek kbd{background:var(--sf);padding:1px 6px;border-radius:4px;border:1px solid var(--bd);color:var(--tx)}
+.ek-sep{color:var(--tx5);font-size:10px}
+.ek-plus{color:var(--tx4);font-size:12px}
 
 /* Loading */
 #ld{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(30,30,46,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:200;transition:opacity .2s}
@@ -214,12 +222,19 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 <svg class="ei" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="14" cy="14" r="6"/><circle cx="34" cy="14" r="6"/><circle cx="24" cy="36" r="6"/><line x1="18" y1="18" x2="21" y2="31"/><line x1="30" y1="18" x2="27" y2="31"/><line x1="19" y1="12" x2="29" y2="12"/></svg>
 <div class="et">No call graph generated</div>
 <div class="ed">Place cursor on a Kotlin function and use the shortcut</div>
-<div class="ek"><kbd>Alt</kbd> + <kbd>G</kbd></div>
+<div class="ek">
+  <kbd>Alt</kbd><span class="ek-sep">/</span><kbd>⌥ Option</kbd>
+  <span class="ek-plus">+</span>
+  <kbd>G</kbd>
+</div>
 </div>
 <div id="gc"></div>
 <div id="tc"></div>
 <div id="leg" class="h"><div class="lt">Legend</div><div id="li"></div></div>
 <div id="zc" class="h">
+<button class="zb on" id="bpan" data-t="Pan tool" data-k="H"><svg viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M9 1a1 1 0 011 1v3.586l.293-.293a1 1 0 111.414 1.414L10 8.414V11a3 3 0 01-6 0V7a1 1 0 012 0v1h.5V3a1 1 0 011-1h0a1 1 0 011 1v3H9V2a1 1 0 011-1z" opacity="0.9"/></svg></button>
+<button class="zb" id="bsel" data-t="Select tool" data-k="V"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2l10 6-5 1-2 5z"/></svg></button>
+<div class="zs"></div>
 <button class="zb" id="bzi" data-t="Zoom in" data-k="+"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="4" x2="8" y2="12"/><line x1="4" y1="8" x2="12" y2="8"/></svg></button>
 <div id="zlv">100%</div>
 <button class="zb" id="bzo" data-t="Zoom out" data-k="-"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="8" x2="12" y2="8"/></svg></button>
@@ -264,7 +279,11 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 <div class="sr">Fit all<div class="skk"><kbd>F</kbd></div></div>
 <div class="sr">Zoom in/out<div class="skk"><kbd>+</kbd><span>/</span><kbd>-</kbd></div></div>
 <div class="sr">Box selection<div class="skk"><kbd>Drag</kbd></div></div>
-<div class="sr">Pan canvas<div class="skk"><kbd>Right/Mid Drag</kbd></div></div>
+<div class="sr">Pan canvas<div class="skk"><kbd>Drag</kbd><span>(pan mode)</span></div></div>
+<div class="sr">Select / Box<div class="skk"><kbd>Drag</kbd><span>(select mode)</span></div></div>
+<div class="sr">Pan tool<div class="skk"><kbd>H</kbd></div></div>
+<div class="sr">Select tool<div class="skk"><kbd>V</kbd></div></div>
+<div class="sr">Temp pan<div class="skk"><kbd>Space</kbd><span>hold</span></div></div>
 </div>
 <div class="sg"><div class="st">Interaction</div>
 <div class="sr">Open in Editor<div class="skk"><kbd>Click</kbd><span>or</span><kbd>Enter</kbd></div></div>
@@ -278,6 +297,8 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 let net=null,nds=null,eds=null,D=null;
 let tColl=new Set();
 let showLib=false,sf='',cv='graph',sel=null,drag=false,sOpen=false;
+let panMode=true; // default: pan tool active (Figma-style)
+let _spaceHeld=false; // tracks Space key for temp pan
 
 // ── Cached DOM ──
 const $=id=>document.getElementById(id);
@@ -286,6 +307,7 @@ const $bg=$('bg'),$bt=$('bt'),$bbk=$('bbk'),$bfw=$('bfw'),$hbg=$('hbg');
 const $bcn=$('bcn'),$sbn=$('sbn'),$sin=$('sin');
 const $tlib=$('tlib'),$bfit=$('bfit'),$bhelp=$('bhelp');
 const $bzi=$('bzi'),$bzo=$('bzo'),$bzf=$('bzf'),$bzc=$('bzc'),$zlv=$('zlv'),$zc=$('zc');
+const $bpan=$('bpan'),$bsel=$('bsel');
 const $sn=$('sn'),$se=$('se'),$sdp=$('sdp'),$sm=$('sm'),$sh=$('sh');
 const $leg=$('leg'),$li=$('li');
 const $ntip=$('ntip'),$ti=$('ti'),$tn=$('tn'),$tp=$('tp'),$tsg=$('tsg'),$tfl=$('tfl'),$tss=$('tss');
@@ -303,7 +325,30 @@ function toast(m,c){$tdot.style.background=c||'var(--accent)';$ttx.textContent=m
 
 // ── Button Tips ──
 document.querySelectorAll('[data-t]').forEach(el=>{
-    el.addEventListener('mouseenter',()=>{const r=el.getBoundingClientRect();$ttip.textContent='';const t=document.createTextNode(el.dataset.t);$ttip.appendChild(t);if(el.dataset.k){const k=document.createElement('kbd');k.textContent=el.dataset.k;$ttip.appendChild(k)}$ttip.style.left=(r.left+r.width/2)+'px';$ttip.style.top=(r.bottom+5)+'px';$ttip.style.transform='translateX(-50%)';$ttip.classList.add('s')});
+    el.addEventListener('mouseenter',()=>{
+        const r=el.getBoundingClientRect();
+        $ttip.textContent='';
+        const t=document.createTextNode(el.dataset.t);
+        $ttip.appendChild(t);
+        if(el.dataset.k){const k=document.createElement('kbd');k.textContent=el.dataset.k;$ttip.appendChild(k)}
+        // Position below element centered, then clamp to viewport
+        $ttip.style.left='0px';$ttip.style.top='-9999px';$ttip.style.transform='none';
+        $ttip.classList.add('s');
+        // After render, measure and clamp
+        requestAnimationFrame(()=>{
+            const tw=$ttip.offsetWidth,th=$ttip.offsetHeight;
+            const vw=window.innerWidth,vh=window.innerHeight;
+            let lf=r.left+r.width/2-tw/2;
+            let tp=r.bottom+5;
+            // clamp horizontally
+            if(lf+tw>vw-4)lf=vw-tw-4;
+            if(lf<4)lf=4;
+            // flip above if clipped at bottom
+            if(tp+th>vh-4)tp=r.top-th-5;
+            $ttip.style.left=lf+'px';
+            $ttip.style.top=tp+'px';
+        });
+    });
     el.addEventListener('mouseleave',()=>$ttip.classList.remove('s'));
 });
 
@@ -345,12 +390,34 @@ function updateShortcuts(){
     if(!D){$sh.innerHTML='';return}
     let h='';const nd=sel?D.nodes.find(n=>n.id===sel):null;
     if(cv==='graph'){
-        if(selCount>1) h+=_sk(selCount+' selected','Drag to move');
-        if(nd&&nd.type!=='ROOT') h+=_sk('Cmd+Click','Expand');
-        h+=_sk('Drag','Box select');
-        h+=_sk('F','Fit');
-    } else if(nd&&nd.type!=='ROOT'){
-        h+=_sk('Dbl','Trace');
+        if(panMode){
+            // Pan mode hints
+            h+=_sk('Drag','Pan');
+            h+=_sk('Pinch / Ctrl+Scroll','Zoom');
+            if(nd){
+                h+=_sk('Click','Navigate');
+                h+=_sk('Dbl','Trace');
+                if(nd.type!=='ROOT')h+=_sk('Cmd+Click','Expand');
+            }
+            h+=_sk('V','Select mode');
+        } else {
+            // Select mode hints
+            if(selCount>1){
+                h+=_sk(selCount+' selected','Drag to move');
+                h+=_sk('Esc','Deselect');
+            } else if(nd){
+                h+=_sk('Click','Navigate');
+                h+=_sk('Dbl','Trace');
+                if(nd.type!=='ROOT')h+=_sk('Cmd+Click','Expand');
+            } else {
+                h+=_sk('Drag','Box select');
+            }
+            h+=_sk('F','Fit');
+            h+=_sk('H','Pan mode');
+        }
+    } else if(cv==='tree'){
+        if(nd&&nd.type!=='ROOT')h+=_sk('Dbl','Trace');
+        if(nd)h+=_sk('Click','Navigate');
     }
     h+=_sk('/','Search');
     $sh.innerHTML=h;
@@ -477,7 +544,7 @@ function _buildNet(focusId){
         nodes:{fixed:false},
         edges:{smooth:{enabled:true,type:'cubicBezier',forceDirection:'horizontal',roundness:.35}},
         physics:{enabled:false},
-        interaction:{hover:true,tooltipDelay:99999,zoomView:true,dragView:false,dragNodes:true,multiselect:false,selectConnectedEdges:true,navigationButtons:false,keyboard:{enabled:true}},
+        interaction:{hover:true,tooltipDelay:99999,zoomView:false,dragView:false,dragNodes:false,multiselect:false,selectConnectedEdges:true,navigationButtons:false,keyboard:{enabled:false}},
         layout:{hierarchical:{direction:'LR',sortMethod:'directed',levelSeparation:200,nodeSpacing:85,treeSpacing:120,parentCentralization:true,blockShifting:true,edgeMinimization:true,shakeTowards:'roots'}}
     });
     
@@ -683,6 +750,23 @@ $tlib.addEventListener('click',function(){
 });
 $bfit.addEventListener('click',()=>doFit());
 
+// ── Tool Mode ──
+function setPanMode(on,temp){
+    panMode=on;
+    if(!temp){
+        $bpan.classList.toggle('on',on);
+        $bsel.classList.toggle('on',!on);
+    }
+    $gc.classList.toggle('pan-mode',on);
+    $gc.classList.toggle('sel-mode',!on);
+    if(net)net.setOptions({interaction:{dragNodes:!on}});
+    updateShortcuts();
+}
+// initialise to pan mode
+setPanMode(true);
+$bpan.addEventListener('click',()=>setPanMode(true));
+$bsel.addEventListener('click',()=>setPanMode(false));
+
 // ── Zoom Controls ──
 function doFit(){if(net)net.fit({animation:{duration:300,easingFunction:'easeInOutQuad'}})}
 function updateZoomLabel(){if(!net)return;const s=net.getScale();$zlv.textContent=Math.round(s*100)+'%'}
@@ -721,6 +805,10 @@ document.addEventListener('keydown',e=>{
 
     if(e.key==='?'||e.key==='¿'){$mOy.classList.add('s');return}
     if(e.key==='l'||e.key==='L'){$tlib.click();return}
+    if(e.key==='h'||e.key==='H'){setPanMode(true);return}
+    if(e.key==='v'||e.key==='V'){setPanMode(false);return}
+    // Space held = temp pan
+    if(e.key===' '&&!_spaceHeld&&cv==='graph'){e.preventDefault();_spaceHeld=true;if(!panMode){$gc.classList.add('pan-mode','sel-mode-temp')}return}
 
     // Search
     if(e.key==='/'||e.key==='f'){e.preventDefault();if(!sOpen){sOpen=true;$sbn.classList.add('op');setTimeout(()=>$sin.focus(),250)}else $sin.focus();return}
@@ -753,9 +841,44 @@ document.addEventListener('keydown',e=>{
         if(e.key==='-'){doZoom(-1);return}
     }
 });
+document.addEventListener('keyup',e=>{
+    if(e.key===' '&&_spaceHeld){
+        _spaceHeld=false;
+        if($gc.classList.contains('sel-mode-temp')){
+            $gc.classList.remove('pan-mode','sel-mode-temp');
+        }
+    }
+});
 
-// Track zoom level on scroll
-$gc.addEventListener('wheel',()=>{setTimeout(updateZoomLabel,50)},{passive:true});
+// Figma-style scroll: plain scroll = pan, pinch / Ctrl+scroll = zoom on cursor
+$gc.addEventListener('wheel',e=>{
+    e.preventDefault();
+    if(!net||cv!=='graph')return;
+    const pos=net.getViewPosition();
+    const s=net.getScale();
+
+    if(e.ctrlKey||e.metaKey){
+        // Pinch gesture or Ctrl/Cmd+scroll → zoom centered on cursor
+        const rect=$gc.getBoundingClientRect();
+        const mx=e.clientX-rect.left;
+        const my=e.clientY-rect.top;
+        const W=$gc.clientWidth,H=$gc.clientHeight;
+        // deltaMode 0=pixels (trackpad), 1=lines (mouse wheel)
+        const raw=e.deltaMode===0?e.deltaY:e.deltaY*30;
+        const factor=Math.pow(0.999,raw); // smooth continuous zoom
+        const ns=Math.max(.05,Math.min(5,s*factor));
+        // keep the canvas point under cursor fixed
+        const cx=pos.x+(mx-W/2)/s;
+        const cy=pos.y+(my-H/2)/s;
+        net.moveTo({position:{x:cx-(mx-W/2)/ns,y:cy-(my-H/2)/ns},scale:ns});
+        updateZoomLabel();
+    } else {
+        // Plain two-finger scroll → pan
+        const dx=e.deltaX/s;
+        const dy=e.deltaY/s;
+        net.moveTo({position:{x:pos.x+dx,y:pos.y+dy}});
+    }
+},{passive:false});
 
 // ── Box / Marquee Selection ──
 const $selbox=$('selbox');
@@ -768,10 +891,21 @@ function _initBoxSel(){
 }
 function _bxDown(e){
     if(e.button!==0||!net||cv!=='graph')return;
-    // Only start box-select on empty canvas (no node under cursor)
     const rect=$gc.getBoundingClientRect();
     const dp={x:e.clientX-rect.left,y:e.clientY-rect.top};
-    if(net.getNodeAt(dp))return; // clicking a node — let vis handle it
+    const nodeUnder=net.getNodeAt(dp);
+
+    if(panMode||_spaceHeld){
+        // Pan mode: left drag always pans (ignore nodes)
+        e.preventDefault();e.stopPropagation();
+        _pan={x:e.clientX,y:e.clientY,pos:net.getViewPosition(),scale:net.getScale()};
+        $gc.classList.add('panning');
+        document.addEventListener('pointermove',_panMove);
+        document.addEventListener('pointerup',_panUp);
+        return;
+    }
+
+    if(nodeUnder)return; // clicking a node in select mode — let vis handle it
     _bx={x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,active:false};
     document.addEventListener('pointermove',_bxMove);
     document.addEventListener('pointerup',_bxUp);
@@ -844,7 +978,7 @@ function _panUp(e){
     document.removeEventListener('pointermove',_panMove);
     document.removeEventListener('pointerup',_panUp);
     _pan=null;
-    $gc.style.cursor='';
+    $gc.classList.remove('panning');
 }
 </script>
 </body>
