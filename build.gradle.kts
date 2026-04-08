@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.mindmap.plugin"
-version = "1.0.1"
+version = "1.0.2"
 
 repositories {
     mavenCentral()
@@ -18,7 +18,6 @@ dependencies {
     intellijPlatform {
         intellijIdeaCommunity("2024.3")
 
-        bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
 
         pluginVerifier()

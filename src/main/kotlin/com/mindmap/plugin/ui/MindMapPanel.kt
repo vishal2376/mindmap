@@ -13,8 +13,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.Disposable
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefJSQuery
+import com.intellij.psi.PsiElement
 import com.mindmap.plugin.analysis.GraphAnalyzer
 import com.mindmap.plugin.analysis.GraphData
+import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
@@ -289,8 +291,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                     val isValid = runReadAction { psiElement.isValid }
                     if (!isValid) return
 
-                    val analyzer = GraphAnalyzer(project)
-                    val newGraphData = analyzer.buildGraph(psiElement, indicator)
+                    val newGraphData = analyzeElement(psiElement, indicator)
                     SwingUtilities.invokeLater {
                         pushGraph(newGraphData)
                     }
@@ -316,8 +317,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                     val isValid = runReadAction { psiElement.isValid }
                     if (!isValid) return
 
-                    val analyzer = GraphAnalyzer(project)
-                    val traceData = analyzer.buildGraph(psiElement, indicator)
+                    val traceData = analyzeElement(psiElement, indicator)
 
                     val current = currentGraphData ?: return
 
@@ -357,7 +357,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         })
     }
 
-    private fun findPsiElement(nodeId: String): org.jetbrains.kotlin.psi.KtNamedFunction? {
+    private fun findPsiElement(nodeId: String): PsiElement? {
         try {
             currentGraphData?.nodes?.find { it.id == nodeId }?.psiElement?.let { return it }
             for (graphData in history.asReversed()) {
@@ -368,6 +368,9 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         }
         return null
     }
+
+    private fun analyzeElement(element: PsiElement, indicator: ProgressIndicator): GraphData =
+        GraphAnalyzer(project).buildGraph(element as KtNamedFunction, indicator)
 
     private fun handleHistoryBack() {
         if (historyIndex > 0) {

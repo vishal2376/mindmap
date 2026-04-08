@@ -205,9 +205,9 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 <button class="vb" id="bt" data-t="Tree view" data-k="2"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="4" y1="3" x2="14" y2="3"/><line x1="6" y1="7" x2="14" y2="7"/><line x1="6" y1="11" x2="14" y2="11"/><line x1="2" y1="3" x2="2" y2="11"/><line x1="2" y1="7" x2="5" y2="7"/><line x1="2" y1="11" x2="5" y2="11"/></svg>Tree</button>
 </div>
 <div class="sep"></div>
-<button class="nb" id="bbk" disabled data-t="Back" data-k="Alt+&#8592;"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="9,3 4,8 9,13"/></svg></button>
+<button class="nb" id="bbk" disabled data-t="Back" data-k="Alt+←"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="9,3 4,8 9,13"/></svg></button>
 <span class="hc h" id="hbg"></span>
-<button class="nb" id="bfw" disabled data-t="Forward" data-k="Alt+&#8594;"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="7,3 12,8 7,13"/></svg></button>
+<button class="nb" id="bfw" disabled data-t="Forward" data-k="Alt+→"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="7,3 12,8 7,13"/></svg></button>
 <div class="sep"></div>
 <div id="bc"><span class="bci">&#9679;</span><span class="bcn" id="bcn">No function selected</span></div>
 <button class="sb" id="sbn" data-t="Search" data-k="/"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg><input id="sin" placeholder="Filter nodes…"/></button>
@@ -222,9 +222,9 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 <div id="es">
 <svg class="ei" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="14" cy="14" r="6"/><circle cx="34" cy="14" r="6"/><circle cx="24" cy="36" r="6"/><line x1="18" y1="18" x2="21" y2="31"/><line x1="30" y1="18" x2="27" y2="31"/><line x1="19" y1="12" x2="29" y2="12"/></svg>
 <div class="et">No call graph generated</div>
-<div class="ed">Place cursor on a Kotlin function and use the shortcut</div>
+<div class="ed">Place cursor on a Kotlin, Java, or Python function and use the shortcut</div>
 <div class="ek">
-  <kbd>Alt</kbd><span class="ek-sep">/</span><kbd>⌥ Option</kbd>
+  <kbd id="ekAlt">Alt</kbd>
   <span class="ek-plus">+</span>
   <kbd>G</kbd>
 </div>
@@ -271,7 +271,7 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 <div class="sg"><div class="st">Global</div>
 <div class="sr">Search node<div class="skk"><kbd>/</kbd></div></div>
 <div class="sr">Switch Graph/Tree<div class="skk"><kbd>1</kbd><span>or</span><kbd>2</kbd></div></div>
-<div class="sr">History Back/Fwd<div class="skk"><kbd>Alt</kbd><kbd>←</kbd><span>/</span><kbd>→</kbd></div></div>
+<div class="sr">History Back/Fwd<div class="skk"><kbd id="mAlt">Alt</kbd><kbd>←</kbd><span>/</span><kbd>→</kbd></div></div>
 <div class="sr">Toggle Library<div class="skk"><kbd>L</kbd></div></div>
 <div class="sr">Show Shortcuts<div class="skk"><kbd>?</kbd></div></div>
 </div>
@@ -279,6 +279,7 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 <div class="sr">Center on select<div class="skk"><kbd>C</kbd></div></div>
 <div class="sr">Fit all<div class="skk"><kbd>F</kbd></div></div>
 <div class="sr">Zoom in/out<div class="skk"><kbd>+</kbd><span>/</span><kbd>-</kbd></div></div>
+<div class="sr">Zoom (scroll / pinch)<div class="skk"><kbd>Scroll</kbd><span>or</span><kbd>Pinch</kbd></div></div>
 <div class="sr">Box selection<div class="skk"><kbd>Drag</kbd></div></div>
 <div class="sr">Pan canvas<div class="skk"><kbd>Drag</kbd><span>(pan mode)</span></div></div>
 <div class="sr">Select / Box<div class="skk"><kbd>Drag</kbd><span>(select mode)</span></div></div>
@@ -294,12 +295,18 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 </div></div></div>
 
 <script>
+// ── OS Detection ──
+const _isMac = /Mac|iPhone|iPad/.test(navigator.platform) || navigator.userAgent.includes('Mac OS X');
+const _altKey = _isMac ? '⌥ Option' : 'Alt';
+const _altShort = _isMac ? '⌥' : 'Alt';
+
 // ── State ──
 let net=null,nds=null,eds=null,D=null;
 let tColl=new Set();
 let showLib=false,sf='',cv='graph',sel=null,drag=false,sOpen=false;
 let panMode=true; // default: pan tool active (Figma-style)
 let _spaceHeld=false; // tracks Space key for temp pan
+let _dimmedNodes=new Set(); // tracks nodes dimmed on hover for fast blur restore
 
 // ── Cached DOM ──
 const $=id=>document.getElementById(id);
@@ -314,6 +321,12 @@ const $leg=$('leg'),$li=$('li');
 const $ntip=$('ntip'),$ti=$('ti'),$tn=$('tn'),$tp=$('tp'),$tsg=$('tsg'),$tfl=$('tfl'),$tss=$('tss');
 const $ttip=$('ttip'),$toast=$('toast'),$tdot=$('tdot'),$ttx=$('ttx');
 const $mOy=$('mOy'),$mCl=$('mCl');
+
+// ── Apply OS-specific key labels ──
+document.getElementById('ekAlt').textContent=_altKey;
+document.getElementById('mAlt').textContent=_altShort;
+$bbk.dataset.k=_altShort+'+←';
+$bfw.dataset.k=_altShort+'+→';
 
 // ── Helpers ──
 function gc(t,d,l){return l?'#6c7086':t==='ROOT'?'#f5c2e7':t==='INBOUND'?'#a6e3a1':t==='OUTBOUND'?'#89b4fa':'#cba6f7'}
@@ -483,10 +496,29 @@ function onHov(nt,ds){return p=>{
         const nd=ds.get(p.node);
         if(nd?._data){const pos=nt.canvasToDOM(nt.getPosition(p.node));const rc=nt.body.container.getBoundingClientRect();showTip({clientX:rc.left+pos.x,clientY:rc.top+pos.y},nd._data)}
         const c=new Set(nt.getConnectedNodes(p.node));c.add(p.node);
-        ds.update(ds.getIds().map(id=>({id,opacity:c.has(id)?1:.12})));
+        // P3.1: only update nodes that actually change (skip already-correct ones)
+        _dimmedNodes.clear();
+        const up=[];
+        ds.forEach(n=>{
+            if(!c.has(n.id)){
+                _dimmedNodes.add(n.id);
+                if(n.opacity!==0.12)up.push({id:n.id,opacity:0.12});
+            } else if(n.opacity===0.12){
+                up.push({id:n.id,opacity:undefined});
+            }
+        });
+        if(up.length)ds.update(up);
     },200);
 }}
-function onBlr(ds){return()=>{clearTimeout(_hovT);hideTip();if(ds)ds.update(ds.getIds().map(id=>({id,opacity:undefined})))}}
+function onBlr(ds){return()=>{
+    clearTimeout(_hovT);hideTip();
+    // P3.1: only reset nodes that were dimmed — skip full dataset scan
+    if(ds&&_dimmedNodes.size>0){
+        const up=[..._dimmedNodes].map(id=>({id,opacity:undefined}));
+        _dimmedNodes.clear();
+        ds.update(up);
+    }
+}}
 
 // ── Draw Graph (hierarchical LR — callers LEFT, root CENTER, callees RIGHT) ──
 function drawGraph(json){
@@ -725,7 +757,9 @@ function uLeg(){
     $leg.classList.toggle('h',cv==='tree');
 }
 function uSt(){
-    if(!D||!D.nodes||!D.edges)return;const tn=D.nodes.length,te=D.edges.length,md=Math.max(...D.nodes.map(n=>n.depth||0),0);
+    if(!D||!D.nodes||!D.edges)return;const tn=D.nodes.length,te=D.edges.length;
+    // P3.1: avoid array spread (stack risk for large node counts); use simple loop
+    let md=0;for(const n of D.nodes)if((n.depth||0)>md)md=n.depth||0;
     let vn=tn;if(nds)vn=nds.get().filter(n=>!n.hidden).length;
     $sn.textContent=vn===tn?tn+' nodes':vn+'/'+tn+' nodes';
     $se.textContent=te+' edges';$sdp.textContent='Depth '+md;
@@ -899,34 +933,21 @@ document.addEventListener('keyup',e=>{
     }
 });
 
-// Figma-style scroll: plain scroll = pan, pinch / Ctrl+scroll = zoom on cursor
+// ── Zoom (scroll wheel + trackpad) ──
 $gc.addEventListener('wheel',e=>{
     e.preventDefault();
     if(!net||cv!=='graph')return;
-    const pos=net.getViewPosition();
-    const s=net.getScale();
-
-    if(e.ctrlKey||e.metaKey){
-        // Pinch gesture or Ctrl/Cmd+scroll → zoom centered on cursor
-        const rect=$gc.getBoundingClientRect();
-        const mx=e.clientX-rect.left;
-        const my=e.clientY-rect.top;
-        const W=$gc.clientWidth,H=$gc.clientHeight;
-        // deltaMode 0=pixels (trackpad), 1=lines (mouse wheel)
-        const raw=e.deltaMode===0?e.deltaY:e.deltaY*30;
-        const factor=Math.pow(0.999,raw); // smooth continuous zoom
-        const ns=Math.max(.05,Math.min(5,s*factor));
-        // keep the canvas point under cursor fixed
-        const cx=pos.x+(mx-W/2)/s;
-        const cy=pos.y+(my-H/2)/s;
-        net.moveTo({position:{x:cx-(mx-W/2)/ns,y:cy-(my-H/2)/ns},scale:ns});
-        updateZoomLabel();
-    } else {
-        // Plain two-finger scroll → pan
-        const dx=e.deltaX/s;
-        const dy=e.deltaY/s;
-        net.moveTo({position:{x:pos.x+dx,y:pos.y+dy}});
-    }
+    const s=net.getScale(),pos=net.getViewPosition();
+    const rect=$gc.getBoundingClientRect();
+    const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+    const W=$gc.clientWidth,H=$gc.clientHeight;
+    const factor=e.deltaMode===0
+        ?Math.pow(0.996,e.deltaY)   // trackpad: smooth proportional zoom
+        :Math.pow(0.85,e.deltaY/3); // mouse wheel: ~15% per notch
+    const ns=Math.max(.05,Math.min(5,s*factor));
+    const cx=pos.x+(mx-W/2)/s,cy=pos.y+(my-H/2)/s;
+    net.moveTo({position:{x:cx-(mx-W/2)/ns,y:cy-(my-H/2)/ns},scale:ns});
+    updateZoomLabel();
 },{passive:false});
 
 // ── Box / Marquee Selection ──
@@ -944,8 +965,15 @@ function _bxDown(e){
     const dp={x:e.clientX-rect.left,y:e.clientY-rect.top};
     const nodeUnder=net.getNodeAt(dp);
 
+    if(panMode && nodeUnder && !_spaceHeld){
+        // P3.2: pan mode over a node → temporarily allow vis to drag it
+        net.setOptions({interaction:{dragNodes:true}});
+        net.once('dragEnd',()=>net.setOptions({interaction:{dragNodes:false}}));
+        return; // let vis-network handle the node drag
+    }
+
     if(panMode||_spaceHeld){
-        // Pan mode: left drag always pans (ignore nodes)
+        // Pan mode over empty canvas (or space-held temp pan) → pan the view
         e.preventDefault();e.stopPropagation();
         _pan={x:e.clientX,y:e.clientY,pos:net.getViewPosition(),scale:net.getScale()};
         $gc.classList.add('panning');
@@ -982,11 +1010,15 @@ function _bxUp(e){
         const x1=Math.min(_bx.x0,_bx.x)-rect.left,y1=Math.min(_bx.y0,_bx.y)-rect.top;
         const x2=Math.max(_bx.x0,_bx.x)-rect.left,y2=Math.max(_bx.y0,_bx.y)-rect.top;
         const ids=[];
-        nds.forEach(n=>{
-            if(n.hidden)return;
-            const p=net.canvasToDOM(net.getPositions([n.id])[n.id]);
-            if(p&&p.x>=x1&&p.x<=x2&&p.y>=y1&&p.y<=y2)ids.push(n.id);
-        });
+        // P3.1: single batched getPositions() call instead of one call per node
+        const visibleIds=[];
+        nds.forEach(n=>{if(!n.hidden)visibleIds.push(n.id)});
+        const allPos=net.getPositions(visibleIds);
+        for(const id of visibleIds){
+            const cp=allPos[id];if(!cp)continue;
+            const p=net.canvasToDOM(cp);
+            if(p&&p.x>=x1&&p.x<=x2&&p.y>=y1&&p.y<=y2)ids.push(id);
+        }
         if(ids.length>0){
             net.selectNodes(ids);
             selCount=ids.length;updateShortcuts();

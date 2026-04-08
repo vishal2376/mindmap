@@ -85,7 +85,6 @@ class GraphAnalyzer(private val project: Project) {
         val callerId = getFunctionId(function)
         val callExpressions = PsiTreeUtil.findChildrenOfType(function.bodyExpression, KtCallExpression::class.java)
 
-        // Limit calls per function to prevent explosion on large functions
         val limitedCalls = if (callExpressions.size > MAX_CALLS_PER_FUNCTION) {
             callExpressions.take(MAX_CALLS_PER_FUNCTION)
         } else {
@@ -143,7 +142,6 @@ class GraphAnalyzer(private val project: Project) {
         val scope = GlobalSearchScope.projectScope(project)
         val references = try {
             val allRefs = ReferencesSearch.search(function, scope).findAll()
-            // Limit inbound refs to prevent explosion on widely-used utility functions
             if (allRefs.size > MAX_INBOUND_REFS) allRefs.take(MAX_INBOUND_REFS) else allRefs
         } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
             throw ce

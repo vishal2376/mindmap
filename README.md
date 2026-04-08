@@ -4,7 +4,7 @@
 
 # **Mindmap**
 
-An IntelliJ IDEA / Android Studio plugin that generates interactive call graph visualizations for Kotlin functions. Place your cursor on any function and press **Alt+G** to view the call chain - callers, callees, and function depth.
+An IntelliJ IDEA / Android Studio / PyCharm plugin that generates interactive call graph visualizations for **Kotlin**, **Java**, and **Python** functions. Place your cursor on any function and press **Alt+G** to view the call chain - callers, callees, and function depth.
 
 <br/>
 
@@ -46,14 +46,19 @@ An IntelliJ IDEA / Android Studio plugin that generates interactive call graph v
 
 ## ✨ Features
 
+### Language Support
+- **Kotlin** — Full support (K1 & K2), IntelliJ IDEA & Android Studio
+- **Java & Python** — *See [Future Roadmap](#-future-roadmap)*
+
 ### Graph View
 - **Hierarchical Layout** - Callers on the left, root in the center, callees on the right
-- **Box Selection** - Drag on empty canvas to select multiple nodes
+- **Box Selection** - Drag on empty canvas (select mode) to select multiple nodes
 - **Multi-node Move** - Drag any selected node to move all selected together
 - **Free Positioning** - Move nodes freely in both horizontal and vertical axes
 - **Smart Labels** - Duplicate function names show their file name as subtitle
-- **Pan** - Right-click drag or middle-click drag to pan the viewport
-- **Zoom** - Scroll wheel, `+`/`-` keys, or zoom buttons
+- **Pan Mode (H)** - Drag a node to move it; drag empty space to pan the canvas
+- **Select Mode (V)** - Drag empty space for box/marquee selection
+- **Zoom** - Scroll wheel, pinch, `+`/`-` keys, or zoom buttons
 
 ### Tree View
 - **Collapsible Tree** - Expand/collapse with chevron icons
@@ -64,13 +69,14 @@ An IntelliJ IDEA / Android Studio plugin that generates interactive call graph v
 ### Analysis
 - **Bidirectional** - Outbound calls (children) + inbound callers (parents)
 - **Trace** - Double-click a node to merge its call graph into the view
-- **Expand** - Cmd+Click to re-center the entire graph on a different function
+- **Expand** - Cmd+Click (⌥+Click on macOS) to re-center the graph on a function
 - **Library Toggle** - Show/hide library/SDK calls with one click
 
 ### Navigation
 - **History** - Navigate back/forward through explored functions (`Alt+←` / `Alt+→`)
-- **Click-to-Navigate** - Single click jumps to source code in the editor
-- **Search Filter** - Filter nodes by name across both views
+- **Smart Navigation** - Use `Arrow keys` to move to parents, children, or cycle through siblings
+- **Click-to-Navigate** - Single click or `Enter` jumps to source code in the editor
+- **Search Filter** - Filter nodes by name across both views (`/` or `f`)
 - **Hover Info Cards** - Signature, file location, depth, and LOC count
 
 
@@ -78,38 +84,45 @@ An IntelliJ IDEA / Android Studio plugin that generates interactive call graph v
 
 | Action | Effect |
 |---|---|
-| **Left-click** node | Navigate to source code |
-| **Cmd+Click** node | Expand - re-center graph on that function |
-| **Double-click** node | Trace - merge its call graph into current view |
-| **Left-drag** on empty space | Box/marquee selection |
-| **Left-drag** selected node | Move all selected nodes freely |
-| **Right-drag** / **Middle-drag** | Pan the viewport |
-| **Scroll wheel** | Zoom in/out |
+| **Left-click** node / **Enter** | Navigate to source code |
+| **Cmd+Click** node (macOS) / **Ctrl+Click** (Linux/Win) | Expand — re-center graph on that function |
+| **Double-click** node | Trace — merge its call graph into current view |
+| **Left-drag** node *(pan mode)* | Move the node |
+| **Left-drag** empty space *(pan mode)* | Pan the canvas |
+| **Space + Drag** empty space *(select mode)* | Temporary pan while in select mode |
+| **Left-drag** empty space *(select mode)* | Box/marquee selection |
+| **Left-drag** selected node *(select mode)* | Move all selected nodes freely |
+| **Right-drag** / **Middle-drag** | Pan the viewport (either mode) |
+| **Scroll wheel** / **Two-finger scroll** | Zoom in/out |
+| **Pinch** | Zoom in/out |
 
 
 ## ⌨️ Keyboard Shortcuts
 
 | Shortcut | Action |
 |---|---|
-| `Alt+G` | Generate call graph for function at cursor |
-| `Alt+←` / `Alt+→` | Navigate history back / forward |
-| `1` / `2` | Switch to Graph / Tree view |
-| `F` | Fit all nodes in view |
-| `C` | Center on selected node |
-| `+` / `-` | Zoom in / out |
-| `/` | Open search filter |
-| `L` | Toggle Library API calls |
-| `?` | Show Keyboard Shortcuts modal |
-| `Escape` | Deselect all nodes or close modals |
-| `Enter` | Navigate to selected node's source |
-| `Arrow keys` | Navigate between connected nodes |
+| **`Alt+G`** | Generate call graph for function at cursor |
+| **`Alt+←`** / **`Alt+→`** | Navigate history back / forward |
+| **`1`** / **`2`** | Switch to **Graph** / **Tree** view |
+| **`H`** / **`V`** | Switch to **Pan tool** / **Select tool** |
+| **`Space` (hold)** | Temporary pan while in Select mode |
+| **`Arrow keys`** | Navigate parents/children or cycle siblings |
+| **`F`** | Fit all nodes in view |
+| **`C`** | Center on selected node |
+| **`+`** / **`-`** | Zoom in / out |
+| **`/`** or **`f`** | Open search filter |
+| **`L`** | Toggle Library API calls |
+| **`Enter`** | Navigate to selected node's source |
+| **`Escape`** | Deselect all nodes or close modals |
+| **`?`** | Show Keyboard Shortcuts modal |
 
 
 ## 📦 Installation
 
 ### Requirements
-- **IntelliJ IDEA** 2024.3+ or **Android Studio** Ladybug+
+- **IntelliJ IDEA** 2024.3+, **Android Studio** Ladybug+, or **PyCharm** 2024.3+
 - **Kotlin** plugin enabled (bundled with IntelliJ/AS)
+- **Python** plugin required for Python support (bundled with PyCharm)
 
 ### From JetBrains Marketplace
 1. Open **Settings** → **Plugins** → **Marketplace**
@@ -131,10 +144,10 @@ The plugin `.zip` will be at `build/distributions/Mindmap-*.zip`.
 src/main/
 ├── kotlin/com/mindmap/plugin/
 │   ├── actions/
-│   │   └── ShowCallGraphAction.kt    # Entry point (Alt+G)
+│   │   └── ShowCallGraphAction.kt    # Entry point (Alt+G), language dispatch
 │   ├── analysis/
 │   │   ├── CallGraphModel.kt         # Data structures (nodes, edges)
-│   │   └── GraphAnalyzer.kt          # K2 Analysis API call graph builder
+│   │   └── GraphAnalyzer.kt          # Kotlin call graph builder (K1 & K2)
 │   └── ui/
 │       ├── GraphToolWindowFactory.kt  # Tool window + JCEF fallback
 │       └── MindMapPanel.kt           # JCEF browser, JS bridge, history
@@ -170,9 +183,18 @@ Android Studio may ship with a JBR that doesn't include JCEF. To fix:
 If another plugin (like IdeaVIM) intercepts the shortcut, go to **Settings → Keymap** and assign a different shortcut to **"Generate Mindmap"**. Or simply use **right-click → Generate Mindmap**.
 
 
+## 🚀 Future Roadmap
+
+- [ ] **Java Support** — Full call graph analysis for Java methods
+- [ ] **Python Support** — Call graph analysis for Python functions
+- [ ] **Export Options** — Save graph as SVG, PNG, or JSON
+- [ ] **Custom Themes** — Allow users to define their own color palettes
+- [ ] **Advanced Filtering** — Filter by depth, visibility, or specific packages
+
+
 ## 👤 Author
 
-**Vishal Singh** - [@vishal2376](https://github.com/vishal2376) 
+**Vishal Singh** - [@vishal2376](https://github.com/vishal2376)
 
 
 ## 📄 License

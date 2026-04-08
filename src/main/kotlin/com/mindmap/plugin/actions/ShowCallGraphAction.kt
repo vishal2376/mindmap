@@ -40,21 +40,20 @@ class ShowCallGraphAction : AnAction() {
             toolWindow.show()
 
             ProgressManager.getInstance().run(object : Task.Backgroundable(
-                project, "Generating Mindmap for ${function.name}", true
+                project, "Generating Mindmap for ${function.name ?: "function"}", true
             ) {
                 override fun run(indicator: ProgressIndicator) {
                     try {
                         indicator.isIndeterminate = true
-                        indicator.text = "Analyzing call graph..."
+                        indicator.text = "Analyzing Kotlin call graph..."
 
-                        val analyzer = GraphAnalyzer(project)
-                        val graphData = analyzer.buildGraph(function, indicator)
+                        val graphData = GraphAnalyzer(project).buildGraph(function, indicator)
 
                         val content = toolWindow.contentManager.getContent(0) ?: return
                         val panel = content.component as? MindMapPanel ?: return
                         panel.updateGraph(graphData)
                     } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
-                        throw ce // let IntelliJ handle cancellation
+                        throw ce
                     } catch (ex: Exception) {
                         LOG.error("Failed to generate mindmap", ex)
                     }

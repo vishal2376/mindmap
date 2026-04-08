@@ -1,11 +1,16 @@
 <idea-plugin>
     <id>com.mindmap.plugin</id>
-    <name>Mindmap - Kotlin CallGraph</name>
+    <name>Mindmap - Call Graph Visualizer</name>
     <vendor email="vishalsingh2376@gmail.com" url="https://vishal2376.github.io">Vishal Singh</vendor>
 
     <description><![CDATA[
-    <h2>Mindmap - Kotlin Call Graph Visualizer</h2>
-    <p>Visualize Kotlin function call graphs as interactive mind maps inside your IDE. Place your cursor on any function and press <b>Alt+G</b> to view the call chain - callers, callees, and function depth.</p>
+    <h2>Mindmap - Call Graph Visualizer</h2>
+    <p>Visualize function call graphs as interactive mind maps inside your IDE. Place your cursor on any function and press <b>Alt+G</b> to view the call chain — callers, callees, and function depth.</p>
+
+    <h3>🌐 Language Support</h3>
+    <ul>
+        <li><b>Kotlin</b> — Full support (K1 &amp; K2), IntelliJ IDEA &amp; Android Studio</li>
+    </ul>
 
     <h3>🎯 Key Features</h3>
     <ul>
@@ -15,7 +20,8 @@
         <li><b>Click-to-Navigate</b> - Click a node to jump to source code</li>
         <li><b>Double-Click Trace</b> - Merge a node's call graph into the view</li>
         <li><b>Cmd+Click Expand</b> - Re-center the graph on a node</li>
-        <li><b>Box Selection</b> - Drag on empty canvas to select and move multiple nodes</li>
+        <li><b>Pan Mode</b> - Drag nodes to move them; drag empty space to pan the canvas</li>
+        <li><b>Box Selection</b> - Drag on empty canvas (select mode) to select and move multiple nodes</li>
         <li><b>Navigation History</b> - Navigate back/forward (Alt+← / Alt+→)</li>
         <li><b>Search &amp; Filter</b> - Filter nodes by name</li>
         <li><b>Library Code Toggle</b> - Toggle library/SDK function calls</li>
@@ -33,16 +39,27 @@
 
     <h3>🖱️ Controls</h3>
     <ul>
-        <li><b>Left-drag</b> on empty space → box select multiple nodes</li>
+        <li><b>Pan mode (H)</b>: drag a node to move it; drag empty space to pan</li>
+        <li><b>Select mode (V)</b>: drag empty space to box-select multiple nodes</li>
         <li><b>Right-drag / Middle-drag</b> → pan the view</li>
-        <li><b>Scroll</b> → zoom in/out</li>
-        <li><b>Drag node</b> → move freely in any direction</li>
+        <li><b>Scroll / Pinch</b> → zoom in/out</li>
     </ul>
 
-    <p><em>Supports K1 and K2 Kotlin compiler modes. Works with IntelliJ IDEA 2024.3+ and Android Studio Ladybug+.</em></p>
+    <p><em>Works with IntelliJ IDEA 2024.3+, Android Studio Ladybug+, and PyCharm 2024.3+.</em></p>
     ]]></description>
 
     <change-notes><![CDATA[
+    <h3>1.0.2</h3>
+    <ul>
+        <li><b>Figma-style Interaction</b> — Toggle between Pan (H) and Select (V) modes</li>
+        <li><b>Smart Navigation</b> — Use Arrow keys to traverse parents, children, and siblings</li>
+        <li><b>Temporary Pan</b> — Hold <kbd>Space</kbd> while in Select mode to quickly pan the view</li>
+        <li><b>Incremental Trace</b> — Double-click a node to merge its call graph into the current view</li>
+        <li><b>Center & Fit</b> — Standardized shortcuts for Fit View (F) and Center on Node (C)</li>
+        <li>OS-aware modifier key labels — shows <kbd>⌥ Option</kbd> on macOS and <kbd>Alt</kbd> on Windows/Linux</li>
+        <li>Performance: optimized hover opacity updates for large graphs (~200 nodes)</li>
+    </ul>
+
     <h3>1.0.1</h3>
     <ul>
         <li>Fixed Android Studio tool window icon collision</li>
@@ -69,18 +86,17 @@
     ]]></change-notes>
 
     <depends>com.intellij.modules.platform</depends>
-    <depends>com.intellij.modules.java</depends>
     <depends>org.jetbrains.kotlin</depends>
+
+    <extensions defaultExtensionNs="org.jetbrains.kotlin">
+        <supportsKotlinPluginMode supportsK1="true" supportsK2="true"/>
+    </extensions>
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Mindmap" secondary="true"
                     icon="/icons/mindmapToolWindow.svg" anchor="right"
                     doNotActivateOnStart="true"
                     factoryClass="com.mindmap.plugin.ui.GraphToolWindowFactory"/>
-    </extensions>
-
-    <extensions defaultExtensionNs="org.jetbrains.kotlin">
-        <supportsKotlinPluginMode supportsK1="true" supportsK2="true"/>
     </extensions>
 
     <actions>
