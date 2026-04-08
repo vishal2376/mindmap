@@ -51,13 +51,14 @@
     <change-notes><![CDATA[
     <h3>1.0.2</h3>
     <ul>
+        <li><b>Performance First</b> — Always-on high-performance rendering (disabled shadows/smoothing)</li>
+        <li><b>Restart & Clear</b> — New button/shortcut (R) to wipe graph data and free memory</li>
+        <li><b>Clean Logic</b> — Library/SDK code is now permanently excluded for maximum clarity and speed</li>
         <li><b>Figma-style Interaction</b> — Toggle between Pan (H) and Select (V) modes</li>
         <li><b>Smart Navigation</b> — Use Arrow keys to traverse parents, children, and siblings</li>
-        <li><b>Temporary Pan</b> — Hold <kbd>Space</kbd> while in Select mode to quickly pan the view</li>
-        <li><b>Incremental Trace</b> — Double-click a node to merge its call graph into the current view</li>
-        <li><b>Center & Fit</b> — Standardized shortcuts for Fit View (F) and Center on Node (C)</li>
-        <li>OS-aware modifier key labels — shows <kbd>⌥ Option</kbd> on macOS and <kbd>Alt</kbd> on Windows/Linux</li>
-        <li>Performance: optimized hover opacity updates for large graphs (~200 nodes)</li>
+        <li><b>Incremental Trace</b> — Double-click a node to merge its call graph into the view</li>
+        <li><b>Seamless Expansion</b> — Fixed "blue circle" UI artifacts during graph re-renders</li>
+        <li><b>Home Page Updates</b> — Instant access to the official website and OS-aware shortcut labels</li>
     </ul>
 
     <h3>1.0.1</h3>

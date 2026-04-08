@@ -1,6 +1,7 @@
 package com.mindmap.plugin.ui
 
 import com.google.gson.GsonBuilder
+import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.diagnostic.Logger
@@ -114,6 +115,14 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         historyIndex = 0
 
         sendGraphToJs(data)
+        sendHistoryState()
+    }
+
+    /** Clears all data and history */
+    private fun handleRestart() {
+        history.clear()
+        historyIndex = -1
+        currentGraphData = null
         sendHistoryState()
     }
 
@@ -237,11 +246,18 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
             }
             val message = gson.fromJson(request, JsMessage::class.java)
             when (message.type) {
-                "navigate" -> handleNavigate(validateNodeId(message.id))
+                "navigate" -> {
+                    if (message.url != null) {
+                        BrowserUtil.browse(message.url)
+                    } else {
+                        handleNavigate(validateNodeId(message.id))
+                    }
+                }
                 "expand" -> handleExpand(validateNodeId(message.id))
                 "trace" -> handleTrace(validateNodeId(message.id))
                 "history_back" -> handleHistoryBack()
                 "history_forward" -> handleHistoryForward()
+                "restart" -> handleRestart()
                 else -> LOG.debug("Unknown JS message type: ${message.type}")
             }
         } catch (e: Exception) {
@@ -394,7 +410,8 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
 
     private data class JsMessage(
         val type: String = "",
-        val id: String? = null
+        val id: String? = null,
+        val url: String? = null
     )
 
     override fun dispose() {

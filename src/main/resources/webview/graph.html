@@ -149,9 +149,12 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 #zlv{font:700 8px/1 'JetBrains Mono',monospace;color:var(--tx5);text-align:center;padding:1px 0;letter-spacing:-.3px}
 
 /* Tool mode cursors */
+#gc{width:100%;height:100%;transition:opacity .2s;outline:none!important}
 #gc.pan-mode{cursor:grab}
 #gc.pan-mode.panning{cursor:grabbing}
 #gc.sel-mode{cursor:default}
+#gc.off{opacity:0;pointer-events:none;position:absolute}
+#gc.loading{opacity:0}
 
 /* ── EMPTY ── */
 #es{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--tx4);display:flex;flex-direction:column;align-items:center;gap:8px}
@@ -163,6 +166,8 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 .ek kbd{background:var(--sf);padding:1px 6px;border-radius:4px;border:1px solid var(--bd);color:var(--tx)}
 .ek-sep{color:var(--tx5);font-size:10px}
 .ek-plus{color:var(--tx4);font-size:12px}
+
+canvas{outline:none!important;-webkit-tap-highlight-color:transparent}
 
 /* Loading */
 #ld{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(30,30,46,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:200;transition:opacity .2s}
@@ -191,7 +196,12 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 .sg{margin-bottom:16px}
 .sg:last-child{margin-bottom:0}
 .st{font-size:10px;text-transform:uppercase;color:var(--tx5);font-weight:600;margin-bottom:8px;letter-spacing:.5px}
-.sr{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11px;color:var(--tx3)}
+.el{margin-top:20px;color:var(--accent);text-decoration:none;font-size:10px;display:flex;align-items:center;gap:4px;opacity:0.8;transition:opacity 0.2s;font-weight:500}
+.el:hover{opacity:1;text-decoration:underline}
+.el svg{width:11px;height:11px}
+.sr{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;font-size:11px;color:var(--tx3);border-radius:6px;transition:background 0.15s}
+.sr:nth-child(even){background:var(--sf)}
+.sr:hover{background:var(--sf2);color:var(--tx)}
 .skk{display:flex;gap:4px;align-items:center}
 .skk kbd{background:var(--sf);border:1px solid var(--bd);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx)}
 .skk span{color:var(--tx5);font-size:9px;padding:0 2px}
@@ -212,8 +222,8 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 <div id="bc"><span class="bci">&#9679;</span><span class="bcn" id="bcn">No function selected</span></div>
 <button class="sb" id="sbn" data-t="Search" data-k="/"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg><input id="sin" placeholder="Filter nodes…"/></button>
 <div class="sep"></div>
-<button class="tb" id="tlib" data-t="Library code" data-k="L"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="6" rx="1"/><rect x="9" y="2" width="5" height="6" rx="1"/><rect x="2" y="10" width="12" height="4" rx="1"/></svg></button>
 <button class="tb" id="bfit" data-t="Fit view" data-k="F"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,6 2,2 6,2"/><polyline points="10,2 14,2 14,6"/><polyline points="14,10 14,14 10,14"/><polyline points="6,14 2,14 2,10"/></svg></button>
+<button class="tb" id="bres" data-t="Restart / Clear" data-k="R"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 8a7 7 0 1 0 1.5-4.5"/><polyline points="1 1 1 4 4 4"/></svg></button>
 <button class="tb" id="bhelp" data-t="Shortcuts" data-k="?"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6" /><path d="M6 6c0-1.1.9-2 2-2s2 .9 2 2c0 1.5-2 2-2 2v1" /><circle cx="8" cy="12" r="0.8" fill="currentColor" stroke="none" /></svg></button>
 </div>
 
@@ -228,6 +238,10 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
   <span class="ek-plus">+</span>
   <kbd>G</kbd>
 </div>
+<a href="#" class="el" onclick="if(window.jbCefQuery)window.jbCefQuery(JSON.stringify({type:'navigate',url:'https://vishal2376.github.io/mindmap'}));return false;">
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:12px;height:12px"><path d="M10 2h4v4M6 10l8-8M13 14H2V3h5"/></svg>
+  Checkout Website
+</a>
 </div>
 <div id="gc"></div>
 <div id="tc"></div>
@@ -272,7 +286,6 @@ body{background:var(--bg);color:var(--tx);font:11px/1.4 -apple-system,BlinkMacSy
 <div class="sr">Search node<div class="skk"><kbd>/</kbd></div></div>
 <div class="sr">Switch Graph/Tree<div class="skk"><kbd>1</kbd><span>or</span><kbd>2</kbd></div></div>
 <div class="sr">History Back/Fwd<div class="skk"><kbd id="mAlt">Alt</kbd><kbd>←</kbd><span>/</span><kbd>→</kbd></div></div>
-<div class="sr">Toggle Library<div class="skk"><kbd>L</kbd></div></div>
 <div class="sr">Show Shortcuts<div class="skk"><kbd>?</kbd></div></div>
 </div>
 <div class="sg"><div class="st">Graph Navigation</div>
@@ -303,8 +316,8 @@ const _altShort = _isMac ? '⌥' : 'Alt';
 // ── State ──
 let net=null,nds=null,eds=null,D=null;
 let tColl=new Set();
-let showLib=false,sf='',cv='graph',sel=null,drag=false,sOpen=false;
-let panMode=true; // default: pan tool active (Figma-style)
+let sf='',cv='graph',sel=null,drag=false,sOpen=false;
+let panMode=true;const perfMode=true; // performance mode always on
 let _spaceHeld=false; // tracks Space key for temp pan
 let _dimmedNodes=new Set(); // tracks nodes dimmed on hover for fast blur restore
 
@@ -313,7 +326,7 @@ const $=id=>document.getElementById(id);
 const $gc=$('gc'),$tc=$('tc'),$ld=$('ld'),$es=$('es');
 const $bg=$('bg'),$bt=$('bt'),$bbk=$('bbk'),$bfw=$('bfw'),$hbg=$('hbg');
 const $bcn=$('bcn'),$sbn=$('sbn'),$sin=$('sin');
-const $tlib=$('tlib'),$bfit=$('bfit'),$bhelp=$('bhelp');
+const $bfit=$('bfit'),$bhelp=$('bhelp'),$bres=$('bres');
 const $bzi=$('bzi'),$bzo=$('bzo'),$bzf=$('bzf'),$bzc=$('bzc'),$zlv=$('zlv'),$zc=$('zc');
 const $bpan=$('bpan'),$bsel=$('bsel');
 const $sn=$('sn'),$se=$('se'),$sdp=$('sdp'),$sm=$('sm'),$sh=$('sh');
@@ -385,7 +398,7 @@ function showTip(e,n){
     const tl=n.type==='ROOT'?'Root':n.type==='OUTBOUND'?'Child (calls)':'Parent (caller)';
     $ti.style.background=c;$ti.textContent=(n.name||'F')[0].toUpperCase();
     $tn.textContent=n.name||'anonymous';
-    $tp.textContent=tl+(n.isLibrary?' · Library':'');
+    $tp.textContent=tl;
     $tsg.textContent=n.signature||n.id||'';
     if(n.fileName){$tfl.innerHTML=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:9px;height:9px;flex-shrink:0"><path d="M4 2h5l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"/><polyline points="9,2 9,6 13,6"/></svg>${esc(n.fileName)}`;$tfl.style.display='inline-flex'}else $tfl.style.display='none';
     let s='';if(n.loc>0)s+=`<div class="tsd"><div class="tsd-d" style="background:var(--warn)"></div><b>${n.loc}</b>loc</div>`;
@@ -534,26 +547,18 @@ function drawGraph(json){
 function mergeGraph(json){
     try{D=typeof json==='string'?JSON.parse(json):json}catch(e){return}
     if(!D||!Array.isArray(D.nodes)||!Array.isArray(D.edges))return;
-    
-    // Remember the node that was double clicked to trace
     const focusId = sel;
-    
     $es.classList.add('h');$ld.classList.remove('h');
-    const root=D.nodes.find(n=>n.type==='ROOT');
-    if(root){$bcn.textContent=root.name||'anonymous';} // keep sel as focusId
-    
-    // Rebuild completely. Hierarchical layout prevents overlaps.
-    _buildNet();
+    _buildNet(focusId);
 }
 
 // Rebuild network from D with current filters, perfectly spacing all nodes to avoid overlap
 function _buildNet(focusId){
     if(!D)return;
-    // Filter library nodes out of the dataset entirely (cleaner hierarchical layout, no phantom gaps)
-    const visNodes=D.nodes.filter(n=>showLib||!n.isLibrary);
+    // Always remove library nodes for performance as requested
+    const visNodes=D.nodes.filter(n=>!n.isLibrary);
     const visIds=new Set(visNodes.map(n=>n.id));
     nodeMap={};for(const n of visNodes)nodeMap[n.id]=n;
-    // Detect duplicate function names to show filename on ambiguous nodes
     const nc={};for(const n of visNodes)nc[n.name]=(nc[n.name]||0)+1;
     nds=new vis.DataSet(visNodes.map(n=>mkN(n,nc[n.name]>1)));
     eds=new vis.DataSet(D.edges.filter(e=>visIds.has(e.from)&&visIds.has(e.to)).map(mkE));
@@ -562,16 +567,27 @@ function _buildNet(focusId){
     
     // Apply search filter
     if(sf){const up=[];nds.forEach(n=>{if(!isVis(n._data))up.push({id:n.id,hidden:true})});if(up.length)nds.update(up)}
-    if(net)net.destroy();
-    net=new vis.Network($gc,{nodes:nds,edges:eds},{
-        nodes:{fixed:false},
+    const options={
+        nodes:{
+            shape:'box',
+            fixed:false,
+            margin:8,
+            font:{multi:'html',face:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif',size:11,color:'#cdd6f4'},
+            borderWidth:1.5,
+            shadow:{enabled:!perfMode,color:'rgba(0,0,0,0.3)',size:6,x:0,y:2}
+        },
         edges:{
-            smooth: isLarge ? false : {enabled:true,type:'cubicBezier',forceDirection:'horizontal',roundness:.35}
+            smooth: !perfMode ? {enabled:true,type:'cubicBezier',forceDirection:'horizontal',roundness:.35} : false,
+            color:{color:'#3e3f58',highlight:'#89b4fa',hover:'#7f849c'},
+            width:1,
+            selectionWidth:2,
+            arrows:{to:{enabled:true,scaleFactor:0.8}}
         },
         physics:{enabled:false},
         interaction:{hover:true,tooltipDelay:99999,zoomView:false,dragView:false,dragNodes:!panMode,multiselect:false,selectConnectedEdges:true,navigationButtons:false,keyboard:{enabled:false}},
         layout:{
             hierarchical:{
+                enabled: true,
                 direction:'LR',
                 sortMethod:'directed',
                 levelSeparation:200,
@@ -583,31 +599,44 @@ function _buildNet(focusId){
                 shakeTowards:'roots'
             }
         }
-    });
+    };
+
+    if(!net){
+        $gc.classList.add('loading');
+        net=new vis.Network($gc,{nodes:nds,edges:eds},options);
+        net.on('click',onClk);net.on('doubleClick',onDbl);
+        net.on('hoverNode',onHov(net,nds));net.on('blurNode',onBlr(nds));
+        net.on('dragStart',()=>{drag=true;hideTip()});net.on('dragEnd',()=>{drag=false});
+        net.on('selectNode',()=>{selCount=net.getSelectedNodes().length;updateShortcuts()});
+        net.on('deselectNode',()=>{selCount=net.getSelectedNodes().length;updateShortcuts()});
+    } else {
+        net.setOptions(options);
+        net.setData({nodes:nds,edges:eds});
+    }
     
     // Unlock X-axis dragging: wait for layout to draw once, then disable hierarchical constraint
     net.once('afterDrawing', () => {
-        net.setOptions({ layout: { hierarchical: { enabled: false } } });
+        net.setOptions({ 
+            layout: { hierarchical: { enabled: false } },
+            interaction: { dragNodes: !panMode }
+        });
+        $gc.classList.remove('loading');
     });
     
-    net.on('click',onClk);net.on('doubleClick',onDbl);
-    net.on('hoverNode',onHov(net,nds));net.on('blurNode',onBlr(nds));
-    net.on('dragStart',()=>{drag=true;hideTip()});net.on('dragEnd',()=>{drag=false});
-    net.on('selectNode',()=>{selCount=net.getSelectedNodes().length;updateShortcuts()});
-    net.on('deselectNode',()=>{selCount=net.getSelectedNodes().length;updateShortcuts()});
     _initBoxSel();
+    const wait = perfMode ? 20 : 50;
     setTimeout(()=>{
         $ld.classList.add('h');
         if(net){
             if(focusId && nds.get(focusId)){
                 net.selectNodes([focusId]);
-                net.focus(focusId, {scale: 1.0, animation: {duration: 300, easingFunction: 'easeInOutQuad'}});
+                net.focus(focusId, perfMode ? {} : {animation:{duration:250}});
             } else {
-                net.fit({animation:{duration:300,easingFunction:'easeInOutQuad'}});
+                net.fit(perfMode ? {} : {animation:{duration:250}});
             }
-            setTimeout(updateZoomLabel,320);
+            setTimeout(updateZoomLabel,perfMode ? 10 : 50);
         }
-    },200);
+    },wait);
     if(cv==='graph')$zc.classList.remove('h');
     uLeg();uSt();updateShortcuts();
     if(cv==='tree')rTree();
@@ -782,6 +811,17 @@ function sw(v){
 // ── Events ──
 $bg.addEventListener('click',()=>sw('graph'));
 $bt.addEventListener('click',()=>sw('tree'));
+$bres.addEventListener('click',()=>resetGraph());
+
+function resetGraph(){
+    if(!confirm('Clear graph data and history?'))return;
+    D=null;nds=null;eds=null;sel=null;history.length=0;historyIndex=-1;
+    $gc.innerHTML=''; $tc.innerHTML='';
+    $es.classList.remove('h'); $zc.classList.add('h'); $ld.classList.add('h');
+    $bcn.textContent='No function selected';
+    if(window.jbCefQuery)window.jbCefQuery(JSON.stringify({type:'restart'}));
+    toast('Memory cleared','var(--accent)');
+}
 
 $tlib.addEventListener('click',function(){
     showLib=!showLib;this.classList.toggle('on',showLib);_buildNet();
@@ -811,25 +851,25 @@ $bpan.addEventListener('click',()=>setPanMode(true));
 $bsel.addEventListener('click',()=>setPanMode(false));
 
 // ── Zoom Controls ──
-function doFit(){if(net)net.fit({animation:{duration:300,easingFunction:'easeInOutQuad'}})}
+function doFit(){if(net)net.fit(perfMode ? {} : {animation:{duration:300,easingFunction:'easeInOutQuad'}})}
 function updateZoomLabel(){if(!net)return;const s=net.getScale();$zlv.textContent=Math.round(s*100)+'%'}
 function doZoom(dir){
     if(!net)return;
     const s=net.getScale();
     const ns=dir>0?s*1.3:s/1.3;
-    net.moveTo({scale:Math.max(.05,Math.min(5,ns)),animation:{duration:200,easingFunction:'easeInOutQuad'}});
-    setTimeout(updateZoomLabel,220);
+    net.moveTo({scale:Math.max(.05,Math.min(5,ns)),animation:perfMode ? false : {duration:200,easingFunction:'easeInOutQuad'}});
+    setTimeout(updateZoomLabel,perfMode ? 20 : 220);
 }
 $bzi.addEventListener('click',()=>doZoom(1));
 $bzo.addEventListener('click',()=>doZoom(-1));
-$bzf.addEventListener('click',()=>{doFit();setTimeout(updateZoomLabel,320)});
+$bzf.addEventListener('click',()=>{doFit();setTimeout(updateZoomLabel,perfMode?20:320)});
 $bzc.addEventListener('click',()=>centerOnSel());
 
 function centerOnSel(){
     if(!net||!sel)return;
     const pos=net.getPositions([sel])[sel];
     if(!pos)return;
-    net.moveTo({position:pos,scale:net.getScale(),animation:{duration:300,easingFunction:'easeInOutQuad'}});
+    net.moveTo({position:pos,scale:net.getScale(),animation:perfMode ? false : {duration:300,easingFunction:'easeInOutQuad'}});
 }
 
 // ── Keyboard ──
@@ -847,7 +887,7 @@ document.addEventListener('keydown',e=>{
     }
 
     if(e.key==='?'||e.key==='¿'){$mOy.classList.add('s');return}
-    if(e.key==='l'||e.key==='L'){$tlib.click();return}
+    if(key==='r'){resetGraph();return}
     if(e.key==='h'||e.key==='H'){setPanMode(true);return}
     if(e.key==='v'||e.key==='V'){setPanMode(false);return}
     // Space held = temp pan
@@ -918,7 +958,7 @@ document.addEventListener('keydown',e=>{
         // C = center on selected node
         if(e.key==='c'||e.key==='C'){centerOnSel();return}
         // F = fit all
-        if(e.key==='F'||e.key==='f'){doFit();setTimeout(updateZoomLabel,320);return}
+        if(e.key==='F'||e.key==='f'){doFit();setTimeout(updateZoomLabel,perfMode?20:320);return}
         // Zoom +/-
         if(e.key==='='||e.key==='+'){doZoom(1);return}
         if(e.key==='-'){doZoom(-1);return}
@@ -955,9 +995,7 @@ const $selbox=$('selbox');
 let _bx=null; // active box state
 function _initBoxSel(){
     if(!net)return;
-    const canvas=$gc.querySelector('canvas');
-    if(!canvas)return;
-    canvas.addEventListener('pointerdown',_bxDown,true);
+    $gc.addEventListener('pointerdown',_bxDown);
 }
 function _bxDown(e){
     if(e.button!==0||!net||cv!=='graph')return;
