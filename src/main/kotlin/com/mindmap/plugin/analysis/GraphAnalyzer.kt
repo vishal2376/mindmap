@@ -6,20 +6,24 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.psi.search.searches.OverridingMethodsSearch
 import com.intellij.psi.search.searches.ReferencesSearch
 import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.resolution.singleFunctionCallOrNull
 import org.jetbrains.kotlin.analysis.api.resolution.symbol
+import org.jetbrains.kotlin.asJava.toLightMethods
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
-class GraphAnalyzer(private val project: Project) {
+class GraphAnalyzer(
+    private val project: Project,
+    private val maxOutboundDepth: Int = 3,
+    private val maxInboundDepth: Int = 2
+) {
 
     companion object {
         private val LOG = Logger.getInstance(GraphAnalyzer::class.java)
-        private const val MAX_OUTBOUND_DEPTH = 3
-        private const val MAX_INBOUND_DEPTH = 2
         private const val MAX_NODES = 300
         private const val MAX_CALLS_PER_FUNCTION = 50
         private const val MAX_INBOUND_REFS = 30
@@ -78,7 +82,7 @@ class GraphAnalyzer(private val project: Project) {
         currentDepth: Int,
         indicator: ProgressIndicator? = null
     ) {
-        if (currentDepth > MAX_OUTBOUND_DEPTH) return
+        if (currentDepth > maxOutboundDepth) return
         if (nodes.size >= MAX_NODES) return
         indicator?.checkCanceled()
 
@@ -109,8 +113,22 @@ class GraphAnalyzer(private val project: Project) {
 
                         addEdgeIfNew(callerId, targetId, nodes, edges, edgeKeys)
 
-                        if (!isLibrary && currentDepth < MAX_OUTBOUND_DEPTH) {
-                            analyzeOutbound(targetPsi, nodes, edges, edgeKeys, currentDepth + 1, indicator)
+                        if (!isLibrary && currentDepth < maxOutboundDepth) {
+                            if (targetPsi.bodyExpression != null) {
+                                // Concrete function — recurse normally
+                                analyzeOutbound(targetPsi, nodes, edges, edgeKeys, currentDepth + 1, indicator)
+                            } else {
+                                // Abstract/interface — show up to 3 implementations as leaf nodes (no recursion)
+                                val impls = findImplementations(targetPsi)
+                                for (impl in impls.take(3)) {
+                                    if (nodes.size >= MAX_NODES) break
+                                    val implId = getFunctionId(impl)
+                                    if (!nodes.containsKey(implId)) {
+                                        nodes[implId] = createNode(impl, NodeType.OUTBOUND, currentDepth + 1)
+                                    }
+                                    addEdgeIfNew(targetId, implId, nodes, edges, edgeKeys)
+                                }
+                            }
                         }
                     } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                         throw ce
@@ -134,7 +152,7 @@ class GraphAnalyzer(private val project: Project) {
         currentDepth: Int,
         indicator: ProgressIndicator? = null
     ) {
-        if (currentDepth > MAX_INBOUND_DEPTH) return
+        if (currentDepth > maxInboundDepth) return
         if (nodes.size >= MAX_NODES) return
         indicator?.checkCanceled()
 
@@ -166,7 +184,7 @@ class GraphAnalyzer(private val project: Project) {
 
                 addEdgeIfNew(callerId, targetId, nodes, edges, edgeKeys)
 
-                if (!isLibrary && currentDepth < MAX_INBOUND_DEPTH) {
+                if (!isLibrary && currentDepth < maxInboundDepth) {
                     analyzeInbound(callerFunction, nodes, edges, edgeKeys, currentDepth + 1, indicator)
                 }
             } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
@@ -219,6 +237,21 @@ class GraphAnalyzer(private val project: Project) {
         val returnType = function.typeReference?.text ?: ""
         val returnSuffix = if (returnType.isNotEmpty()) ": $returnType" else ""
         return "${function.name}($params)$returnSuffix"
+    }
+
+    /** Returns concrete (non-abstract) overrides of an abstract/interface function. */
+    private fun findImplementations(function: KtNamedFunction): List<KtNamedFunction> {
+        if (function.bodyExpression != null) return emptyList()
+        return try {
+            val scope = GlobalSearchScope.projectScope(project)
+            function.toLightMethods().flatMap { lightMethod ->
+                OverridingMethodsSearch.search(lightMethod, scope, true).toList()
+                    .mapNotNull { it.navigationElement as? KtNamedFunction }
+                    .filter { impl -> impl.bodyExpression != null && isSourceCode(impl) }
+            }.take(3)
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
 
     private fun isSourceCode(function: KtNamedFunction): Boolean {

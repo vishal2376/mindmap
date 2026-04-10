@@ -41,6 +41,10 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     private val history = mutableListOf<GraphData>()
     private var historyIndex = -1
 
+    // User-configurable depth (set via toolbar dropdowns)
+    @Volatile private var outboundDepth = 3
+    @Volatile private var inboundDepth  = 2
+
     // Node ID validation: only allow safe characters (alphanumeric, dots, colons, underscores, hyphens)
     private val nodeIdPattern = Regex("^[a-zA-Z0-9._:\\\\\\-<>, ]+$")
 
@@ -258,6 +262,11 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                 "history_back" -> handleHistoryBack()
                 "history_forward" -> handleHistoryForward()
                 "restart" -> handleRestart()
+                "set_depth" -> {
+                    val out = message.outbound?.coerceIn(1, 5) ?: return
+                    val inn = message.inbound?.coerceIn(1, 5) ?: return
+                    outboundDepth = out; inboundDepth = inn
+                }
                 else -> LOG.debug("Unknown JS message type: ${message.type}")
             }
         } catch (e: Exception) {
@@ -386,7 +395,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     }
 
     private fun analyzeElement(element: PsiElement, indicator: ProgressIndicator): GraphData =
-        GraphAnalyzer(project).buildGraph(element as KtNamedFunction, indicator)
+        GraphAnalyzer(project, outboundDepth, inboundDepth).buildGraph(element as KtNamedFunction, indicator)
 
     private fun handleHistoryBack() {
         if (historyIndex > 0) {
@@ -411,7 +420,9 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     private data class JsMessage(
         val type: String = "",
         val id: String? = null,
-        val url: String? = null
+        val url: String? = null,
+        val outbound: Int? = null,
+        val inbound: Int? = null
     )
 
     override fun dispose() {

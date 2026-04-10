@@ -546,6 +546,14 @@
             pointer-events: none
         }
 
+        .tree-empty {
+            padding: 20px 16px;
+            font-size: 11px;
+            color: var(--tx5);
+            text-align: center;
+            font-style: italic
+        }
+
         /* ── TOOLTIP ── */
         #ntip {
             position: fixed;
@@ -684,6 +692,232 @@
             border-radius: 2px;
             border: 1px solid var(--bd);
             color: var(--tx4)
+        }
+
+        /* ── SETTINGS MODAL ── */
+        #sOy {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.65); backdrop-filter: blur(8px);
+            z-index: 1200; align-items: center; justify-content: center;
+        }
+        #sOy.s { display: flex; }
+        #sOy.s .mdl { transform: scale(1); opacity: 1; }
+        .smdl { width: 440px; max-width: calc(100vw - 32px); }
+        /* header */
+        .smhd {
+            padding: 18px 20px 16px; border-bottom: 1px solid var(--bd);
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        }
+        .smhd-l { display: flex; align-items: center; gap: 12px; }
+        .smhd-ico {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: rgba(137,180,250,.1); display: grid; place-items: center;
+            color: var(--accent); flex-shrink: 0;
+        }
+        .smhd-ico svg { width: 18px; height: 18px; }
+        .smhd-ttl { font: 700 13px/1 inherit; color: var(--tx); }
+        .smhd-sub { font-size: 10px; color: var(--tx5); margin-top: 4px; }
+        /* body */
+        .smbd { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 10px; }
+        /* section label */
+        .sm-sl {
+            font: 600 9px/1 'JetBrains Mono', monospace; letter-spacing: 1.2px;
+            text-transform: uppercase; color: var(--tx5); margin-bottom: 4px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .sm-sl::after { content: ''; flex: 1; height: 1px; background: var(--bd); }
+        /* depth card */
+        .sdep {
+            background: var(--sf); border: 1px solid var(--bd); border-radius: 10px;
+            padding: 14px 16px; position: relative; overflow: hidden;
+        }
+        .sdep::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px; border-radius: 10px 0 0 10px;
+        }
+        .sdep.out::before { background: var(--child); }
+        .sdep.inn::before { background: var(--parent); }
+        .sdep-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+        .sdep-ic {
+            width: 36px; height: 36px; border-radius: 9px;
+            display: grid; place-items: center; flex-shrink: 0;
+        }
+        .sdep.out .sdep-ic { background: rgba(137,180,250,.12); color: var(--child); }
+        .sdep.inn .sdep-ic { background: rgba(166,227,161,.12); color: var(--parent); }
+        .sdep-ic svg { width: 18px; height: 18px; }
+        .sdep-nm { font: 600 12px/1.3 inherit; color: var(--tx); margin-bottom: 5px; }
+        .sdep-ds { font-size: 10.5px; color: var(--tx4); line-height: 1.55; }
+        .sdep-ds em { font-style: normal; font-weight: 600; color: var(--tx3); }
+        .sdep-bot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        /* depth track */
+        .sdep-trk { display: flex; align-items: center; gap: 4px; flex: 1; }
+        .sdep-seg { flex: 1; height: 5px; border-radius: 3px; background: var(--sf3); transition: background .15s; }
+        .sdep.out .sdep-seg.on { background: var(--child); }
+        .sdep.inn .sdep-seg.on { background: var(--parent); }
+        /* stepper */
+        .sstep {
+            display: flex; align-items: center; background: var(--bg);
+            border: 1px solid var(--bd); border-radius: 8px; overflow: hidden; flex-shrink: 0;
+        }
+        .stepb {
+            width: 32px; height: 32px; background: 0; border: 0;
+            color: var(--tx3); font-size: 18px; cursor: pointer; line-height: 1;
+            display: grid; place-items: center; transition: background .12s, color .12s;
+            font-family: inherit;
+        }
+        .stepb:hover:not(:disabled) { background: var(--sf); color: var(--tx); }
+        .stepb:active:not(:disabled) { background: var(--sf2); }
+        .stepb:disabled { color: var(--bd2); cursor: default; }
+        .stepv {
+            min-width: 36px; text-align: center; font: 700 13px/1 'JetBrains Mono', monospace;
+            color: var(--tx); user-select: none;
+            border-left: 1px solid var(--bd); border-right: 1px solid var(--bd);
+            height: 32px; display: flex; align-items: center; justify-content: center;
+        }
+        /* footer */
+        .sm-ft {
+            font-size: 10px; color: var(--tx5); display: flex; align-items: center;
+            justify-content: center; gap: 5px; padding-top: 2px;
+        }
+
+        /* ── NODE EYE BUTTON ── */
+        #neyeBtn {
+            position: absolute;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 22px; height: 22px;
+            background: rgba(20,20,30,.9);
+            border: 1px solid var(--bd2);
+            border-radius: 6px;
+            color: var(--tx3);
+            cursor: pointer;
+            z-index: 70;
+            pointer-events: auto;
+            transition: color .12s, border-color .12s, background .12s;
+        }
+        #neyeBtn svg { width: 12px; height: 12px; }
+        #neyeBtn:hover { color: var(--tx); border-color: var(--accent); background: rgba(137,180,250,.12); }
+        #neyeBtn.unhide { color: var(--tx5); border-color: var(--bd); }
+        #neyeBtn.unhide svg { opacity: .5; }
+        #neyeBtn.unhide:hover { color: var(--accent); border-color: var(--accent); background: rgba(137,180,250,.12); opacity: 1; }
+
+        /* ── MINIMAP ── */
+        #mmc {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 160px;
+            background: rgba(20, 20, 30, .92);
+            border: 1px solid var(--bd);
+            border-radius: 8px;
+            z-index: 55;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+        }
+        #mmh {
+            font: 600 8px/1 'JetBrains Mono', monospace;
+            color: var(--tx2);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            padding: 5px 8px 4px;
+            border-bottom: 1px solid var(--bd);
+            flex-shrink: 0;
+            text-align: center;
+        }
+        #mmcv { width: 100%; height: 100px; display: block; cursor: crosshair; }
+        #mmc.h { display: none; }
+
+        /* ── HIDDEN NODES PANEL ── */
+        #hnp {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            width: 180px;
+            background: rgba(20, 20, 30, .92);
+            border: 1px solid var(--bd);
+            border-radius: 8px;
+            z-index: 55;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            user-select: none;
+            display: none;
+            flex-direction: column;
+            max-height: 240px;
+        }
+        #hnp.v { display: flex; }
+        #hnp-hdr {
+            font: 600 8px/1 'JetBrains Mono', monospace;
+            color: var(--tx2);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            padding: 6px 8px 5px;
+            border-bottom: 1px solid var(--bd);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+        #hnp-hdr:hover { color: var(--tx3); }
+        .hnp-cnt { font: 500 8px/1 'JetBrains Mono', monospace; color: var(--tx4); background: var(--sf2); padding: 1px 5px; border-radius: 4px; }
+        .hnp-chev { width: 10px; height: 10px; color: var(--tx5); transition: transform .15s; }
+        #hnp.min .hnp-chev { transform: rotate(-90deg); }
+        #hnp-body {
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+        }
+        #hnp.min #hnp-body { display: none; }
+        #hnp.min { max-height: none; }
+        .hnp-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 8px;
+            font: 400 10px/1 'JetBrains Mono', monospace;
+            color: var(--tx3);
+            cursor: default;
+            border-bottom: 1px solid rgba(255,255,255,.03);
+        }
+        .hnp-row:last-child { border-bottom: none; }
+        .hnp-row:hover { background: var(--sf); }
+        .hnp-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+        .hnp-name {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .hnp-show {
+            width: 18px;
+            height: 18px;
+            background: 0;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: var(--tx5);
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            transition: all .12s;
+        }
+        .hnp-show:hover { color: var(--accent); border-color: var(--bd); background: var(--sf); }
+        .hnp-show svg { width: 12px; height: 12px; }
+        .hnp-empty {
+            font: 10px/1 inherit;
+            color: var(--tx5);
+            padding: 10px 8px;
+            text-align: center;
         }
 
         /* ── LEGEND ── */
@@ -1256,13 +1490,6 @@
                 <line x1="10.5" y1="10.5" x2="14" y2="14" />
             </svg><input id="sin" placeholder="Filter nodes…" /></button>
         <div class="sep"></div>
-        <button class="tb" id="bfit" data-t="Fit view" data-k="F"><svg viewBox="0 0 16 16" fill="none"
-                stroke="currentColor" stroke-width="1.5">
-                <polyline points="2,6 2,2 6,2" />
-                <polyline points="10,2 14,2 14,6" />
-                <polyline points="14,10 14,14 10,14" />
-                <polyline points="6,14 2,14 2,10" />
-            </svg></button>
         <button class="tb" id="bres" data-t="Restart / Clear" data-k="R"><svg viewBox="0 0 16 16" fill="none"
                 stroke="currentColor" stroke-width="1.8">
                 <path d="M1 8a7 7 0 1 0 1.5-4.5" />
@@ -1274,6 +1501,7 @@
                 <path d="M6 6c0-1.1.9-2 2-2s2 .9 2 2c0 1.5-2 2-2 2v1" />
                 <circle cx="8" cy="12" r="0.8" fill="currentColor" stroke="none" />
             </svg></button>
+        <button class="tb" id="bset" data-t="Settings"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M13.2 10a1.2 1.2 0 0 0 .24 1.32l.04.04a1.46 1.46 0 0 1-2.06 2.06l-.04-.04a1.2 1.2 0 0 0-1.32-.24 1.2 1.2 0 0 0-.73 1.1V14.5a1.45 1.45 0 1 1-2.9 0v-.06A1.2 1.2 0 0 0 5.66 13a1.2 1.2 0 0 0-1.32.24l-.04.04a1.46 1.46 0 0 1-2.06-2.06l.04-.04A1.2 1.2 0 0 0 2.52 9.8a1.2 1.2 0 0 0-1.1-.73H1.5a1.45 1.45 0 1 1 0-2.9h.06A1.2 1.2 0 0 0 2.9 5.66a1.2 1.2 0 0 0-.24-1.32l-.04-.04a1.46 1.46 0 0 1 2.06-2.06l.04.04A1.2 1.2 0 0 0 6.04 2.52a1.2 1.2 0 0 0 .73-1.1V1.5a1.45 1.45 0 1 1 2.9 0v.06a1.2 1.2 0 0 0 .73 1.1 1.2 1.2 0 0 0 1.32-.24l.04-.04a1.46 1.46 0 0 1 2.06 2.06l-.04.04A1.2 1.2 0 0 0 13.52 6a1.2 1.2 0 0 0 1.1.73H14.5a1.45 1.45 0 1 1 0 2.9h-.06a1.2 1.2 0 0 0-1.1.73z"/></svg></button>
     </div>
 
     <div id="main">
@@ -1307,6 +1535,21 @@
         </div>
         <div id="gc"></div>
         <div id="tc"></div>
+        <div id="mmc" class="h">
+            <div id="mmh">Mini-Map</div>
+            <canvas id="mmcv"></canvas>
+        </div>
+        <div id="neyeBtn" title="Hide node">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>
+        </div>
+        <div id="hnp">
+            <div id="hnp-hdr">
+                <span>Hidden Nodes</span>
+                <span class="hnp-cnt" id="hnp-cnt">0</span>
+                <svg class="hnp-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="4,6 8,10 12,6"/></svg>
+            </div>
+            <div id="hnp-body"></div>
+        </div>
         <div id="leg" class="h">
             <div class="lt">Legend</div>
             <div id="li"></div>
@@ -1386,6 +1629,95 @@
     <div id="toast"><span class="td" id="tdot"></span><span id="ttx"></span></div>
     <div id="selbox"></div>
 
+    <div id="sOy" onclick="if(event.target===this)this.classList.remove('s')">
+        <div class="mdl smdl">
+            <!-- Header -->
+            <div class="smhd">
+                <div class="smhd-l">
+                    <div class="smhd-ico">
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M13.2 10a1.2 1.2 0 0 0 .24 1.32l.04.04a1.46 1.46 0 0 1-2.06 2.06l-.04-.04a1.2 1.2 0 0 0-1.32-.24 1.2 1.2 0 0 0-.73 1.1V14.5a1.45 1.45 0 1 1-2.9 0v-.06A1.2 1.2 0 0 0 5.66 13a1.2 1.2 0 0 0-1.32.24l-.04.04a1.46 1.46 0 0 1-2.06-2.06l.04-.04A1.2 1.2 0 0 0 2.52 9.8a1.2 1.2 0 0 0-1.1-.73H1.5a1.45 1.45 0 1 1 0-2.9h.06A1.2 1.2 0 0 0 2.9 5.66a1.2 1.2 0 0 0-.24-1.32l-.04-.04a1.46 1.46 0 0 1 2.06-2.06l.04.04A1.2 1.2 0 0 0 6.04 2.52a1.2 1.2 0 0 0 .73-1.1V1.5a1.45 1.45 0 1 1 2.9 0v.06a1.2 1.2 0 0 0 .73 1.1 1.2 1.2 0 0 0 1.32-.24l.04-.04a1.46 1.46 0 0 1 2.06 2.06l-.04.04A1.2 1.2 0 0 0 13.52 6a1.2 1.2 0 0 0 1.1.73H14.5a1.45 1.45 0 1 1 0 2.9h-.06a1.2 1.2 0 0 0-1.1.73z"/></svg>
+                    </div>
+                    <div>
+                        <div class="smhd-ttl">Settings</div>
+                        <div class="smhd-sub">Configure graph analysis</div>
+                    </div>
+                </div>
+                <button class="mc" id="sCl"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg></button>
+            </div>
+            <!-- Body -->
+            <div class="smbd">
+                <div class="sm-sl">Graph Depth</div>
+
+                <!-- Outbound card -->
+                <div class="sdep out">
+                    <div class="sdep-top">
+                        <div class="sdep-ic">
+                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="8" cy="3" r="1.5" fill="currentColor" stroke="none"/>
+                                <line x1="8" y1="5" x2="8" y2="10.5"/>
+                                <polyline points="5.5,8.5 8,11 10.5,8.5"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="sdep-nm">Outbound Depth</div>
+                            <div class="sdep-ds">How many levels deep to follow calls <em>made by</em> the selected function. Depth 3 means: root → its calls → their calls → their calls.</div>
+                        </div>
+                    </div>
+                    <div class="sdep-bot">
+                        <div class="sdep-trk" id="doutBars">
+                            <div class="sdep-seg on"></div>
+                            <div class="sdep-seg on"></div>
+                            <div class="sdep-seg on"></div>
+                            <div class="sdep-seg"></div>
+                            <div class="sdep-seg"></div>
+                        </div>
+                        <div class="sstep">
+                            <button class="stepb" data-dir="-1" data-target="dout">−</button>
+                            <span class="stepv" id="doutV">3</span>
+                            <button class="stepb" data-dir="1" data-target="dout">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inbound card -->
+                <div class="sdep inn">
+                    <div class="sdep-top">
+                        <div class="sdep-ic">
+                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="8" cy="13" r="1.5" fill="currentColor" stroke="none"/>
+                                <line x1="8" y1="5.5" x2="8" y2="11"/>
+                                <polyline points="5.5,7.5 8,5 10.5,7.5"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="sdep-nm">Inbound Depth</div>
+                            <div class="sdep-ds">How many levels up to find functions that <em>call</em> the selected function. Depth 2 means: root ← its callers ← their callers.</div>
+                        </div>
+                    </div>
+                    <div class="sdep-bot">
+                        <div class="sdep-trk" id="dinBars">
+                            <div class="sdep-seg on"></div>
+                            <div class="sdep-seg on"></div>
+                            <div class="sdep-seg"></div>
+                            <div class="sdep-seg"></div>
+                            <div class="sdep-seg"></div>
+                        </div>
+                        <div class="sstep">
+                            <button class="stepb" data-dir="-1" data-target="din">−</button>
+                            <span class="stepv" id="dinV">2</span>
+                            <button class="stepb" data-dir="1" data-target="din">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sm-ft">
+                    <svg viewBox="0 0 16 16" fill="currentColor" width="10" height="10"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm.75 10.5h-1.5v-5h1.5v5zm0-6.5h-1.5V3.5h1.5V5z"/></svg>
+                    Takes effect on next trace or graph navigation
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="mOy">
         <div class="mdl">
             <div class="mh">Keyboard Shortcuts <button class="mc" id="mCl"><svg viewBox="0 0 16 16" fill="none"
@@ -1454,19 +1786,28 @@
         let tColl = new Set();
         let sf = '', cv = 'graph', sel = null, drag = false, sOpen = false;
         let panMode = true; const perfMode = true; // performance mode always on
+        const showLib = false; // library nodes always hidden for performance
         let _spaceHeld = false; // tracks Space key for temp pan
         let _dimmedNodes = new Set(); // tracks nodes dimmed on hover for fast blur restore
+        let _hiddenNodes = new Set(); // persists across hover — nodes explicitly hidden by user
+        let _hiddenNodeSpecs = new Map(); // id → original vis node spec, for restore
 
         // ── Cached DOM ──
         const $ = id => document.getElementById(id);
         const $gc = $('gc'), $tc = $('tc'), $ld = $('ld'), $es = $('es');
         const $bg = $('bg'), $bt = $('bt'), $bbk = $('bbk'), $bfw = $('bfw'), $hbg = $('hbg');
         const $bcn = $('bcn'), $sbn = $('sbn'), $sin = $('sin');
-        const $bfit = $('bfit'), $bhelp = $('bhelp'), $bres = $('bres');
+        const $bhelp = $('bhelp'), $bres = $('bres'), $bset = $('bset');
+        const $sOy = $('sOy'), $sCl = $('sCl');
+        const $doutV = $('doutV'), $dinV = $('dinV');
         const $bzi = $('bzi'), $bzo = $('bzo'), $bzf = $('bzf'), $bzc = $('bzc'), $zlv = $('zlv'), $zc = $('zc');
         const $bpan = $('bpan'), $bsel = $('bsel');
         const $sn = $('sn'), $se = $('se'), $sdp = $('sdp'), $sm = $('sm'), $sh = $('sh');
         const $leg = $('leg'), $li = $('li');
+        const $mmc = $('mmc'), $mmcv = $('mmcv');
+        const $neye = $('neyeBtn');
+        let mmCtx = null, _mmRaf = 0, _mmHov = false;
+        let _mmScl = 1, _mmOx = 0, _mmOy = 0; // transform saved for click-to-pan
         const $ntip = $('ntip'), $ti = $('ti'), $tn = $('tn'), $tp = $('tp'), $tsg = $('tsg'), $tfl = $('tfl'), $tss = $('tss');
         const $ttip = $('ttip'), $toast = $('toast'), $tdot = $('tdot'), $ttx = $('ttx');
         const $mOy = $('mOy'), $mCl = $('mCl');
@@ -1625,6 +1966,7 @@
         function onClk(p) {
             if (p.nodes.length !== 1) { sel = null; updateShortcuts(); return }
             const nid = p.nodes[0]; sel = nid; updateShortcuts();
+            if (_hiddenNodes.has(nid)) return; // hidden nodes are disabled
             if (p.event?.srcEvent?.metaKey || p.event?.srcEvent?.ctrlKey) {
                 const nd = D?.nodes?.find(n => n.id === nid);
                 if (nd?.type === 'ROOT') { toast('Already viewing this function', 'var(--warn)'); return }
@@ -1636,12 +1978,197 @@
         function onDbl(p) {
             if (p.nodes.length !== 1 || !window.jbCefQuery) return;
             const nid = p.nodes[0];
+            if (_hiddenNodes.has(nid)) { toast('Unhide node first', 'var(--warn)'); return }
             const nd = D?.nodes?.find(n => n.id === nid);
             if (nd?.type === 'ROOT') { toast('Already the root function', 'var(--warn)'); return }
             toast('Tracing ' + tr(nd?.name || nid, 20) + '…', 'var(--accent)');
             window.jbCefQuery(JSON.stringify({ type: 'trace', id: nid }));
         }
-        let _hovT = null;
+        let _hovT = null, _neyeHideT = null, _neyeNodeId = null;
+
+        function _positionEye(nt, nodeId) {
+            const pos = nt.canvasToDOM(nt.getPosition(nodeId));
+            const rc  = $gc.getBoundingClientRect();
+            // Place the eye button top-right of the node bounding box
+            const bb  = nt.getBoundingBox(nodeId);
+            const tl  = nt.canvasToDOM({ x: bb.right, y: bb.top });
+            $neye.style.left = (tl.x - 11) + 'px';
+            $neye.style.top  = (tl.y -  5) + 'px';
+        }
+
+        function showEyeBtn(nt, nodeId) {
+            clearTimeout(_neyeHideT);
+            _neyeNodeId = nodeId;
+            const isHidden = _hiddenNodes.has(nodeId);
+            $neye.className = isHidden ? 'unhide' : '';
+            $neye.title     = isHidden ? 'Unhide node' : 'Hide node';
+            // eye-off SVG when hidden
+            $neye.innerHTML = isHidden
+                ? `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l12 12M6.5 6.6A2 2 0 0 0 9.4 9.5M4.2 4.3C2.8 5.3 1.7 6.6 1 8c1.5 3 4 5 7 5 1.2 0 2.3-.3 3.3-.8M7 3.1C7.3 3 7.7 3 8 3c3 0 5.5 2 7 5a12 12 0 0 1-1.7 2.7"/></svg>`
+                : `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>`;
+            _positionEye(nt, nodeId);
+            $neye.style.display = 'flex';
+        }
+
+        function hideEyeBtn(immediate) {
+            if (immediate) { $neye.style.display = 'none'; _neyeNodeId = null; return; }
+            clearTimeout(_neyeHideT);
+            _neyeHideT = setTimeout(() => { $neye.style.display = 'none'; _neyeNodeId = null; }, 300);
+        }
+
+        let _cascadeSet = new Set(); // nodes auto-hidden by cascade (vs explicitly hidden by user)
+
+        // Apply ghost style to a single node
+        function _hideOne(nodeId) {
+            if (_hiddenNodes.has(nodeId)) return;
+            _hiddenNodes.add(nodeId);
+            const current = nds.get(nodeId);
+            if (current && !_hiddenNodeSpecs.has(nodeId)) _hiddenNodeSpecs.set(nodeId, { ...current });
+            const nd = nodeMap[nodeId];
+            const c  = gc(nd?.type, nd?.depth, nd?.isLibrary);
+            nds.update({
+                id: nodeId, label: '',
+                color: { background: 'rgba(30,30,40,0.25)', border: 'rgba(100,100,120,0.2)', highlight: { background: 'rgba(30,30,40,0.35)', border: c }, hover: { background: 'rgba(30,30,40,0.3)', border: 'rgba(100,100,120,0.3)' } },
+                opacity: 0.25
+            });
+            const hide = [];
+            eds.forEach(e => { if (e.from === nodeId || e.to === nodeId) hide.push({ id: e.id, hidden: true, _hidden: true }); });
+            if (hide.length) eds.update(hide);
+        }
+
+        // Unhide a single node
+        function _unhideOne(nodeId) {
+            if (!_hiddenNodes.has(nodeId)) return;
+            _hiddenNodes.delete(nodeId);
+            const orig = _hiddenNodeSpecs.get(nodeId);
+            _hiddenNodeSpecs.delete(nodeId);
+            if (orig) {
+                nds.update(orig);
+            } else {
+                const nd = D?.nodes?.find(n => n.id === nodeId);
+                if (nd) {
+                    const nc = {}; D.nodes.forEach(n => { nc[n.name] = (nc[n.name] || 0) + 1; });
+                    nds.update(mkN(nd, nc[nd.name] > 1));
+                }
+            }
+            const restore = [];
+            eds.forEach(e => {
+                if ((e.from === nodeId || e.to === nodeId) && e._hidden) {
+                    const other = e.from === nodeId ? e.to : e.from;
+                    if (!_hiddenNodes.has(other)) restore.push({ id: e.id, hidden: false, _hidden: false });
+                }
+            });
+            if (restore.length) eds.update(restore);
+        }
+
+        // BFS from ROOT through visible nodes — returns set of reachable nodeIds
+        function _reachableFromRoot() {
+            const root = D?.nodes?.find(n => n.type === 'ROOT');
+            const reached = new Set();
+            if (!root || !eds || _hiddenNodes.has(root.id)) return reached;
+            const queue = [root.id];
+            reached.add(root.id);
+            while (queue.length) {
+                const nid = queue.shift();
+                eds.forEach(e => {
+                    let nb = null;
+                    if (e.from === nid) nb = e.to;
+                    else if (e.to === nid) nb = e.from;
+                    if (nb && !reached.has(nb) && !_hiddenNodes.has(nb)) {
+                        reached.add(nb);
+                        queue.push(nb);
+                    }
+                });
+            }
+            return reached;
+        }
+
+        // Sync cascade: hide nodes disconnected from ROOT, unhide cascade nodes that reconnected
+        function _syncCascade() {
+            if (!nds || !eds || !D) return;
+            const reachable = _reachableFromRoot();
+
+            // Hide unreachable visible nodes
+            nds.forEach(n => {
+                if (!_hiddenNodes.has(n.id) && !reachable.has(n.id)) {
+                    _cascadeSet.add(n.id);
+                    _hideOne(n.id);
+                }
+            });
+
+            // Unhide cascade-hidden nodes that are now reachable again
+            const revive = [];
+            _cascadeSet.forEach(nid => { if (reachable.has(nid)) revive.push(nid); });
+            for (const nid of revive) {
+                _cascadeSet.delete(nid);
+                _unhideOne(nid);
+            }
+        }
+
+        // ── Hidden Nodes Panel ──
+        const $hnp = $('hnp'), $hnpBody = $('hnp-body'), $hnpCnt = $('hnp-cnt');
+        let _hnpMin = false;
+
+        $('hnp-hdr').addEventListener('click', () => {
+            _hnpMin = !_hnpMin;
+            $hnp.classList.toggle('min', _hnpMin);
+        });
+
+        const _iEyeOpen = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>';
+
+        function _updateHiddenPanel() {
+            const count = _hiddenNodes.size;
+            $hnpCnt.textContent = count;
+            // Auto-show when hidden nodes exist, auto-hide when none
+            $hnp.classList.toggle('v', count > 0 && cv === 'graph');
+            if (count === 0) { $hnpBody.innerHTML = ''; return; }
+
+            $hnpBody.innerHTML = '';
+            _hiddenNodes.forEach(nodeId => {
+                const nd = nodeMap[nodeId];
+                if (!nd) return;
+                const c = gc(nd.type, nd.depth, nd.isLibrary);
+                const row = document.createElement('div');
+                row.className = 'hnp-row';
+                row.innerHTML = `<span class="hnp-dot" style="background:${c}"></span><span class="hnp-name">${esc(nd.name || 'anonymous')}</span><button class="hnp-show" title="Show node">${_iEyeOpen}</button>`;
+                row.querySelector('.hnp-show').addEventListener('click', e => {
+                    e.stopPropagation();
+                    toggleHideNode(nodeId);
+                });
+                $hnpBody.appendChild(row);
+            });
+        }
+
+        function toggleHideNode(nodeId) {
+            if (!nds || !eds) return;
+            if (_hiddenNodes.has(nodeId)) {
+                const wasCascade = _cascadeSet.has(nodeId);
+                _cascadeSet.delete(nodeId);
+                _unhideOne(nodeId);
+                if (!wasCascade) {
+                    // Explicitly hidden node — re-sync to revive its cascade children
+                    _syncCascade();
+                }
+                toast('Node shown', 'var(--accent)');
+            } else {
+                _hideOne(nodeId);
+                _syncCascade(); // cascade-hide any nodes now disconnected from ROOT
+                if (sel === nodeId) { sel = null; updateShortcuts(); }
+                toast('Node hidden — hover to unhide', 'var(--tx4)');
+            }
+            _updateHiddenPanel();
+            scheduleMinimap();
+        }
+
+        // Eye button click
+        $neye.addEventListener('mousedown', e => { e.stopPropagation(); e.preventDefault(); });
+        $neye.addEventListener('click', e => {
+            e.stopPropagation();
+            if (_neyeNodeId) { toggleHideNode(_neyeNodeId); showEyeBtn(net, _neyeNodeId); }
+        });
+        $neye.addEventListener('mouseenter', () => clearTimeout(_neyeHideT));
+        $neye.addEventListener('mouseleave', () => hideEyeBtn(false));
+
         function onHov(nt, ds) {
             return p => {
                 if (drag) return;
@@ -1649,11 +2176,13 @@
                 _hovT = setTimeout(() => {
                     const nd = ds.get(p.node);
                     if (nd?._data) { const pos = nt.canvasToDOM(nt.getPosition(p.node)); const rc = nt.body.container.getBoundingClientRect(); showTip({ clientX: rc.left + pos.x, clientY: rc.top + pos.y }, nd._data) }
+                    showEyeBtn(nt, p.node);
                     const c = new Set(nt.getConnectedNodes(p.node)); c.add(p.node);
-                    // P3.1: only update nodes that actually change (skip already-correct ones)
+                    // only update nodes that actually change opacity
                     _dimmedNodes.clear();
                     const up = [];
                     ds.forEach(n => {
+                        if (_hiddenNodes.has(n.id)) return; // skip explicitly hidden nodes
                         if (!c.has(n.id)) {
                             _dimmedNodes.add(n.id);
                             if (n.opacity !== 0.12) up.push({ id: n.id, opacity: 0.12 });
@@ -1668,7 +2197,7 @@
         function onBlr(ds) {
             return () => {
                 clearTimeout(_hovT); hideTip();
-                // P3.1: only reset nodes that were dimmed — skip full dataset scan
+                hideEyeBtn(false);
                 if (ds && _dimmedNodes.size > 0) {
                     const up = [..._dimmedNodes].map(id => ({ id, opacity: undefined }));
                     _dimmedNodes.clear();
@@ -1684,6 +2213,10 @@
             $es.classList.add('h'); $ld.classList.remove('h');
             const root = D.nodes.find(n => n.type === 'ROOT');
             if (root) { $bcn.textContent = root.name || 'anonymous'; sel = root.id; }
+            if (cv === 'graph') {
+                $mmc.classList.remove('h');
+                if (!mmCtx) initMinimap();
+            }
             _buildNet();
         }
 
@@ -1694,6 +2227,33 @@
             const focusId = sel;
             $es.classList.add('h'); $ld.classList.remove('h');
             _buildNet(focusId);
+        }
+
+        // Phase 1: Ghost node appearance only (before layout — keeps edges so layout positions correctly)
+        function _reapplyHiddenAppearance() {
+            if (!_hiddenNodes.size || !nds) return;
+            _hiddenNodes.forEach(nodeId => {
+                if (!nds.get(nodeId)) return;
+                if (!_hiddenNodeSpecs.has(nodeId)) {
+                    const current = nds.get(nodeId);
+                    if (current) _hiddenNodeSpecs.set(nodeId, { ...current });
+                }
+                const nd = nodeMap[nodeId];
+                const c  = gc(nd?.type, nd?.depth, nd?.isLibrary);
+                nds.update({ id: nodeId, label: '', color: { background: 'rgba(30,30,40,0.25)', border: 'rgba(100,100,120,0.2)', highlight: { background: 'rgba(30,30,40,0.35)', border: c }, hover: { background: 'rgba(30,30,40,0.3)', border: 'rgba(100,100,120,0.3)' } }, opacity: 0.25 });
+            });
+        }
+
+        // Phase 2: Hide edges connected to hidden nodes (after layout has computed positions)
+        function _hideEdgesForHidden() {
+            if (!_hiddenNodes.size || !eds) return;
+            const hide = [];
+            eds.forEach(e => {
+                if ((_hiddenNodes.has(e.from) || _hiddenNodes.has(e.to)) && !e._hidden) {
+                    hide.push({ id: e.id, hidden: true, _hidden: true });
+                }
+            });
+            if (hide.length) eds.update(hide);
         }
 
         // Rebuild network from D with current filters, perfectly spacing all nodes to avoid overlap
@@ -1711,6 +2271,10 @@
 
             // Apply search filter
             if (sf) { const up = []; nds.forEach(n => { if (!isVis(n._data)) up.push({ id: n.id, hidden: true }) }); if (up.length) nds.update(up) }
+            // Phase 1: ghost hidden nodes but KEEP edges (so layout positions them correctly)
+            _reapplyHiddenAppearance();
+            _syncCascade();
+            _updateHiddenPanel();
             const options = {
                 nodes: {
                     shape: 'box',
@@ -1721,7 +2285,7 @@
                     shadow: { enabled: !perfMode, color: 'rgba(0,0,0,0.3)', size: 6, x: 0, y: 2 }
                 },
                 edges: {
-                    smooth: !perfMode ? { enabled: true, type: 'cubicBezier', forceDirection: 'horizontal', roundness: .35 } : false,
+                    smooth: false,
                     color: { color: '#3e3f58', highlight: '#89b4fa', hover: '#7f849c' },
                     width: 1,
                     selectionWidth: 2,
@@ -1730,17 +2294,18 @@
                 physics: { enabled: false },
                 interaction: { hover: true, tooltipDelay: 99999, zoomView: false, dragView: false, dragNodes: !panMode, multiselect: false, selectConnectedEdges: true, navigationButtons: false, keyboard: { enabled: false } },
                 layout: {
+                    improvedLayout: true,
                     hierarchical: {
                         enabled: true,
                         direction: 'LR',
-                        sortMethod: 'directed',
-                        levelSeparation: 200,
-                        nodeSpacing: isLarge ? 60 : 85,
-                        treeSpacing: isLarge ? 80 : 120,
+                        sortMethod: 'hubsize',
+                        levelSeparation: isLarge ? 180 : 220,
+                        nodeSpacing: isLarge ? 80 : 110,
+                        treeSpacing: isLarge ? 120 : 160,
                         parentCentralization: true,
-                        blockShifting: !isLarge,
-                        edgeMinimization: !isLarge,
-                        shakeTowards: 'roots'
+                        blockShifting: true,
+                        edgeMinimization: true,
+                        shakeTowards: 'leaves'
                     }
                 }
             };
@@ -1750,7 +2315,8 @@
                 net = new vis.Network($gc, { nodes: nds, edges: eds }, options);
                 net.on('click', onClk); net.on('doubleClick', onDbl);
                 net.on('hoverNode', onHov(net, nds)); net.on('blurNode', onBlr(nds));
-                net.on('dragStart', () => { drag = true; hideTip() }); net.on('dragEnd', () => { drag = false });
+                net.on('dragStart', () => { drag = true; hideTip(); hideEyeBtn(true); }); net.on('dragEnd', () => { drag = false });
+                net.on('afterDrawing', scheduleMinimap);
                 net.on('selectNode', () => { selCount = net.getSelectedNodes().length; updateShortcuts() });
                 net.on('deselectNode', () => { selCount = net.getSelectedNodes().length; updateShortcuts() });
             } else {
@@ -1764,23 +2330,24 @@
                     layout: { hierarchical: { enabled: false } },
                     interaction: { dragNodes: !panMode }
                 });
+                // Phase 2: NOW hide edges — layout already computed correct positions
+                _hideEdgesForHidden();
                 $gc.classList.remove('loading');
             });
 
             _initBoxSel();
-            const wait = perfMode ? 20 : 50;
             setTimeout(() => {
                 $ld.classList.add('h');
                 if (net) {
                     if (focusId && nds.get(focusId)) {
                         net.selectNodes([focusId]);
-                        net.focus(focusId, perfMode ? {} : { animation: { duration: 250 } });
+                        net.focus(focusId, {});
                     } else {
-                        net.fit(perfMode ? {} : { animation: { duration: 250 } });
+                        net.fit({});
                     }
-                    setTimeout(updateZoomLabel, perfMode ? 10 : 50);
+                    setTimeout(updateZoomLabel, 20);
                 }
-            }, wait);
+            }, 20);
             if (cv === 'graph') $zc.classList.remove('h');
             uLeg(); uSt(); updateShortcuts();
             if (cv === 'tree') rTree();
@@ -1806,11 +2373,27 @@
             const nm = {}; for (const n of D.nodes) nm[n.id] = n;
             const cm = {}, pm = {};
             for (const e of D.edges) { (cm[e.from] = cm[e.from] || []).push(e.to); (pm[e.to] = pm[e.to] || []).push(e.from) }
+
+            // Sticky header
             const hb = document.createElement('div'); hb.className = 'thb';
-            hb.innerHTML = `<div class="thb-i">${_iFn}</div><div class="thb-t">${esc(root.name || 'anonymous')}</div><div class="thb-s">${root.fileName || ''}</div><div class="thb-c">${D.nodes.length} nodes</div>`;
+            const visCount = D.nodes.filter(n => !sf || mS(n)).length;
+            hb.innerHTML = `<div class="thb-i">${_iFn}</div><div class="thb-t">${esc(root.name || 'anonymous')}</div><div class="thb-s">${esc(root.fileName || '')}</div><div class="thb-c">${visCount} node${visCount !== 1 ? 's' : ''}${sf ? ' matched' : ''}</div>`;
             $tc.appendChild(hb);
+
+            // If filter active and root doesn't match, still show it but check children
             $tc.appendChild(mkTR(root, 0, false, false, false, []));
             rSub($tc, root.id, nm, cm, pm, 0, new Set([root.id]), []);
+
+            // Empty filter result state
+            if (sf && visCount <= 1) {
+                const em = document.createElement('div'); em.className = 'tree-empty';
+                em.textContent = 'No nodes match "' + sf + '"';
+                $tc.appendChild(em);
+            }
+
+            // Scroll selected row into view
+            const selRow = $tc.querySelector('.tr.sel');
+            if (selRow) selRow.scrollIntoView({ block: 'nearest' });
         }
 
         function rSub(ct, nid, nm, cm, pm, dep, vis, cont) {
@@ -1852,10 +2435,20 @@
 
         // SVG icon helpers for tree view
         const _iChev = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,4 10,8 6,12"/></svg>';
-        const _iFn = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13c0-3.5 1.5-5 4-5s4-1.5 4-5"/><line x1="2" y1="8" x2="8" y2="8"/></svg>';
-        const _iFile = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2h5l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"/><polyline points="9,2 9,6 13,6"/></svg>';
-        const _iArr = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>';
+        const _iFn   = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13c0-3.5 1.5-5 4-5s4-1.5 4-5"/><line x1="2" y1="8" x2="8" y2="8"/></svg>';
+        const _iOut  = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="3" x2="8" y2="11"/><polyline points="5,8 8,11 11,8"/><circle cx="8" cy="13" r="1.2" fill="currentColor" stroke="none"/></svg>';
+        const _iIn   = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="5" x2="8" y2="13"/><polyline points="5,8 8,5 11,8"/><circle cx="8" cy="3" r="1.2" fill="currentColor" stroke="none"/></svg>';
+        const _iLib  = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="10" height="10" rx="1"/><line x1="6" y1="3" x2="6" y2="13"/></svg>';
+        const _iArr  = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>';
         const _iArrUp = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 8h10M7 4l-4 4 4 4"/></svg>';
+
+        function _nodeIcon(n) {
+            if (n.isLibrary) return _iLib;
+            if (n.type === 'ROOT') return _iFn;
+            if (n.type === 'OUTBOUND') return _iOut;
+            if (n.type === 'INBOUND') return _iIn;
+            return _iFn;
+        }
 
         function mkSL(t, c, cnt, dep, cont, isCall) {
             const el = document.createElement('div'); el.className = 'tsl';
@@ -1891,11 +2484,11 @@
 
             row.innerHTML = guides + `
         <span class="trc ${cc}">${_iChev}</span>
-        <span class="tri-c" style="color:${c}">${n.type === 'ROOT' ? _iFn : _iFn}</span>
+        <span class="tri-c" style="color:${c}">${_nodeIcon(n)}</span>
         <span class="trn">${esc(n.name || 'anon')}</span>
         ${n.fileName ? `<span class="trf">${esc(n.fileName)}</span>` : ''}
         <div class="trr">
-            ${n.loc > 0 ? `<span class="trloc">${n.loc} lines</span>` : ''}
+            ${n.loc > 0 ? `<span class="trloc">${n.loc}L</span>` : ''}
         </div>
     `;
 
@@ -1946,7 +2539,15 @@
             $gc.classList.toggle('off', v !== 'graph'); $tc.classList.toggle('on', v === 'tree');
             $leg.classList.toggle('h', v === 'tree');
             $zc.classList.toggle('h', v !== 'graph');
-            $bfit.style.display = v === 'tree' ? 'none' : '';
+            // Minimap: only in graph view, and only when there are nodes
+            if (v === 'graph' && D && D.nodes && D.nodes.length > 0) {
+                $mmc.classList.remove('h');
+                if (!mmCtx) initMinimap();
+            } else {
+                $mmc.classList.add('h');
+            }
+            // Hidden nodes panel: only in graph view
+            $hnp.classList.toggle('v', v === 'graph' && _hiddenNodes.size > 0);
             if (v === 'tree' && D) rTree();
             if (v === 'graph' && net) { setTimeout(() => { net.redraw(); updateZoomLabel() }, 30) }
             uLeg(); uSt(); updateShortcuts();
@@ -1961,13 +2562,58 @@
             if (!confirm('Clear graph data and history?')) return;
             if (net) { net.destroy(); net = null; }
             D = null; nds = null; eds = null; sel = null; history.length = 0; historyIndex = -1;
+            _hiddenNodes.clear(); _dimmedNodes.clear(); _cascadeSet.clear(); hideEyeBtn(true);
+            $hnp.classList.remove('v'); $hnpBody.innerHTML = ''; $hnpCnt.textContent = '0';
             $gc.innerHTML = ''; $tc.innerHTML = '';
             $es.classList.remove('h'); $zc.classList.add('h'); $ld.classList.add('h');
+            $mmc.classList.add('h');
             $bcn.textContent = 'No function selected';
             if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'restart' }));
             toast('Memory cleared', 'var(--accent)');
         }
-        $bfit.addEventListener('click', () => doFit());
+        // ── Settings state ──
+        let _sOut = 3, _sIn = 2;
+
+        function _sendDepth() {
+            if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'set_depth', outbound: _sOut, inbound: _sIn }));
+        }
+
+        // Settings modal open/close
+        $bset.addEventListener('click', () => $sOy.classList.add('s'));
+        $sCl.addEventListener('click',  () => $sOy.classList.remove('s'));
+        $sOy.addEventListener('click',  e => { if (e.target === $sOy) $sOy.classList.remove('s'); });
+
+        // Track segment updater
+        function _updateTrack(target, val) {
+            const bars = document.getElementById(target === 'dout' ? 'doutBars' : 'dinBars');
+            if (!bars) return;
+            bars.querySelectorAll('.sdep-seg').forEach((seg, i) => seg.classList.toggle('on', i < val));
+        }
+        // Init tracks to match default values
+        _updateTrack('dout', _sOut);
+        _updateTrack('din', _sIn);
+
+        // Stepper buttons (+ / −)
+        document.querySelectorAll('.stepb').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const dir    = +btn.dataset.dir;
+                const target = btn.dataset.target;
+                if (target === 'dout') {
+                    _sOut = Math.max(1, Math.min(5, _sOut + dir));
+                    $doutV.textContent = _sOut;
+                } else {
+                    _sIn  = Math.max(1, Math.min(5, _sIn  + dir));
+                    $dinV.textContent  = _sIn;
+                }
+                const v = target === 'dout' ? _sOut : _sIn;
+                // Update track and disabled state
+                _updateTrack(target, v);
+                btn.closest('.sstep').querySelectorAll('.stepb').forEach(b => {
+                    b.disabled = (+b.dataset.dir === -1 && v <= 1) || (+b.dataset.dir === 1 && v >= 5);
+                });
+                _sendDepth();
+            });
+        });
 
         // ── Tool Mode ──
         function setPanMode(on, temp) {
@@ -1990,26 +2636,102 @@
         $bpan.addEventListener('click', () => setPanMode(true));
         $bsel.addEventListener('click', () => setPanMode(false));
 
+        // ── Minimap ──
+        function initMinimap() {
+            const dpr = window.devicePixelRatio || 1;
+            const W = $mmcv.clientWidth, H = $mmcv.clientHeight;
+            $mmcv.width  = W * dpr;
+            $mmcv.height = H * dpr;
+            mmCtx = $mmcv.getContext('2d');
+            mmCtx.scale(dpr, dpr);
+        }
+
+        function scheduleMinimap() {
+            if (!_mmRaf) _mmRaf = requestAnimationFrame(_mmFlush);
+        }
+
+        function _mmFlush() {
+            _mmRaf = 0;
+            if (!net || !mmCtx || $mmc.classList.contains('h')) return;
+
+            const positions = net.getPositions();
+            const ids = Object.keys(positions);
+            if (!ids.length) return;
+
+            // bounding box of all nodes
+            let x0=Infinity, x1=-Infinity, y0=Infinity, y1=-Infinity;
+            for (const id of ids) {
+                const p = positions[id];
+                if (p.x < x0) x0=p.x; if (p.x > x1) x1=p.x;
+                if (p.y < y0) y0=p.y; if (p.y > y1) y1=p.y;
+            }
+            const pad = 60;
+            x0-=pad; x1+=pad; y0-=pad; y1+=pad;
+
+            const MW = $mmcv.clientWidth, MH = $mmcv.clientHeight;
+            const scl = Math.min(MW/(x1-x0), MH/(y1-y0));
+            const ox  = (MW - (x1-x0)*scl)/2 - x0*scl;
+            const oy  = (MH - (y1-y0)*scl)/2 - y0*scl;
+            _mmScl=scl; _mmOx=ox; _mmOy=oy;
+
+            const ctx = mmCtx;
+            ctx.clearRect(0, 0, MW, MH);
+
+            // node dots — colors match gc() in the main graph
+            const localNodeMap = new Map(D.nodes.map(n => [n.id, n]));
+            for (const id of ids) {
+                const p  = positions[id];
+                const nd = localNodeMap.get(id);
+                const mx = p.x*scl+ox, my = p.y*scl+oy;
+                const r  = id === sel ? 4 : 2;
+                ctx.fillStyle = nd?.isLibrary      ? '#6c7086' :
+                                nd?.type==='ROOT'    ? '#f5c2e7' :
+                                nd?.type==='INBOUND' ? '#a6e3a1' :
+                                nd?.type==='OUTBOUND'? '#89b4fa' : '#cba6f7';
+                ctx.beginPath(); ctx.arc(mx, my, r, 0, 6.283); ctx.fill();
+            }
+
+            // viewport rect
+            const vp  = net.getViewPosition();
+            const vs  = net.getScale();
+            const vrW = Math.min(($gc.clientWidth  / vs) * scl, MW);
+            const vrH = Math.min(($gc.clientHeight / vs) * scl, MH);
+            const vrL = Math.max(0, vp.x*scl+ox - vrW/2);
+            const vrT = Math.max(0, vp.y*scl+oy - vrH/2);
+
+            // VS Code-style: dim everything outside the viewport
+            ctx.fillStyle = 'rgba(0,0,0,0.42)';
+            ctx.fillRect(0,       0,    vrL,           MH);           // left strip
+            ctx.fillRect(vrL+vrW, 0,    MW-vrL-vrW,    MH);           // right strip
+            ctx.fillRect(vrL,     0,    vrW,           vrT);           // top strip
+            ctx.fillRect(vrL,     vrT+vrH, vrW,        MH-vrT-vrH);   // bottom strip
+
+            // viewport border
+            ctx.strokeStyle = 'rgba(137,180,250,0.65)';
+            ctx.lineWidth   = 1;
+            ctx.strokeRect(vrL + 0.5, vrT + 0.5, vrW - 1, vrH - 1);
+        }
+
         // ── Zoom Controls ──
-        function doFit() { if (net) net.fit(perfMode ? {} : { animation: { duration: 300, easingFunction: 'easeInOutQuad' } }) }
+        function doFit() { if (net) net.fit({}) }
         function updateZoomLabel() { if (!net) return; const s = net.getScale(); $zlv.textContent = Math.round(s * 100) + '%' }
         function doZoom(dir) {
             if (!net) return;
             const s = net.getScale();
             const ns = dir > 0 ? s * 1.3 : s / 1.3;
-            net.moveTo({ scale: Math.max(.05, Math.min(5, ns)), animation: perfMode ? false : { duration: 200, easingFunction: 'easeInOutQuad' } });
-            setTimeout(updateZoomLabel, perfMode ? 20 : 220);
+            net.moveTo({ scale: Math.max(.05, Math.min(5, ns)) });
+            setTimeout(updateZoomLabel, 20);
         }
         $bzi.addEventListener('click', () => doZoom(1));
         $bzo.addEventListener('click', () => doZoom(-1));
-        $bzf.addEventListener('click', () => { doFit(); setTimeout(updateZoomLabel, perfMode ? 20 : 320) });
+        $bzf.addEventListener('click', () => { doFit(); setTimeout(updateZoomLabel, 20) });
         $bzc.addEventListener('click', () => centerOnSel());
 
         function centerOnSel() {
             if (!net || !sel) return;
             const pos = net.getPositions([sel])[sel];
             if (!pos) return;
-            net.moveTo({ position: pos, scale: net.getScale(), animation: perfMode ? false : { duration: 300, easingFunction: 'easeInOutQuad' } });
+            net.moveTo({ position: pos, scale: net.getScale() });
         }
 
         // ── Keyboard ──
@@ -2043,6 +2765,18 @@
             // History (Alt+Arrow)
             if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); $bbk.click(); return }
             if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); $bfw.click(); return }
+
+            // Minimap arrow-key pan (when hovering minimap)
+            if (cv === 'graph' && _mmHov && e.key.startsWith('Arrow') && !e.altKey) {
+                e.preventDefault();
+                if (!net) return;
+                const step = 120 / (net.getScale() || 1);
+                const pos  = net.getViewPosition();
+                const dx   = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+                const dy   = e.key === 'ArrowUp'   ? -step : e.key === 'ArrowDown'  ? step : 0;
+                net.moveTo({ position: { x: pos.x + dx, y: pos.y + dy } });
+                return;
+            }
 
             // Graph Keyboard Navigation
             if (cv === 'graph' && sel && e.key.startsWith('Arrow') && !e.altKey && !e.metaKey && !e.ctrlKey) {
@@ -2098,7 +2832,7 @@
                 // C = center on selected node
                 if (e.key === 'c' || e.key === 'C') { centerOnSel(); return }
                 // F = fit all
-                if (e.key === 'F' || e.key === 'f') { doFit(); setTimeout(updateZoomLabel, perfMode ? 20 : 320); return }
+                if (e.key === 'F' || e.key === 'f') { doFit(); setTimeout(updateZoomLabel, 20); return }
                 // Zoom +/-
                 if (e.key === '=' || e.key === '+') { doZoom(1); return }
                 if (e.key === '-') { doZoom(-1); return }
@@ -2113,22 +2847,92 @@
             }
         });
 
-        // ── Zoom (scroll wheel + trackpad) ──
+        // ── Zoom (scroll + pinch) — Figma/Excalidraw style, rAF-batched ──
+        // Accumulate all deltas between animation frames → single moveTo per frame.
+        // Two pinch paths:
+        //   1) wheel + ctrlKey=true  — standard Chromium / JCEF pinch encoding
+        //   2) gesturechange         — WebKit/older-JCEF native gesture fallback
+        let _zF = 1, _zMx = 0, _zMy = 0, _zRaf = 0;
+        // Cache bounding rect so event handlers never trigger layout reflow
+        let _gcRect = $gc.getBoundingClientRect();
+        window.addEventListener('resize', () => { _gcRect = $gc.getBoundingClientRect(); }, { passive: true });
+
+        function _flushZoom() {
+            _zRaf = 0;
+            if (!net || Math.abs(_zF - 1) < 0.0005) { _zF = 1; return; }
+            const s = net.getScale(), pos = net.getViewPosition();
+            const W = $gc.clientWidth, H = $gc.clientHeight;
+            const ns = Math.max(0.05, Math.min(5, s * _zF));
+            const cx = pos.x + (_zMx - W / 2) / s;
+            const cy = pos.y + (_zMy - H / 2) / s;
+            net.moveTo({ position: { x: cx - (_zMx - W / 2) / ns, y: cy - (_zMy - H / 2) / ns }, scale: ns });
+            _zF = 1;
+            updateZoomLabel();
+        }
+
+        function _zoomAt(mx, my, factor) {
+            _zMx = mx; _zMy = my;
+            _zF *= factor;
+            if (!_zRaf) _zRaf = requestAnimationFrame(_flushZoom);
+        }
+
+        // Path 1: wheel events — trackpad scroll AND Chromium-encoded pinch (ctrlKey)
         $gc.addEventListener('wheel', e => {
             e.preventDefault();
             if (!net || cv !== 'graph') return;
-            const s = net.getScale(), pos = net.getViewPosition();
-            const rect = $gc.getBoundingClientRect();
-            const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-            const W = $gc.clientWidth, H = $gc.clientHeight;
-            const factor = e.deltaMode === 0
-                ? Math.pow(0.996, e.deltaY)   // trackpad: smooth proportional zoom
-                : Math.pow(0.85, e.deltaY / 3); // mouse wheel: ~15% per notch
-            const ns = Math.max(.05, Math.min(5, s * factor));
-            const cx = pos.x + (mx - W / 2) / s, cy = pos.y + (my - H / 2) / s;
-            net.moveTo({ position: { x: cx - (mx - W / 2) / ns, y: cy - (my - H / 2) / ns }, scale: ns });
-            updateZoomLabel();
+            const mx = e.clientX - _gcRect.left, my = e.clientY - _gcRect.top;
+            if (e.ctrlKey) {
+                // Pinch — Chromium/JCEF encodes macOS pinch as ctrlKey+wheel
+                // deltaY is small (±1–10); use stronger base for responsive feel
+                _zoomAt(mx, my, Math.pow(0.97, e.deltaY));
+            } else if (e.deltaMode === 0) {
+                // Trackpad two-finger scroll; drop sub-pixel momentum tail
+                if (Math.abs(e.deltaY) < 1) return;
+                _zoomAt(mx, my, Math.pow(0.996, e.deltaY));
+            } else {
+                // Physical mouse wheel — discrete notches (~15% per click)
+                _zoomAt(mx, my, Math.pow(0.85, e.deltaY / 3));
+            }
         }, { passive: false });
+
+        // Path 2: native gesture events — WebKit / older JCEF pinch fallback
+        // gesturechange.scale is cumulative from gesturestart, so track delta manually
+        let _gestScale = 1;
+        $gc.addEventListener('gesturestart',  e => { e.preventDefault(); _gestScale = 1; }, { passive: false });
+        $gc.addEventListener('gesturechange', e => {
+            e.preventDefault();
+            if (!net || cv !== 'graph' || e.scale === 0) return;
+            const factor = e.scale / _gestScale;
+            _gestScale = e.scale;
+            _zoomAt(e.clientX - _gcRect.left, e.clientY - _gcRect.top, factor);
+        }, { passive: false });
+        $gc.addEventListener('gestureend', e => { e.preventDefault(); _gestScale = 1; }, { passive: false });
+
+        // ── Minimap interaction ──
+        let _mmDragging = false;
+
+        function _mmPanTo(e) {
+            if (!net) return;
+            const r  = $mmcv.getBoundingClientRect();
+            const gx = (e.clientX - r.left - _mmOx) / _mmScl;
+            const gy = (e.clientY - r.top  - _mmOy) / _mmScl;
+            net.moveTo({ position: { x: gx, y: gy } });
+        }
+
+        $mmcv.addEventListener('mousedown', e => {
+            e.preventDefault();
+            _mmDragging = true;
+            _mmPanTo(e);
+        });
+        document.addEventListener('mousemove', e => {
+            if (!_mmDragging) return;
+            _mmPanTo(e);
+        });
+        document.addEventListener('mouseup', () => { _mmDragging = false; });
+
+        // Track hover so arrow keys know to pan instead of navigate nodes
+        $mmc.addEventListener('mouseenter', () => { _mmHov = true;  });
+        $mmc.addEventListener('mouseleave', () => { _mmHov = false; });
 
         // ── Box / Marquee Selection ──
         const $selbox = $('selbox');
@@ -2222,6 +3026,7 @@
             if (!net || cv !== 'graph') return;
             if (e.button === 1 || e.button === 2) { // middle or right click
                 e.preventDefault();
+                hideTip(); hideEyeBtn(true);
                 _pan = { x: e.clientX, y: e.clientY, pos: net.getViewPosition(), scale: net.getScale() };
                 $gc.style.cursor = 'grabbing';
                 document.addEventListener('pointermove', _panMove);

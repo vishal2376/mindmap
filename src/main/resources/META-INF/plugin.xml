@@ -51,14 +51,19 @@
     <change-notes><![CDATA[
     <h3>1.0.2</h3>
     <ul>
-        <li><b>Performance First</b> — Always-on high-performance rendering (disabled shadows/smoothing)</li>
-        <li><b>Restart & Clear</b> — New button/shortcut (R) to wipe graph data and free memory</li>
-        <li><b>Clean Logic</b> — Library/SDK code is now permanently excluded for maximum clarity and speed</li>
+        <li><b>Live Mini-Map</b> — VS Code-style minimap (top-left) with colored node dots, viewport rectangle, click-to-pan, and drag-to-pan navigation</li>
+        <li><b>Hide/Unhide Nodes</b> — Hover any node to reveal an eye button; hidden nodes cascade-hide disconnected children and preserve their layout position across retraces</li>
+        <li><b>Hidden Nodes Panel</b> — Bottom-left panel auto-appears when nodes are hidden; lists all hidden nodes with one-click unhide for easy access</li>
+        <li><b>Settings Modal</b> — Gear button opens a redesigned settings panel with outbound/inbound depth controls, visual depth track indicators, and clear descriptions</li>
+        <li><b>Configurable Depth</b> — Adjust outbound (1-5) and inbound (1-5) trace depth from the settings modal; takes effect on next trace</li>
+        <li><b>Abstract Function Tracing</b> — Traces through abstract/interface functions to their concrete implementations (up to 3)</li>
+        <li><b>Figma-style Zoom</b> — Smooth pinch-to-zoom and scroll-zoom with requestAnimationFrame batching for 60fps performance</li>
+        <li><b>Straight-Line Edges</b> — Replaced cubic bezier curves with straight lines for maximum rendering performance</li>
+        <li><b>Crossing Minimization</b> — Improved hierarchical layout with hubsize sorting, edge minimization, block shifting, and shake-towards-leaves</li>
+        <li><b>Performance First</b> — Always-on high-performance rendering (disabled shadows/smoothing/animations)</li>
         <li><b>Figma-style Interaction</b> — Toggle between Pan (H) and Select (V) modes</li>
-        <li><b>Smart Navigation</b> — Use Arrow keys to traverse parents, children, and siblings</li>
         <li><b>Incremental Trace</b> — Double-click a node to merge its call graph into the view</li>
-        <li><b>Seamless Expansion</b> — Fixed "blue circle" UI artifacts during graph re-renders</li>
-        <li><b>Home Page Updates</b> — Instant access to the official website and OS-aware shortcut labels</li>
+        <li><b>Restart &amp; Clear</b> — New button/shortcut (R) to wipe graph data and free memory</li>
     </ul>
 
     <h3>1.0.1</h3>
