@@ -1735,6 +1735,8 @@
                     <div class="sr">History Back/Fwd<div class="skk"><kbd
                                 id="mAlt">Alt</kbd><kbd>←</kbd><span>/</span><kbd>→</kbd></div>
                     </div>
+                    <div class="sr">Restart / Clear<div class="skk"><kbd>R</kbd></div>
+                    </div>
                     <div class="sr">Show Shortcuts<div class="skk"><kbd>?</kbd></div>
                     </div>
                 </div>
@@ -1761,6 +1763,8 @@
                     </div>
                     <div class="sr">Temp pan<div class="skk"><kbd>Space</kbd><span>hold</span></div>
                     </div>
+                    <div class="sr">Minimap pan<div class="skk"><kbd>Arrow Keys</kbd><span>(hover minimap)</span></div>
+                    </div>
                 </div>
                 <div class="sg">
                     <div class="st">Interaction</div>
@@ -1769,6 +1773,10 @@
                     <div class="sr">Expand node<div class="skk"><kbd>Cmd/Ctrl+Click</kbd></div>
                     </div>
                     <div class="sr">Trace function<div class="skk"><kbd>Dbl Click</kbd></div>
+                    </div>
+                    <div class="sr">Hide/Unhide node<div class="skk"><kbd>Eye btn</kbd><span>on hover</span></div>
+                    </div>
+                    <div class="sr">Right/Mid pan<div class="skk"><kbd>Right Drag</kbd><span>or</span><kbd>Mid Drag</kbd></div>
                     </div>
                 </div>
             </div>
@@ -1935,8 +1943,11 @@
             const bg = n.isLibrary ? '#2a2a30' : (bgs[n.type] || '#252636');
             const label = isRoot ? (n.name || 'anonymous') : (n.name || 'anon');
             const fullLabel = isDup && n.fileName ? label + '\n_' + n.fileName + '_' : label;
+            // Assign hierarchical level: INBOUND on left (negative), ROOT at 0, OUTBOUND on right (positive)
+            const level = isRoot ? 0 : n.type === 'INBOUND' ? -(n.depth || 1) : (n.depth || 1);
             return {
                 id: n.id, label: fullLabel, shape: 'box',
+                level: level,
                 color: { background: bg, border: c, highlight: { background: '#363750', border: c }, hover: { background: '#2d2e44', border: c } },
                 borderWidth: isRoot ? 3 : 1.5, borderWidthSelected: 3,
                 font: { color: n.isLibrary ? '#8888a0' : '#e0e0f0', size: isRoot ? 13 : 11, face: "'JetBrains Mono','SF Mono','Fira Code',monospace", bold: { color: c, size: isRoot ? 8 : 7, face: "'JetBrains Mono',monospace", mod: 'bold' }, ital: { color: '#7f849c', size: 8, face: "'JetBrains Mono',monospace" }, multi: 'md' },
@@ -2023,7 +2034,7 @@
             if (_hiddenNodes.has(nodeId)) return;
             _hiddenNodes.add(nodeId);
             const current = nds.get(nodeId);
-            if (current && !_hiddenNodeSpecs.has(nodeId)) _hiddenNodeSpecs.set(nodeId, { ...current });
+            if (current && !_hiddenNodeSpecs.has(nodeId)) _hiddenNodeSpecs.set(nodeId, JSON.parse(JSON.stringify(current)));
             const nd = nodeMap[nodeId];
             const c  = gc(nd?.type, nd?.depth, nd?.isLibrary);
             nds.update({
@@ -2071,6 +2082,7 @@
             while (queue.length) {
                 const nid = queue.shift();
                 eds.forEach(e => {
+                    if (e._hidden) return; // skip edges already hidden
                     let nb = null;
                     if (e.from === nid) nb = e.to;
                     else if (e.to === nid) nb = e.from;
@@ -2236,7 +2248,7 @@
                 if (!nds.get(nodeId)) return;
                 if (!_hiddenNodeSpecs.has(nodeId)) {
                     const current = nds.get(nodeId);
-                    if (current) _hiddenNodeSpecs.set(nodeId, { ...current });
+                    if (current) _hiddenNodeSpecs.set(nodeId, JSON.parse(JSON.stringify(current)));
                 }
                 const nd = nodeMap[nodeId];
                 const c  = gc(nd?.type, nd?.depth, nd?.isLibrary);
@@ -2298,7 +2310,7 @@
                     hierarchical: {
                         enabled: true,
                         direction: 'LR',
-                        sortMethod: 'hubsize',
+                        sortMethod: 'directed',
                         levelSeparation: isLarge ? 180 : 220,
                         nodeSpacing: isLarge ? 80 : 110,
                         treeSpacing: isLarge ? 120 : 160,
@@ -2457,7 +2469,7 @@
             let guides = '';
             for (let i = 0; i < dep; i++) { if (cont[i]) guides += `<div class="t-guide" style="left:${18 + i * 16}px"></div>` }
             const arrow = isCall ? _iArr : _iArrUp;
-            el.innerHTML = guides + `<span style="color:${c};display:flex">${arrow}</span><span class="tsl-t" style="color:${c}">${t}</span><span class="tsl-c">${cnt}</span>`;
+            el.innerHTML = guides + `<span style="color:${c};display:flex">${arrow}</span><span class="tsl-t" style="color:${c}">${esc(t)}</span><span class="tsl-c">${cnt}</span>`;
             return el;
         }
 
@@ -2559,7 +2571,6 @@
         $bres.addEventListener('click', () => resetGraph());
 
         function resetGraph() {
-            if (!confirm('Clear graph data and history?')) return;
             if (net) { net.destroy(); net = null; }
             D = null; nds = null; eds = null; sel = null; history.length = 0; historyIndex = -1;
             _hiddenNodes.clear(); _dimmedNodes.clear(); _cascadeSet.clear(); hideEyeBtn(true);
@@ -2756,7 +2767,7 @@
             if (e.key === ' ' && !_spaceHeld && cv === 'graph') { e.preventDefault(); _spaceHeld = true; if (!panMode) { $gc.classList.add('pan-mode', 'sel-mode-temp') } return }
 
             // Search
-            if (e.key === '/' || e.key === 'f') { e.preventDefault(); if (!sOpen) { sOpen = true; $sbn.classList.add('op'); setTimeout(() => $sin.focus(), 250) } else $sin.focus(); return }
+            if (e.key === '/') { e.preventDefault(); if (!sOpen) { sOpen = true; $sbn.classList.add('op'); setTimeout(() => $sin.focus(), 250) } else $sin.focus(); return }
 
             // View switch
             if (e.key === '1') { sw('graph'); return }
@@ -2968,6 +2979,8 @@
 
             if (nodeUnder) return; // clicking a node in select mode — let vis handle it
             _bx = { x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, active: false };
+            document.removeEventListener('pointermove', _bxMove);
+            document.removeEventListener('pointerup', _bxUp);
             document.addEventListener('pointermove', _bxMove);
             document.addEventListener('pointerup', _bxUp);
         }
@@ -3029,6 +3042,8 @@
                 hideTip(); hideEyeBtn(true);
                 _pan = { x: e.clientX, y: e.clientY, pos: net.getViewPosition(), scale: net.getScale() };
                 $gc.style.cursor = 'grabbing';
+                document.removeEventListener('pointermove', _panMove);
+                document.removeEventListener('pointerup', _panUp);
                 document.addEventListener('pointermove', _panMove);
                 document.addEventListener('pointerup', _panUp);
             }
@@ -3044,6 +3059,7 @@
             document.removeEventListener('pointermove', _panMove);
             document.removeEventListener('pointerup', _panUp);
             _pan = null;
+            $gc.style.cursor = '';
             $gc.classList.remove('panning');
         }
     </script>

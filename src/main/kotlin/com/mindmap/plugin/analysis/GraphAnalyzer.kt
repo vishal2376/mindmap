@@ -222,12 +222,13 @@ class GraphAnalyzer(
     }
 
     private fun getFunctionId(function: KtNamedFunction): String {
+        val paramSig = function.valueParameters.joinToString(",") { it.typeReference?.text ?: "Any" }
         val fqName = function.fqName?.asString()
-        if (fqName != null) return fqName
+        if (fqName != null) return "$fqName($paramSig)"
 
-        val containingFile = function.containingFile?.name ?: "unknown"
+        val filePath = function.containingFile?.virtualFile?.path ?: function.containingFile?.name ?: "unknown"
         val name = function.name ?: "anonymous"
-        return "$containingFile::$name"
+        return "$filePath::$name($paramSig)"
     }
 
     private fun buildSignature(function: KtNamedFunction): String {

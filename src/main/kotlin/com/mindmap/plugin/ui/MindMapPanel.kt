@@ -37,7 +37,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     private var pendingData: GraphData? = null
     private var currentGraphData: GraphData? = null
 
-    // History for back/forward navigation
+    // History for back/forward navigation — all access must be on EDT
     private val history = mutableListOf<GraphData>()
     private var historyIndex = -1
 
@@ -46,7 +46,10 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     @Volatile private var inboundDepth  = 2
 
     // Node ID validation: only allow safe characters (alphanumeric, dots, colons, underscores, hyphens)
-    private val nodeIdPattern = Regex("^[a-zA-Z0-9._:\\\\\\-<>, ]+$")
+    private val nodeIdPattern = Regex("^[a-zA-Z0-9._:\\\\\\-<>,?*@\\[\\] ()]+$")
+
+    // Allowed URL schemes for BrowserUtil.browse
+    private val allowedSchemes = setOf("http", "https")
 
     companion object {
         private val LOG = Logger.getInstance(MindMapPanel::class.java)
@@ -79,6 +82,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                     browser.executeJavaScript(bridgeCode, browser.url, 0)
 
                     SwingUtilities.invokeLater {
+                        if (isDisposed) return@invokeLater
                         isBrowserReady = true
                         pendingData?.let {
                             updateGraph(it)
@@ -249,19 +253,31 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                 return
             }
             val message = gson.fromJson(request, JsMessage::class.java)
+
+            // Dispatch all state-mutating operations to EDT for thread safety
             when (message.type) {
                 "navigate" -> {
                     if (message.url != null) {
-                        BrowserUtil.browse(message.url)
+                        // Validate URL scheme before opening
+                        try {
+                            val uri = java.net.URI(message.url)
+                            if (uri.scheme?.lowercase() in allowedSchemes) {
+                                BrowserUtil.browse(message.url)
+                            } else {
+                                LOG.warn("Blocked URL with disallowed scheme: ${uri.scheme}")
+                            }
+                        } catch (e: Exception) {
+                            LOG.warn("Invalid URL rejected: ${message.url}", e)
+                        }
                     } else {
                         handleNavigate(validateNodeId(message.id))
                     }
                 }
                 "expand" -> handleExpand(validateNodeId(message.id))
                 "trace" -> handleTrace(validateNodeId(message.id))
-                "history_back" -> handleHistoryBack()
-                "history_forward" -> handleHistoryForward()
-                "restart" -> handleRestart()
+                "history_back" -> SwingUtilities.invokeLater { if (!isDisposed) handleHistoryBack() }
+                "history_forward" -> SwingUtilities.invokeLater { if (!isDisposed) handleHistoryForward() }
+                "restart" -> SwingUtilities.invokeLater { if (!isDisposed) handleRestart() }
                 "set_depth" -> {
                     val out = message.outbound?.coerceIn(1, 5) ?: return
                     val inn = message.inbound?.coerceIn(1, 5) ?: return
@@ -275,26 +291,28 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     }
 
     private fun handleNavigate(nodeId: String?) {
-        if (nodeId == null) return
+        if (nodeId == null || isDisposed) return
 
-        ApplicationManager.getApplication().invokeLater {
+        // Read PSI data on a background thread to avoid blocking EDT
+        ApplicationManager.getApplication().executeOnPooledThread {
             try {
-                runReadAction {
+                val result = runReadAction {
                     val node = currentGraphData?.nodes?.find { it.id == nodeId }
-                    val psiElement = node?.psiElement ?: return@runReadAction
-                    if (!psiElement.isValid) return@runReadAction
-
-                    val virtualFile = psiElement.containingFile?.virtualFile ?: return@runReadAction
+                    val psiElement = node?.psiElement ?: return@runReadAction null
+                    if (!psiElement.isValid) return@runReadAction null
+                    val virtualFile = psiElement.containingFile?.virtualFile ?: return@runReadAction null
                     val offset = psiElement.textOffset
-                    val descriptor = OpenFileDescriptor(project, virtualFile, offset)
+                    Triple(virtualFile, offset, project)
+                } ?: return@executeOnPooledThread
 
-                    ApplicationManager.getApplication().invokeLater {
-                        try {
-                            FileEditorManager.getInstance(project).openTextEditor(descriptor, false)
-                            browser.component.requestFocusInWindow()
-                        } catch (e: Exception) {
-                            LOG.error("Failed to open editor", e)
-                        }
+                SwingUtilities.invokeLater {
+                    if (isDisposed) return@invokeLater
+                    try {
+                        val descriptor = OpenFileDescriptor(result.third, result.first, result.second)
+                        FileEditorManager.getInstance(project).openTextEditor(descriptor, false)
+                        browser.component.requestFocusInWindow()
+                    } catch (e: Exception) {
+                        LOG.error("Failed to open editor", e)
                     }
                 }
             } catch (e: Exception) {
@@ -304,7 +322,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     }
 
     private fun handleExpand(nodeId: String?) {
-        if (nodeId == null) return
+        if (nodeId == null || isDisposed) return
 
         val psiElement = findPsiElement(nodeId) ?: return
 
@@ -313,11 +331,13 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         ) {
             override fun run(indicator: ProgressIndicator) {
                 try {
+                    if (isDisposed) return
                     val isValid = runReadAction { psiElement.isValid }
                     if (!isValid) return
 
                     val newGraphData = analyzeElement(psiElement, indicator)
                     SwingUtilities.invokeLater {
+                        if (isDisposed) return@invokeLater
                         pushGraph(newGraphData)
                     }
                 } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
@@ -330,7 +350,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     }
 
     private fun handleTrace(nodeId: String?) {
-        if (nodeId == null) return
+        if (nodeId == null || isDisposed) return
 
         val psiElement = findPsiElement(nodeId) ?: return
 
@@ -339,11 +359,13 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         ) {
             override fun run(indicator: ProgressIndicator) {
                 try {
+                    if (isDisposed) return
                     val isValid = runReadAction { psiElement.isValid }
                     if (!isValid) return
 
                     val traceData = analyzeElement(psiElement, indicator)
 
+                    // Capture current on background thread (volatile read is safe)
                     val current = currentGraphData ?: return
 
                     // Merge using Set-based dedup for O(1) lookups
@@ -367,6 +389,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                     val mergedData = GraphData(newNodes, newEdges)
 
                     SwingUtilities.invokeLater {
+                        if (isDisposed) return@invokeLater
                         currentGraphData = mergedData
                         if (historyIndex in history.indices) {
                             history[historyIndex] = mergedData
@@ -382,20 +405,30 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         })
     }
 
-    private fun findPsiElement(nodeId: String): PsiElement? {
-        try {
-            currentGraphData?.nodes?.find { it.id == nodeId }?.psiElement?.let { return it }
-            for (graphData in history.asReversed()) {
-                graphData.nodes.find { it.id == nodeId }?.psiElement?.let { return it }
+    private fun findPsiElement(nodeId: String): KtNamedFunction? {
+        return try {
+            // Search current graph first, then history (snapshot to avoid CME)
+            currentGraphData?.nodes?.find { it.id == nodeId }?.psiElement?.let {
+                if (it.isValid) return it
             }
+            val historyCopy = synchronized(history) { history.toList() }
+            for (graphData in historyCopy.asReversed()) {
+                graphData.nodes.find { it.id == nodeId }?.psiElement?.let {
+                    if (it.isValid) return it
+                }
+            }
+            null
         } catch (e: Exception) {
             LOG.error("Failed to find PSI element for node: $nodeId", e)
+            null
         }
-        return null
     }
 
-    private fun analyzeElement(element: PsiElement, indicator: ProgressIndicator): GraphData =
-        GraphAnalyzer(project, outboundDepth, inboundDepth).buildGraph(element as KtNamedFunction, indicator)
+    private fun analyzeElement(element: PsiElement, indicator: ProgressIndicator): GraphData {
+        val function = element as? KtNamedFunction
+            ?: throw IllegalArgumentException("Element is not a KtNamedFunction: ${element.javaClass.simpleName}")
+        return GraphAnalyzer(project, outboundDepth, inboundDepth).buildGraph(function, indicator)
+    }
 
     private fun handleHistoryBack() {
         if (historyIndex > 0) {
