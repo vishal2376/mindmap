@@ -4,7 +4,7 @@
 
 # **Mindmap**
 
-An IntelliJ IDEA / Android Studio / PyCharm plugin that generates interactive call graph visualizations for **Kotlin**, **Java**, and **Python** functions. Place your cursor on any function and press **Alt+G** to view the call chain - callers, callees, and function depth.
+An IntelliJ IDEA / Android Studio / PyCharm plugin that generates interactive call graph visualizations for **Kotlin** and **Java** functions, including cross-language **Java <-> Kotlin** graphs. Place your cursor on any function and press **Alt+G** to view the call chain - callers, callees, and function depth.
 
 <br/>
 
@@ -48,7 +48,9 @@ An IntelliJ IDEA / Android Studio / PyCharm plugin that generates interactive ca
 
 ### Language Support
 - **Kotlin** — Full support (K1 & K2), IntelliJ IDEA & Android Studio
-- **Java & Python** — *See [Future Roadmap](#-future-roadmap)*
+- **Java** — Full support, IntelliJ IDEA & Android Studio
+- **Java <-> Kotlin** — Cross-language call graphs in mixed projects
+- **Python** — *Coming soon (see [Future Roadmap](#-future-roadmap))*
 
 ### Graph View
 - **Hierarchical Layout** - Callers on the left, root in the center, callees on the right
@@ -178,16 +180,19 @@ The plugin `.zip` will be at `build/distributions/Mindmap-*.zip`.
 src/main/
 ├── kotlin/com/mindmap/plugin/
 │   ├── actions/
-│   │   └── ShowCallGraphAction.kt    # Entry point (Alt+G), language dispatch
+│   │   └── ShowCallGraphAction.kt        # Entry point (Alt+G), language dispatch
 │   ├── analysis/
-│   │   ├── CallGraphModel.kt         # Data structures (nodes, edges)
-│   │   └── GraphAnalyzer.kt          # Kotlin call graph builder (K1 & K2)
+│   │   ├── CallGraphModel.kt             # Data structures (nodes, edges)
+│   │   ├── LanguageAnalyzer.kt           # Interface for language-specific analyzers
+│   │   ├── LanguageAnalyzerRegistry.kt   # Runtime analyzer discovery
+│   │   ├── KotlinAnalyzer.kt             # Kotlin call graph builder (K1 & K2)
+│   │   └── JavaAnalyzer.kt              # Java call graph builder
 │   └── ui/
-│       ├── GraphToolWindowFactory.kt  # Tool window + JCEF fallback
-│       └── MindMapPanel.kt           # JCEF browser, JS bridge, history
+│       ├── GraphToolWindowFactory.kt      # Tool window + JCEF fallback
+│       └── MindMapPanel.kt               # JCEF browser, JS bridge, history
 └── resources/
-    ├── META-INF/plugin.xml            # Plugin descriptor
-    └── webview/graph.html             # UI (vis-network, CSS, event handlers)
+    ├── META-INF/plugin.xml                # Plugin descriptor
+    └── webview/graph.html                 # UI (vis-network, CSS, event handlers)
 ```
 
 
@@ -229,7 +234,8 @@ If another plugin (like IdeaVIM) intercepts the shortcut, go to **Settings → K
 
 ## Future Roadmap
 
-- [ ] **Java Support** — Full call graph analysis for Java methods
+- [x] **Java Support** — Full call graph analysis for Java methods
+- [x] **Java <-> Kotlin** — Cross-language call graphs in mixed projects
 - [ ] **Python Support** — Call graph analysis for Python functions
 - [ ] **Export Options** — Save graph as SVG, PNG, or JSON
 - [ ] **Custom Themes** — Allow users to define their own color palettes

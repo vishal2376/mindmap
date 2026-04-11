@@ -19,6 +19,7 @@ dependencies {
         intellijIdeaCommunity("2024.3")
 
         bundledPlugin("org.jetbrains.kotlin")
+        bundledPlugin("com.intellij.java")
 
         pluginVerifier()
         zipSigner()

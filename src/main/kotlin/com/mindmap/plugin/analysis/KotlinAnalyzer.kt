@@ -5,6 +5,9 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiMethod
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.searches.OverridingMethodsSearch
 import com.intellij.psi.search.searches.ReferencesSearch
@@ -14,22 +17,38 @@ import org.jetbrains.kotlin.analysis.api.resolution.singleFunctionCallOrNull
 import org.jetbrains.kotlin.analysis.api.resolution.symbol
 import org.jetbrains.kotlin.asJava.toLightMethods
 import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
-class GraphAnalyzer(
+class KotlinAnalyzer(
     private val project: Project,
     private val maxOutboundDepth: Int = 3,
     private val maxInboundDepth: Int = 2
-) {
+) : LanguageAnalyzer {
 
     companion object {
-        private val LOG = Logger.getInstance(GraphAnalyzer::class.java)
+        private val LOG = Logger.getInstance(KotlinAnalyzer::class.java)
         private const val MAX_NODES = 300
         private const val MAX_CALLS_PER_FUNCTION = 50
         private const val MAX_INBOUND_REFS = 30
     }
 
-    fun buildGraph(function: KtNamedFunction, indicator: ProgressIndicator? = null): GraphData {
+    override fun canAnalyze(psiFile: PsiFile): Boolean = psiFile is KtFile
+
+    override fun findFunctionAtOffset(psiFile: PsiFile, offset: Int): PsiElement? {
+        val element = psiFile.findElementAt(offset) ?: return null
+        return PsiTreeUtil.getParentOfType(element, KtNamedFunction::class.java)
+    }
+
+    override fun languageName(): String = "Kotlin"
+
+    override fun buildGraph(element: PsiElement, indicator: ProgressIndicator?): GraphData {
+        val function = element as? KtNamedFunction
+            ?: throw IllegalArgumentException("Element is not a KtNamedFunction: ${element.javaClass.simpleName}")
+        return buildKotlinGraph(function, indicator)
+    }
+
+    fun buildKotlinGraph(function: KtNamedFunction, indicator: ProgressIndicator? = null): GraphData {
         val nodes = mutableMapOf<String, CallGraphNode>()
         val edges = mutableListOf<CallGraphEdge>()
         val edgeKeys = HashSet<String>()
@@ -102,33 +121,50 @@ class GraphAnalyzer(
                     try {
                         val resolvedCall = callExpr.resolveToCall()?.singleFunctionCallOrNull() ?: continue
                         val targetSymbol = resolvedCall.partiallyAppliedSymbol.symbol
-                        val targetPsi = targetSymbol.psi as? KtNamedFunction ?: continue
+                        val targetPsiRaw = targetSymbol.psi ?: continue
 
-                        val targetId = getFunctionId(targetPsi)
-                        val isLibrary = !isSourceCode(targetPsi)
+                        // Handle Kotlin function targets
+                        val targetKt = targetPsiRaw as? KtNamedFunction
+                        // Handle Java method targets (cross-language)
+                        val targetJava = if (targetKt == null) targetPsiRaw as? PsiMethod else null
 
-                        if (!nodes.containsKey(targetId)) {
-                            nodes[targetId] = createNode(targetPsi, NodeType.OUTBOUND, currentDepth, isLibrary)
-                        }
+                        if (targetKt != null) {
+                            val targetId = getFunctionId(targetKt)
+                            val isLibrary = !isSourceCode(targetKt)
 
-                        addEdgeIfNew(callerId, targetId, nodes, edges, edgeKeys)
+                            if (!nodes.containsKey(targetId)) {
+                                nodes[targetId] = createNode(targetKt, NodeType.OUTBOUND, currentDepth, isLibrary)
+                            }
 
-                        if (!isLibrary && currentDepth < maxOutboundDepth) {
-                            if (targetPsi.bodyExpression != null) {
-                                // Concrete function — recurse normally
-                                analyzeOutbound(targetPsi, nodes, edges, edgeKeys, currentDepth + 1, indicator)
-                            } else {
-                                // Abstract/interface — show up to 3 implementations as leaf nodes (no recursion)
-                                val impls = findImplementations(targetPsi)
-                                for (impl in impls.take(3)) {
-                                    if (nodes.size >= MAX_NODES) break
-                                    val implId = getFunctionId(impl)
-                                    if (!nodes.containsKey(implId)) {
-                                        nodes[implId] = createNode(impl, NodeType.OUTBOUND, currentDepth + 1)
+                            addEdgeIfNew(callerId, targetId, nodes, edges, edgeKeys)
+
+                            if (!isLibrary && currentDepth < maxOutboundDepth) {
+                                if (targetKt.bodyExpression != null) {
+                                    analyzeOutbound(targetKt, nodes, edges, edgeKeys, currentDepth + 1, indicator)
+                                } else {
+                                    val impls = findImplementations(targetKt)
+                                    for (impl in impls.take(3)) {
+                                        if (nodes.size >= MAX_NODES) break
+                                        val implId = getFunctionId(impl)
+                                        if (!nodes.containsKey(implId)) {
+                                            nodes[implId] = createNode(impl, NodeType.OUTBOUND, currentDepth + 1)
+                                        }
+                                        addEdgeIfNew(targetId, implId, nodes, edges, edgeKeys)
                                     }
-                                    addEdgeIfNew(targetId, implId, nodes, edges, edgeKeys)
                                 }
                             }
+                        } else if (targetJava != null) {
+                            // Cross-language: Kotlin calling Java
+                            val targetId = getJavaMethodId(targetJava)
+                            val isLibrary = !isJavaSourceCode(targetJava)
+
+                            if (!nodes.containsKey(targetId)) {
+                                nodes[targetId] = createJavaNode(targetJava, NodeType.OUTBOUND, currentDepth, isLibrary)
+                            }
+
+                            addEdgeIfNew(callerId, targetId, nodes, edges, edgeKeys)
+
+                            // Don't recurse into Java methods from Kotlin analyzer — keep it as a leaf
                         }
                     } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                         throw ce
@@ -240,7 +276,6 @@ class GraphAnalyzer(
         return "${function.name}($params)$returnSuffix"
     }
 
-    /** Returns concrete (non-abstract) overrides of an abstract/interface function. */
     private fun findImplementations(function: KtNamedFunction): List<KtNamedFunction> {
         if (function.bodyExpression != null) return emptyList()
         return try {
@@ -257,6 +292,48 @@ class GraphAnalyzer(
 
     private fun isSourceCode(function: KtNamedFunction): Boolean {
         val virtualFile = function.containingFile?.virtualFile ?: return false
+        return ProjectFileIndex.getInstance(project).isInSourceContent(virtualFile)
+    }
+
+    // Cross-language helpers for Java targets called from Kotlin
+    private fun getJavaMethodId(method: PsiMethod): String {
+        val containingClass = method.containingClass?.qualifiedName ?: ""
+        val paramSig = method.parameterList.parameters.joinToString(",") { it.type.presentableText }
+        return if (containingClass.isNotEmpty()) {
+            "$containingClass.${method.name}($paramSig)"
+        } else {
+            val filePath = method.containingFile?.virtualFile?.path ?: "unknown"
+            "$filePath::${method.name}($paramSig)"
+        }
+    }
+
+    private fun createJavaNode(
+        method: PsiMethod,
+        type: NodeType,
+        depth: Int,
+        isLibrary: Boolean = false
+    ): CallGraphNode {
+        val id = getJavaMethodId(method)
+        val params = method.parameterList.parameters.joinToString(", ") { "${it.name}: ${it.type.presentableText}" }
+        val returnType = method.returnType?.presentableText ?: "void"
+        val signature = "${method.name}($params): $returnType"
+
+        return CallGraphNode(
+            id = id,
+            name = method.name,
+            signature = signature,
+            fileName = method.containingFile?.name ?: "",
+            type = type,
+            depth = depth,
+            isLibrary = isLibrary,
+            loc = method.text?.lines()?.size ?: 0
+        ).also {
+            it.psiElement = method
+        }
+    }
+
+    private fun isJavaSourceCode(method: PsiMethod): Boolean {
+        val virtualFile = method.containingFile?.virtualFile ?: return false
         return ProjectFileIndex.getInstance(project).isInSourceContent(virtualFile)
     }
 }

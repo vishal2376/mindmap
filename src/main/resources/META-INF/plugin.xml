@@ -5,44 +5,69 @@
 
     <description><![CDATA[
     <h2>Mindmap - Call Graph Visualizer</h2>
-    <p>Visualize function call graphs as interactive mind maps inside your IDE. Place your cursor on any function and press <b>Alt+G</b> to view the call chain — callers, callees, and function depth.</p>
+    <p>Visualize function call graphs as interactive mind maps inside your IDE. Place your cursor on any function and press <b>Alt+G</b> to view the call chain — callers, callees, and function depth — all in a Figma-style interactive canvas.</p>
 
     <h3>🌐 Language Support</h3>
     <ul>
         <li><b>Kotlin</b> — Full support (K1 &amp; K2), IntelliJ IDEA &amp; Android Studio</li>
+        <li><b>Java</b> — Full support, IntelliJ IDEA &amp; Android Studio</li>
+        <li><b>Java ↔ Kotlin</b> — Cross-language call graphs in mixed projects</li>
+        <li><b>Python</b> — <em>Coming soon</em></li>
     </ul>
+
+    <h3>⚡ Getting Started</h3>
+    <ol>
+        <li>Place your cursor inside any Kotlin function</li>
+        <li>Press <b>Alt+G</b> (or right-click → <em>Generate Mindmap</em>)</li>
+        <li>The Mindmap tool window opens with your function as the root node</li>
+        <li><b>Callers</b> appear on the left, <b>callees</b> on the right — color-coded by type</li>
+        <li><b>Click</b> any node to jump to its source code</li>
+        <li><b>Double-click</b> a node to trace deeper and merge its call graph into the view</li>
+        <li>Use the <b>Mini-Map</b> (top-left) to navigate large graphs at a glance</li>
+        <li>Open <b>Settings</b> (gear icon) to adjust trace depth (1-5 levels)</li>
+    </ol>
 
     <h3>🎯 Key Features</h3>
     <ul>
-        <li><b>Interactive Graph View</b> - Hierarchical layout with drag, zoom, and pan</li>
-        <li><b>Tree View</b> - Collapsible tree with SVG icons</li>
-        <li><b>Bidirectional Analysis</b> - Outbound calls (children) + inbound callers (parents)</li>
-        <li><b>Click-to-Navigate</b> - Click a node to jump to source code</li>
-        <li><b>Double-Click Trace</b> - Merge a node's call graph into the view</li>
-        <li><b>Cmd+Click Expand</b> - Re-center the graph on a node</li>
-        <li><b>Pan Mode</b> - Drag nodes to move them; drag empty space to pan the canvas</li>
-        <li><b>Box Selection</b> - Drag on empty canvas (select mode) to select and move multiple nodes</li>
-        <li><b>Navigation History</b> - Navigate back/forward (Alt+← / Alt+→)</li>
-        <li><b>Search &amp; Filter</b> - Filter nodes by name</li>
-        <li><b>Library Code Toggle</b> - Toggle library/SDK function calls</li>
-        <li><b>Hover Info Cards</b> - Node tooltips with signature, file, depth, and LOC</li>
-        <li><b>Zoom Controls</b> - Scroll wheel, zoom keys, fit view, center</li>
-        <li><b>Dark Theme</b> - Catppuccin Mocha theme interface</li>
+        <li><b>Interactive Graph View</b> - Hierarchical LR layout with callers left, root center, callees right</li>
+        <li><b>Tree View</b> - Collapsible tree with type-specific icons and section headers</li>
+        <li><b>Live Mini-Map</b> - VS Code-style overview with colored dots, viewport rectangle, click/drag-to-pan, and arrow key navigation</li>
+        <li><b>Hide / Unhide Nodes</b> - Hover eye button to hide nodes with smart cascade (children auto-hide if disconnected); Hidden Nodes panel for easy unhide</li>
+        <li><b>Bidirectional Analysis</b> - Outbound calls + inbound callers with configurable depth (1-5)</li>
+        <li><b>Abstract Function Tracing</b> - Traces through abstract/interface functions to concrete implementations</li>
+        <li><b>Double-Click Trace</b> - Merge a node's call graph into the current view</li>
+        <li><b>Cmd+Click Expand</b> - Re-center the graph on any node with full history</li>
+        <li><b>Figma-style Zoom</b> - 60fps scroll/pinch zoom with rAF batching, cursor-centered</li>
+        <li><b>Pan &amp; Select Modes</b> - Toggle with H/V keys; right-drag or middle-drag to pan anytime</li>
+        <li><b>Box Selection</b> - Drag to select and move multiple nodes together</li>
+        <li><b>Navigation History</b> - Back/forward (Alt+← / Alt+→) through explored functions</li>
+        <li><b>Search &amp; Filter</b> - Filter nodes by name across both views</li>
+        <li><b>Hover Info Cards</b> - Signature, file location, depth, and LOC count</li>
+        <li><b>Settings Modal</b> - Configure outbound/inbound trace depth with visual depth track</li>
+        <li><b>Dark Theme</b> - Catppuccin Mocha theme with high-contrast panel headers</li>
     </ul>
 
-    <h3>⚡ Quick Start</h3>
-    <ol>
-        <li>Place cursor inside any Kotlin function</li>
-        <li>Press <b>Alt+G</b> (or right-click → <em>Generate Mindmap</em>)</li>
-        <li>Explore the interactive call graph in the Mindmap tool window</li>
-    </ol>
-
-    <h3>🖱️ Controls</h3>
+    <h3>⌨️ Keyboard Shortcuts</h3>
     <ul>
-        <li><b>Pan mode (H)</b>: drag a node to move it; drag empty space to pan</li>
-        <li><b>Select mode (V)</b>: drag empty space to box-select multiple nodes</li>
-        <li><b>Right-drag / Middle-drag</b> → pan the view</li>
-        <li><b>Scroll / Pinch</b> → zoom in/out</li>
+        <li><b>Alt+G</b> — Generate call graph</li>
+        <li><b>1 / 2</b> — Switch Graph / Tree view</li>
+        <li><b>H / V</b> — Pan tool / Select tool</li>
+        <li><b>F</b> — Fit all nodes &nbsp;|&nbsp; <b>C</b> — Center on selected</li>
+        <li><b>+ / -</b> — Zoom in/out &nbsp;|&nbsp; <b>/</b> — Search</li>
+        <li><b>R</b> — Restart / Clear graph</li>
+        <li><b>Arrow keys</b> — Navigate nodes or pan minimap (on hover)</li>
+        <li><b>Space (hold)</b> — Temporary pan in select mode</li>
+        <li><b>?</b> — Show all shortcuts</li>
+    </ul>
+
+    <h3>🖱️ Mouse Controls</h3>
+    <ul>
+        <li><b>Click</b> node → jump to source &nbsp;|&nbsp; <b>Double-click</b> → trace deeper</li>
+        <li><b>Cmd/Ctrl+Click</b> → expand (re-center graph)</li>
+        <li><b>Hover</b> node → eye button to hide/unhide</li>
+        <li><b>Scroll / Pinch</b> → zoom (Figma-style, 60fps)</li>
+        <li><b>Right-drag / Middle-drag</b> → pan the viewport</li>
+        <li><b>Click / Drag minimap</b> → navigate large graphs</li>
     </ul>
 
     <p><em>Works with IntelliJ IDEA 2024.3+, Android Studio Ladybug+, and PyCharm 2024.3+.</em></p>
@@ -93,6 +118,8 @@
 
     <depends>com.intellij.modules.platform</depends>
     <depends>org.jetbrains.kotlin</depends>
+    <depends optional="true" config-file="java-support.xml">com.intellij.java</depends>
+    <!-- Python support (future): <depends optional="true" config-file="python-support.xml">com.intellij.modules.python</depends> -->
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
         <supportsKotlinPluginMode supportsK1="true" supportsK2="true"/>

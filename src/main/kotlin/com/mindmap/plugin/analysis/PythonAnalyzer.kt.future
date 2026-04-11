@@ -1,0 +1,235 @@
+package com.mindmap.plugin.analysis
+
+import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ProjectFileIndex
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
+import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.psi.search.searches.ReferencesSearch
+import com.intellij.psi.util.PsiTreeUtil
+import com.jetbrains.python.psi.PyCallExpression
+import com.jetbrains.python.psi.PyFile
+import com.jetbrains.python.psi.PyFunction
+
+class PythonAnalyzer(
+    private val project: Project,
+    private val maxOutboundDepth: Int = 3,
+    private val maxInboundDepth: Int = 2
+) : LanguageAnalyzer {
+
+    companion object {
+        private val LOG = Logger.getInstance(PythonAnalyzer::class.java)
+        private const val MAX_NODES = 300
+        private const val MAX_CALLS_PER_FUNCTION = 50
+        private const val MAX_INBOUND_REFS = 30
+    }
+
+    override fun canAnalyze(psiFile: PsiFile): Boolean = psiFile is PyFile
+
+    override fun findFunctionAtOffset(psiFile: PsiFile, offset: Int): PsiElement? {
+        val element = psiFile.findElementAt(offset) ?: return null
+        return PsiTreeUtil.getParentOfType(element, PyFunction::class.java)
+    }
+
+    override fun languageName(): String = "Python"
+
+    override fun buildGraph(element: PsiElement, indicator: ProgressIndicator?): GraphData {
+        val function = element as? PyFunction
+            ?: throw IllegalArgumentException("Element is not a PyFunction: ${element.javaClass.simpleName}")
+
+        val nodes = mutableMapOf<String, CallGraphNode>()
+        val edges = mutableListOf<CallGraphEdge>()
+        val edgeKeys = HashSet<String>()
+
+        try {
+            runReadAction {
+                val rootId = getFunctionId(function)
+                val rootNode = createNode(function, NodeType.ROOT, 0)
+                nodes[rootId] = rootNode
+
+                indicator?.text = "Analyzing outbound calls..."
+                analyzeOutbound(function, nodes, edges, edgeKeys, 1, indicator)
+                indicator?.text = "Finding callers..."
+                analyzeInbound(function, nodes, edges, edgeKeys, 1, indicator)
+            }
+        } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
+            throw ce
+        } catch (e: Exception) {
+            LOG.error("Error building Python graph", e)
+        }
+
+        return GraphData(nodes.values.toList(), edges)
+    }
+
+    private fun addEdgeIfNew(
+        from: String, to: String,
+        nodes: MutableMap<String, CallGraphNode>,
+        edges: MutableList<CallGraphEdge>,
+        edgeKeys: HashSet<String>
+    ): Boolean {
+        val key = "$from\u0000$to"
+        if (edgeKeys.add(key)) {
+            edges.add(CallGraphEdge(from, to))
+            nodes[from]?.children?.add(to)
+            nodes[to]?.parents?.add(from)
+            return true
+        }
+        return false
+    }
+
+    private fun analyzeOutbound(
+        function: PyFunction,
+        nodes: MutableMap<String, CallGraphNode>,
+        edges: MutableList<CallGraphEdge>,
+        edgeKeys: HashSet<String>,
+        currentDepth: Int,
+        indicator: ProgressIndicator? = null
+    ) {
+        if (currentDepth > maxOutboundDepth) return
+        if (nodes.size >= MAX_NODES) return
+        indicator?.checkCanceled()
+
+        val callerId = getFunctionId(function)
+        val body = function.statementList ?: return
+        val callExpressions = PsiTreeUtil.findChildrenOfType(body, PyCallExpression::class.java)
+
+        val limitedCalls = if (callExpressions.size > MAX_CALLS_PER_FUNCTION) {
+            callExpressions.take(MAX_CALLS_PER_FUNCTION)
+        } else {
+            callExpressions.toList()
+        }
+
+        for (callExpr in limitedCalls) {
+            if (nodes.size >= MAX_NODES) break
+            try {
+                // Resolve the call to a PyFunction
+                val callee = callExpr.multiResolveCallee(PyResolveContext.defaultContext())
+                val targetFunction = callee.firstOrNull()?.callable as? PyFunction ?: continue
+
+                val targetId = getFunctionId(targetFunction)
+                val isLibrary = !isSourceCode(targetFunction)
+
+                if (!nodes.containsKey(targetId)) {
+                    nodes[targetId] = createNode(targetFunction, NodeType.OUTBOUND, currentDepth, isLibrary)
+                }
+
+                addEdgeIfNew(callerId, targetId, nodes, edges, edgeKeys)
+
+                if (!isLibrary && currentDepth < maxOutboundDepth) {
+                    analyzeOutbound(targetFunction, nodes, edges, edgeKeys, currentDepth + 1, indicator)
+                }
+            } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
+                throw ce
+            } catch (_: Exception) {
+                // Skip unresolvable calls
+            }
+        }
+    }
+
+    private fun analyzeInbound(
+        function: PyFunction,
+        nodes: MutableMap<String, CallGraphNode>,
+        edges: MutableList<CallGraphEdge>,
+        edgeKeys: HashSet<String>,
+        currentDepth: Int,
+        indicator: ProgressIndicator? = null
+    ) {
+        if (currentDepth > maxInboundDepth) return
+        if (nodes.size >= MAX_NODES) return
+        indicator?.checkCanceled()
+
+        val targetId = getFunctionId(function)
+        val scope = GlobalSearchScope.projectScope(project)
+        val references = try {
+            val allRefs = ReferencesSearch.search(function, scope).findAll()
+            if (allRefs.size > MAX_INBOUND_REFS) allRefs.take(MAX_INBOUND_REFS) else allRefs
+        } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
+            throw ce
+        } catch (e: Exception) {
+            LOG.warn("Error searching Python references", e)
+            return
+        }
+
+        for (ref in references) {
+            if (nodes.size >= MAX_NODES) break
+            try {
+                val callerFunction = PsiTreeUtil.getParentOfType(
+                    ref.element, PyFunction::class.java
+                ) ?: continue
+
+                val callerId = getFunctionId(callerFunction)
+                val isLibrary = !isSourceCode(callerFunction)
+
+                if (!nodes.containsKey(callerId)) {
+                    nodes[callerId] = createNode(callerFunction, NodeType.INBOUND, currentDepth, isLibrary)
+                }
+
+                addEdgeIfNew(callerId, targetId, nodes, edges, edgeKeys)
+
+                if (!isLibrary && currentDepth < maxInboundDepth) {
+                    analyzeInbound(callerFunction, nodes, edges, edgeKeys, currentDepth + 1, indicator)
+                }
+            } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
+                throw ce
+            } catch (_: Exception) {
+                // Skip unresolvable references
+            }
+        }
+    }
+
+    private fun createNode(
+        function: PyFunction,
+        type: NodeType,
+        depth: Int,
+        isLibrary: Boolean = false
+    ): CallGraphNode {
+        val id = getFunctionId(function)
+        val name = function.name ?: "anonymous"
+        val signature = buildSignature(function)
+        val fileName = function.containingFile?.name ?: ""
+        val loc = function.text?.lines()?.size ?: 0
+
+        return CallGraphNode(
+            id = id,
+            name = name,
+            signature = signature,
+            fileName = fileName,
+            type = type,
+            depth = depth,
+            isLibrary = isLibrary,
+            loc = loc
+        ).also {
+            it.psiElement = function
+        }
+    }
+
+    private fun getFunctionId(function: PyFunction): String {
+        val qualifiedName = function.qualifiedName
+        if (qualifiedName != null) return qualifiedName
+
+        val filePath = function.containingFile?.virtualFile?.path ?: function.containingFile?.name ?: "unknown"
+        val name = function.name ?: "anonymous"
+        return "$filePath::$name"
+    }
+
+    private fun buildSignature(function: PyFunction): String {
+        val params = function.parameterList.parameters.joinToString(", ") { param ->
+            val annotation = param.annotation?.text ?: ""
+            if (annotation.isNotEmpty()) "${param.name}: $annotation" else param.name ?: "_"
+        }
+        val returnAnnotation = function.annotation?.text ?: ""
+        val returnSuffix = if (returnAnnotation.isNotEmpty()) " -> $returnAnnotation" else ""
+        return "${function.name}($params)$returnSuffix"
+    }
+
+    private fun isSourceCode(function: PyFunction): Boolean {
+        val virtualFile = function.containingFile?.virtualFile ?: return false
+        return ProjectFileIndex.getInstance(project).isInSourceContent(virtualFile)
+    }
+}
+
+// Import alias — the actual resolve context class
+private typealias PyResolveContext = com.jetbrains.python.psi.resolve.PyResolveContext

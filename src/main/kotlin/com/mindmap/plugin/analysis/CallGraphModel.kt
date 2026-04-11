@@ -1,6 +1,6 @@
 package com.mindmap.plugin.analysis
 
-import org.jetbrains.kotlin.psi.KtNamedFunction
+import com.intellij.psi.PsiElement
 
 enum class NodeType {
     ROOT,
@@ -21,7 +21,7 @@ data class CallGraphNode(
     val parents: MutableList<String> = mutableListOf()
 ) {
     @Transient
-    var psiElement: KtNamedFunction? = null
+    var psiElement: PsiElement? = null
 }
 
 data class CallGraphEdge(

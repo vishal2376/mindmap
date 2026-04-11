@@ -10,10 +10,8 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.wm.ToolWindowManager
-import com.intellij.psi.util.PsiTreeUtil
-import com.mindmap.plugin.analysis.GraphAnalyzer
+import com.mindmap.plugin.analysis.LanguageAnalyzerRegistry
 import com.mindmap.plugin.ui.MindMapPanel
-import org.jetbrains.kotlin.psi.KtNamedFunction
 
 class ShowCallGraphAction : AnAction() {
 
@@ -29,25 +27,29 @@ class ShowCallGraphAction : AnAction() {
             val editor = e.getData(CommonDataKeys.EDITOR) ?: return
             val psiFile = e.getData(CommonDataKeys.PSI_FILE) ?: return
 
-            val offset = editor.caretModel.offset
-            val element = psiFile.findElementAt(offset) ?: return
+            val analyzer = runReadAction {
+                LanguageAnalyzerRegistry.findAnalyzer(project, psiFile)
+            } ?: return
 
+            val offset = editor.caretModel.offset
             val function = runReadAction {
-                PsiTreeUtil.getParentOfType(element, KtNamedFunction::class.java)
+                analyzer.findFunctionAtOffset(psiFile, offset)
             } ?: return
 
             val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Mindmap") ?: return
             toolWindow.show()
 
+            val langName = analyzer.languageName()
+
             ProgressManager.getInstance().run(object : Task.Backgroundable(
-                project, "Generating Mindmap for ${function.name ?: "function"}", true
+                project, "Generating Mindmap...", true
             ) {
                 override fun run(indicator: ProgressIndicator) {
                     try {
                         indicator.isIndeterminate = true
-                        indicator.text = "Analyzing Kotlin call graph..."
+                        indicator.text = "Analyzing $langName call graph..."
 
-                        val graphData = GraphAnalyzer(project).buildGraph(function, indicator)
+                        val graphData = analyzer.buildGraph(function, indicator)
 
                         val content = toolWindow.contentManager.getContent(0) ?: return
                         val panel = content.component as? MindMapPanel ?: return
@@ -66,17 +68,16 @@ class ShowCallGraphAction : AnAction() {
 
     override fun update(e: AnActionEvent) {
         try {
+            val project = e.project
             val psiFile = e.getData(CommonDataKeys.PSI_FILE)
             val editor = e.getData(CommonDataKeys.EDITOR)
 
             var visible = false
-            if (psiFile != null && editor != null) {
+            if (project != null && psiFile != null && editor != null) {
                 val offset = editor.caretModel.offset
-                val element = psiFile.findElementAt(offset)
-                if (element != null) {
-                    visible = runReadAction {
-                        PsiTreeUtil.getParentOfType(element, KtNamedFunction::class.java) != null
-                    }
+                visible = runReadAction {
+                    val analyzer = LanguageAnalyzerRegistry.findAnalyzer(project, psiFile) ?: return@runReadAction false
+                    analyzer.findFunctionAtOffset(psiFile, offset) != null
                 }
             }
 

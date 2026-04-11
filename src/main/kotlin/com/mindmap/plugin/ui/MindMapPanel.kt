@@ -15,9 +15,8 @@ import com.intellij.openapi.Disposable
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefJSQuery
 import com.intellij.psi.PsiElement
-import com.mindmap.plugin.analysis.GraphAnalyzer
+import com.mindmap.plugin.analysis.LanguageAnalyzerRegistry
 import com.mindmap.plugin.analysis.GraphData
-import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
@@ -405,7 +404,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         })
     }
 
-    private fun findPsiElement(nodeId: String): KtNamedFunction? {
+    private fun findPsiElement(nodeId: String): PsiElement? {
         return try {
             // Search current graph first, then history (snapshot to avoid CME)
             currentGraphData?.nodes?.find { it.id == nodeId }?.psiElement?.let {
@@ -425,9 +424,11 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     }
 
     private fun analyzeElement(element: PsiElement, indicator: ProgressIndicator): GraphData {
-        val function = element as? KtNamedFunction
-            ?: throw IllegalArgumentException("Element is not a KtNamedFunction: ${element.javaClass.simpleName}")
-        return GraphAnalyzer(project, outboundDepth, inboundDepth).buildGraph(function, indicator)
+        val psiFile = element.containingFile
+            ?: throw IllegalArgumentException("Element has no containing file")
+        val analyzer = LanguageAnalyzerRegistry.findAnalyzer(project, psiFile, outboundDepth, inboundDepth)
+            ?: throw IllegalArgumentException("No analyzer available for ${psiFile.language.displayName}")
+        return analyzer.buildGraph(element, indicator)
     }
 
     private fun handleHistoryBack() {
