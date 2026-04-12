@@ -2245,8 +2245,12 @@
             try { D = typeof json === 'string' ? JSON.parse(json) : json } catch (e) { return }
             if (!D || !Array.isArray(D.nodes) || !Array.isArray(D.edges)) return;
             const focusId = sel;
+            // Capture existing node positions and viewport before rebuild
+            const savedPositions = net ? net.getPositions() : {};
+            const savedScale = net ? net.getScale() : null;
+            const savedView = net ? net.getViewPosition() : null;
             $es.classList.add('h'); $ld.classList.remove('h');
-            _buildNet(focusId);
+            _buildNet(focusId, savedPositions, savedScale, savedView);
         }
 
         // Phase 1: Ghost node appearance only (before layout — keeps edges so layout positions correctly)
@@ -2277,7 +2281,7 @@
         }
 
         // Rebuild network from D with current filters, perfectly spacing all nodes to avoid overlap
-        function _buildNet(focusId) {
+        function _buildNet(focusId, savedPositions, savedScale, savedView) {
             if (!D) return;
             // Always remove library nodes for performance as requested
             const visNodes = D.nodes.filter(n => !n.isLibrary);
@@ -2345,11 +2349,22 @@
             }
 
             // Unlock X-axis dragging: wait for layout to draw once, then disable hierarchical constraint
+            const hasSaved = savedPositions && Object.keys(savedPositions).length > 0;
             net.once('afterDrawing', () => {
                 net.setOptions({
                     layout: { hierarchical: { enabled: false } },
                     interaction: { dragNodes: !panMode }
                 });
+                // Restore saved positions for existing nodes (merge/trace preserves layout)
+                if (hasSaved) {
+                    const updates = [];
+                    nds.forEach(n => {
+                        if (savedPositions[n.id]) {
+                            updates.push({ id: n.id, x: savedPositions[n.id].x, y: savedPositions[n.id].y });
+                        }
+                    });
+                    if (updates.length) nds.update(updates);
+                }
                 // Phase 2: NOW hide edges — layout already computed correct positions
                 _hideEdgesForHidden();
                 $gc.classList.remove('loading');
@@ -2359,7 +2374,10 @@
             setTimeout(() => {
                 $ld.classList.add('h');
                 if (net) {
-                    if (focusId && nds.get(focusId)) {
+                    // Restore viewport if we have saved state (merge/trace)
+                    if (hasSaved && savedScale != null && savedView) {
+                        net.moveTo({ position: savedView, scale: savedScale });
+                    } else if (focusId && nds.get(focusId)) {
                         net.selectNodes([focusId]);
                         net.focus(focusId, {});
                     } else {
