@@ -2098,6 +2098,10 @@
         // Sync cascade: hide nodes disconnected from ROOT, unhide cascade nodes that reconnected
         function _syncCascade() {
             if (!nds || !eds || !D) return;
+            // Only cascade when user has explicitly hidden nodes — otherwise orphaned
+            // nodes (connected only through filtered library intermediaries) get
+            // wrongly hidden as empty blue boxes.
+            if (!_hiddenNodes.size) return;
             const reachable = _reachableFromRoot();
 
             // Hide unreachable visible nodes
@@ -2181,19 +2185,20 @@
         $neye.addEventListener('mouseenter', () => clearTimeout(_neyeHideT));
         $neye.addEventListener('mouseleave', () => hideEyeBtn(false));
 
-        function onHov(nt, ds) {
+        function onHov(nt) {
             return p => {
                 if (drag) return;
                 clearTimeout(_hovT);
                 _hovT = setTimeout(() => {
-                    const nd = ds.get(p.node);
-                    if (nd?._data) { const pos = nt.canvasToDOM(nt.getPosition(p.node)); const rc = nt.body.container.getBoundingClientRect(); showTip({ clientX: rc.left + pos.x, clientY: rc.top + pos.y }, nd._data) }
+                    if (!nds) return;
+                    const nd = nds.get(p.node);
+                    if (nd?._data) { const pos = nt.canvasToDOM(nt.getPosition(p.node)); const rc = nt.body.container.getBoundingClientRect(); showTip({ clientX: rc.left + pos.x, clientY: rc.top + pos.y }, nodeMap[p.node] || nd._data) }
                     showEyeBtn(nt, p.node);
                     const c = new Set(nt.getConnectedNodes(p.node)); c.add(p.node);
                     // only update nodes that actually change opacity
                     _dimmedNodes.clear();
                     const up = [];
-                    ds.forEach(n => {
+                    nds.forEach(n => {
                         if (_hiddenNodes.has(n.id)) return; // skip explicitly hidden nodes
                         if (!c.has(n.id)) {
                             _dimmedNodes.add(n.id);
@@ -2202,18 +2207,18 @@
                             up.push({ id: n.id, opacity: undefined });
                         }
                     });
-                    if (up.length) ds.update(up);
+                    if (up.length) nds.update(up);
                 }, 200);
             }
         }
-        function onBlr(ds) {
+        function onBlr() {
             return () => {
                 clearTimeout(_hovT); hideTip();
                 hideEyeBtn(false);
-                if (ds && _dimmedNodes.size > 0) {
+                if (nds && _dimmedNodes.size > 0) {
                     const up = [..._dimmedNodes].map(id => ({ id, opacity: undefined }));
                     _dimmedNodes.clear();
-                    ds.update(up);
+                    nds.update(up);
                 }
             }
         }
@@ -2222,6 +2227,9 @@
         function drawGraph(json) {
             try { D = typeof json === 'string' ? JSON.parse(json) : json } catch (e) { return }
             if (!D || !Array.isArray(D.nodes) || !Array.isArray(D.edges)) return;
+            // Clear hidden state from previous graph so stale IDs don't ghost new nodes
+            _hiddenNodes.clear(); _hiddenNodeSpecs.clear(); _cascadeSet.clear(); _dimmedNodes.clear();
+            $hnp.classList.remove('v'); $hnpBody.innerHTML = ''; $hnpCnt.textContent = '0';
             $es.classList.add('h'); $ld.classList.remove('h');
             const root = D.nodes.find(n => n.type === 'ROOT');
             if (root) { $bcn.textContent = root.name || 'anonymous'; sel = root.id; }
@@ -2326,7 +2334,7 @@
                 $gc.classList.add('loading');
                 net = new vis.Network($gc, { nodes: nds, edges: eds }, options);
                 net.on('click', onClk); net.on('doubleClick', onDbl);
-                net.on('hoverNode', onHov(net, nds)); net.on('blurNode', onBlr(nds));
+                net.on('hoverNode', onHov(net)); net.on('blurNode', onBlr());
                 net.on('dragStart', () => { drag = true; hideTip(); hideEyeBtn(true); }); net.on('dragEnd', () => { drag = false });
                 net.on('afterDrawing', scheduleMinimap);
                 net.on('selectNode', () => { selCount = net.getSelectedNodes().length; updateShortcuts() });

@@ -115,9 +115,14 @@ class GraphAnalyzer(
                 for (callExpr in limitedCalls) {
                     if (nodes.size >= MAX_NODES) break
                     try {
-                        val resolvedCall = callExpr.resolveToCall()?.singleFunctionCallOrNull() ?: continue
+                        val callInfo = callExpr.resolveToCall()
+                        if (callInfo == null) continue
+                        val resolvedCall = callInfo.singleFunctionCallOrNull() ?: continue
                         val targetSymbol = resolvedCall.partiallyAppliedSymbol.symbol
                         val targetPsi = targetSymbol.psi as? KtNamedFunction ?: continue
+
+                        // Skip functions with no name (synthetic/generated)
+                        if (targetPsi.name.isNullOrEmpty()) continue
 
                         val targetId = getFunctionId(targetPsi)
                         val isLibrary = !isSourceCode(targetPsi)
@@ -130,10 +135,9 @@ class GraphAnalyzer(
 
                         if (!isLibrary && currentDepth < maxOutboundDepth) {
                             if (targetPsi.bodyExpression != null) {
-                                // Concrete function — recurse normally
                                 analyzeOutbound(targetPsi, nodes, edges, edgeKeys, currentDepth + 1, indicator)
                             } else {
-                                // Abstract/interface — find implementations and recurse into them
+                                // Abstract/interface — find implementations and recurse
                                 val impls = findImplementations(targetPsi)
                                 for (impl in impls.take(3)) {
                                     if (nodes.size >= MAX_NODES) break
@@ -202,6 +206,7 @@ class GraphAnalyzer(
 
                 val callerId = getFunctionId(callerFunction)
                 val isLibrary = !isSourceCode(callerFunction)
+
 
                 if (!nodes.containsKey(callerId)) {
                     nodes[callerId] = createNode(callerFunction, NodeType.INBOUND, currentDepth, isLibrary)
