@@ -2345,6 +2345,97 @@
             if (hide.length) eds.update(hide);
         }
 
+        // ── Barycenter crossing minimization ──
+        // After vis.js hierarchical layout, reorder nodes within each column (level)
+        // so edges cross as little as possible. Uses the median heuristic with
+        // multiple forward+backward sweeps (same core idea as Graphviz dot).
+        function _minimizeCrossings() {
+            if (!net || !nds || !eds) return;
+            const positions = net.getPositions();
+            const ids = Object.keys(positions);
+            if (ids.length < 3) return;
+
+            // Build adjacency (both directions for bidirectional sweep)
+            const adj = {};   // id → Set of neighbor ids
+            ids.forEach(id => adj[id] = new Set());
+            eds.forEach(e => {
+                if (adj[e.from] && adj[e.to]) {
+                    adj[e.from].add(e.to);
+                    adj[e.to].add(e.from);
+                }
+            });
+
+            // Group nodes into levels by x-position (LR layout → x = level)
+            const levelMap = {};  // roundedX → [{ id, y }]
+            ids.forEach(id => {
+                const p = positions[id];
+                const lx = Math.round(p.x / 10) * 10; // snap to grid
+                if (!levelMap[lx]) levelMap[lx] = [];
+                levelMap[lx].push({ id, y: p.y });
+            });
+            const levels = Object.keys(levelMap).map(Number).sort((a, b) => a - b);
+            const levelNodes = levels.map(lx => levelMap[lx].sort((a, b) => a.y - b.y));
+
+            // Build level index: id → which level index it's in
+            const levelIdx = {};
+            levelNodes.forEach((lnodes, li) => lnodes.forEach(n => levelIdx[n.id] = li));
+
+            // Median heuristic: for a node, compute median y of its neighbors in the adjacent level
+            function medianY(nodeId, adjLevelIndex) {
+                const neighbors = [];
+                adj[nodeId].forEach(nid => {
+                    if (levelIdx[nid] === adjLevelIndex) {
+                        neighbors.push(positions[nid].y);
+                    }
+                });
+                if (neighbors.length === 0) return null;
+                neighbors.sort((a, b) => a - b);
+                const mid = Math.floor(neighbors.length / 2);
+                return neighbors.length % 2 === 1 ? neighbors[mid] : (neighbors[mid - 1] + neighbors[mid]) / 2;
+            }
+
+            // Sweep: reorder each level based on median of neighbors in adjacent level
+            function sweep(forward) {
+                const range = forward
+                    ? levels.map((_, i) => i).slice(1)        // 1, 2, 3, ...
+                    : levels.map((_, i) => i).slice(0, -1).reverse(); // n-2, n-3, ..., 0
+                for (const li of range) {
+                    const adjLi = forward ? li - 1 : li + 1;
+                    const lnodes = levelNodes[li];
+                    // Compute median for each node
+                    lnodes.forEach(n => {
+                        const m = medianY(n.id, adjLi);
+                        n._median = m !== null ? m : n.y; // keep original if no neighbors
+                    });
+                    // Sort by median
+                    lnodes.sort((a, b) => a._median - b._median);
+                    // Reassign y-positions with even spacing (use original spacing from vis.js)
+                    const spacing = lnodes.length > 1
+                        ? Math.max(80, (lnodes[lnodes.length - 1].y - lnodes[0].y) / (lnodes.length - 1))
+                        : 0;
+                    const centerY = lnodes.reduce((s, n) => s + n.y, 0) / lnodes.length;
+                    const startY = centerY - spacing * (lnodes.length - 1) / 2;
+                    lnodes.forEach((n, i) => {
+                        n.y = startY + i * spacing;
+                        positions[n.id] = { x: positions[n.id].x, y: n.y };
+                    });
+                }
+            }
+
+            // Run 4 sweeps (forward, backward, forward, backward) for convergence
+            for (let i = 0; i < 4; i++) {
+                sweep(true);
+                sweep(false);
+            }
+
+            // Apply new positions
+            const updates = [];
+            ids.forEach(id => {
+                updates.push({ id, y: positions[id].y });
+            });
+            if (updates.length) nds.update(updates);
+        }
+
         // Rebuild network from D with current filters, perfectly spacing all nodes to avoid overlap
         function _buildNet(focusId, savedPositions, savedScale, savedView) {
             if (!D) return;
@@ -2389,8 +2480,8 @@
                         direction: 'LR',
                         sortMethod: 'directed',
                         levelSeparation: isLarge ? 180 : 220,
-                        nodeSpacing: isLarge ? 80 : 110,
-                        treeSpacing: isLarge ? 120 : 160,
+                        nodeSpacing: isLarge ? 100 : 130,
+                        treeSpacing: isLarge ? 140 : 180,
                         parentCentralization: true,
                         blockShifting: true,
                         edgeMinimization: true,
@@ -2429,6 +2520,10 @@
                         }
                     });
                     if (updates.length) nds.update(updates);
+                } else {
+                    // Barycenter crossing minimization — reorder nodes within each level
+                    // to minimize edge crossings (same algorithm as Graphviz dot / Obsidian)
+                    _minimizeCrossings();
                 }
                 // Phase 2: NOW hide edges — layout already computed correct positions
                 _hideEdgesForHidden();
