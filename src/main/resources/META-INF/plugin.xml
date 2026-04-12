@@ -1,54 +1,46 @@
 <idea-plugin>
     <id>com.mindmap.plugin</id>
     <name>Mindmap - Call Graph Visualizer</name>
-    <vendor email="vishalsingh2376@gmail.com" url="https://vishal2376.github.io">Vishal Singh</vendor>
+    <vendor
+        email="vishalsingh2376@gmail.com"
+        url="https://vishal2376.github.io"
+    >Vishal Singh</vendor>
 
-    <description><![CDATA[
+    <description
+    ><![CDATA[
     <h2>Mindmap - Call Graph Visualizer</h2>
-    <p>Visualize function call graphs as interactive mind maps inside your IDE. Place your cursor on any function and press <b>Alt+G</b> to view the call chain — callers, callees, and function depth.</p>
+    <p>Visualize function call graphs as interactive mind maps inside your IDE. Place your cursor on any <b>Kotlin</b> function and press <b>Alt / Option + G</b> to instantly see its callers, callees, and function depth.</p>
 
-    <h3>🌐 Language Support</h3>
+    <h3>Features</h3>
     <ul>
-        <li><b>Kotlin</b> — Full support (K1 &amp; K2), IntelliJ IDEA &amp; Android Studio</li>
+        <li><b>Bidirectional Call Graph</b> — Outbound calls + inbound callers with configurable depth (1–5)</li>
+        <li><b>Hierarchical Layout</b> — Callers left, root center, callees right with crossing minimization</li>
+        <li><b>Mini-Map</b> — VS Code-style overview with colored dots and click/drag navigation</li>
+        <li><b>Tree View</b> — Collapsible tree with type-specific icons and section headers</li>
+        <li><b>Trace &amp; Expand</b> — Double-click to merge call graphs, Cmd+Click to re-center</li>
+        <li><b>Abstract Tracing</b> — Traces through abstract/interface functions to concrete implementations</li>
+        <li><b>Hide/Unhide Nodes</b> — Hide nodes with cascade logic, floating panel to restore</li>
+        <li><b>Smart Navigation</b> — Arrow keys, history back/forward, click-to-navigate to source</li>
+        <li><b>Search &amp; Filter</b> — Filter nodes by name across both views</li>
+        <li><b>Hover Info Cards</b> — Signature, file location, depth, and LOC count</li>
+        <li><b>Pan &amp; Select Modes</b> — Figma-style interaction with box selection and multi-node move</li>
+        <li><b>Smooth Zoom</b> — Scroll wheel, pinch-to-zoom, and keyboard shortcuts at 60fps</li>
     </ul>
 
-    <h3>🎯 Key Features</h3>
-    <ul>
-        <li><b>Interactive Graph View</b> - Hierarchical layout with drag, zoom, and pan</li>
-        <li><b>Tree View</b> - Collapsible tree with SVG icons</li>
-        <li><b>Bidirectional Analysis</b> - Outbound calls (children) + inbound callers (parents)</li>
-        <li><b>Click-to-Navigate</b> - Click a node to jump to source code</li>
-        <li><b>Double-Click Trace</b> - Merge a node's call graph into the view</li>
-        <li><b>Cmd+Click Expand</b> - Re-center the graph on a node</li>
-        <li><b>Pan Mode</b> - Drag nodes to move them; drag empty space to pan the canvas</li>
-        <li><b>Box Selection</b> - Drag on empty canvas (select mode) to select and move multiple nodes</li>
-        <li><b>Navigation History</b> - Navigate back/forward (Alt+← / Alt+→)</li>
-        <li><b>Search &amp; Filter</b> - Filter nodes by name</li>
-        <li><b>Library Code Toggle</b> - Toggle library/SDK function calls</li>
-        <li><b>Hover Info Cards</b> - Node tooltips with signature, file, depth, and LOC</li>
-        <li><b>Zoom Controls</b> - Scroll wheel, zoom keys, fit view, center</li>
-        <li><b>Dark Theme</b> - Catppuccin Mocha theme interface</li>
-    </ul>
-
-    <h3>⚡ Quick Start</h3>
+    <h3>Quick Start</h3>
     <ol>
         <li>Place cursor inside any Kotlin function</li>
-        <li>Press <b>Alt+G</b> (or right-click → <em>Generate Mindmap</em>)</li>
+        <li>Press <b>Alt / Option + G</b> (or right-click → <em>Generate Mindmap</em>)</li>
         <li>Explore the interactive call graph in the Mindmap tool window</li>
     </ol>
 
-    <h3>🖱️ Controls</h3>
-    <ul>
-        <li><b>Pan mode (H)</b>: drag a node to move it; drag empty space to pan</li>
-        <li><b>Select mode (V)</b>: drag empty space to box-select multiple nodes</li>
-        <li><b>Right-drag / Middle-drag</b> → pan the view</li>
-        <li><b>Scroll / Pinch</b> → zoom in/out</li>
-    </ul>
+    <p>For shortcuts, detailed help, and more visit <a href="https://vishal2376.github.io/mindmap">vishal2376.github.io/mindmap</a></p>
 
-    <p><em>Works with IntelliJ IDEA 2024.3+, Android Studio Ladybug+, and PyCharm 2024.3+.</em></p>
+    <p><em>Supports Kotlin (K1 &amp; K2) on IntelliJ IDEA 2024.3+ and Android Studio Ladybug+.</em></p>
     ]]></description>
 
-    <change-notes><![CDATA[
+    <change-notes
+    ><![CDATA[
     <h3>1.0.2</h3>
     <ul>
         <li><b>Live Mini-Map</b> — VS Code-style minimap (top-left) with colored node dots, viewport rectangle, click-to-pan, and drag-to-pan navigation</li>
@@ -95,24 +87,30 @@
     <depends>org.jetbrains.kotlin</depends>
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
-        <supportsKotlinPluginMode supportsK1="true" supportsK2="true"/>
+        <supportsKotlinPluginMode supportsK1="true" supportsK2="true" />
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="Mindmap" secondary="true"
-                    icon="/icons/mindmapToolWindow.svg" anchor="right"
-                    doNotActivateOnStart="true"
-                    factoryClass="com.mindmap.plugin.ui.GraphToolWindowFactory"/>
+        <toolWindow
+            id="Mindmap"
+            secondary="true"
+            icon="/icons/mindmapToolWindow.svg"
+            anchor="right"
+            doNotActivateOnStart="true"
+            factoryClass="com.mindmap.plugin.ui.GraphToolWindowFactory"
+        />
     </extensions>
 
     <actions>
-        <action id="ShowCallGraphAction"
-                class="com.mindmap.plugin.actions.ShowCallGraphAction"
-                text="Generate Mindmap"
-                description="Generate a call graph for the selected function"
-                icon="/icons/mindmapActionIcon.svg">
-            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-            <keyboard-shortcut keymap="$default" first-keystroke="alt G"/>
+        <action
+            id="ShowCallGraphAction"
+            class="com.mindmap.plugin.actions.ShowCallGraphAction"
+            text="Generate Mindmap"
+            description="Generate a call graph for the selected function"
+            icon="/icons/mindmapActionIcon.svg"
+        >
+            <add-to-group group-id="EditorPopupMenu" anchor="last" />
+            <keyboard-shortcut keymap="$default" first-keystroke="alt G" />
         </action>
     </actions>
 </idea-plugin>
