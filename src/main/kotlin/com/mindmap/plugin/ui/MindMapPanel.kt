@@ -36,9 +36,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     private var pendingData: GraphData? = null
     private var currentGraphData: GraphData? = null
 
-    // History for back/forward navigation — all access must be on EDT
-    private val history = mutableListOf<GraphData>()
-    private var historyIndex = -1
+    private val history = GraphHistory()
 
     // User-configurable depth (set via toolbar dropdowns)
     @Volatile private var outboundDepth = 3
@@ -54,7 +52,6 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
 
     companion object {
         private val LOG = Logger.getInstance(MindMapPanel::class.java)
-        private const val MAX_HISTORY_SIZE = 50
         private const val MAX_NODE_ID_LENGTH = 500
     }
 
@@ -110,7 +107,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         }
     }
 
-    /** Called from Alt+G action — resets history and starts fresh */
+    /** Called from Alt+G action -- resets history and starts fresh */
     fun updateGraph(data: GraphData) {
         currentGraphData = data
         if (!isBrowserReady) {
@@ -118,11 +115,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
             return
         }
 
-        // Clear history and start fresh
-        history.clear()
-        history.add(data)
-        historyIndex = 0
-
+        history.reset(data)
         sendGraphToJs(data)
         sendHistoryState()
     }
@@ -130,12 +123,11 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     /** Clears all data and history */
     private fun handleRestart() {
         history.clear()
-        historyIndex = -1
         currentGraphData = null
         sendHistoryState()
     }
 
-    /** Called from Cmd+Click expand — pushes to history stack */
+    /** Called from Cmd+Click expand -- pushes to history stack */
     private fun pushGraph(data: GraphData) {
         currentGraphData = data
         if (!isBrowserReady) {
@@ -143,22 +135,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
             return
         }
 
-        // Trim forward history if navigated back, then push
-        if (historyIndex < history.size - 1) {
-            while (history.size > historyIndex + 1) {
-                history.removeAt(history.size - 1)
-            }
-        }
-
-        // Cap history size to prevent unbounded memory growth
-        if (history.size >= MAX_HISTORY_SIZE) {
-            history.removeAt(0)
-            historyIndex = (historyIndex - 1).coerceAtLeast(0)
-        }
-
-        history.add(data)
-        historyIndex = history.size - 1
-
+        history.push(data)
         sendGraphToJs(data)
         sendHistoryState()
     }
@@ -216,10 +193,10 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
 
     private fun sendHistoryState() {
         if (isDisposed) return
-        val canBack = historyIndex > 0
-        val canForward = historyIndex < history.size - 1
-        val position = historyIndex + 1
-        val total = history.size
+        val canBack = history.canBack
+        val canForward = history.canForward
+        val position = history.position
+        val total = history.total
 
         SwingUtilities.invokeLater {
             if (isDisposed) return@invokeLater
@@ -398,9 +375,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                     SwingUtilities.invokeLater {
                         if (isDisposed) return@invokeLater
                         currentGraphData = mergedData
-                        if (historyIndex in history.indices) {
-                            history[historyIndex] = mergedData
-                        }
+                        history.updateCurrent(mergedData)
                         sendMergedGraphToJs(mergedData)
                     }
                 } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
@@ -413,22 +388,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     }
 
     private fun findPsiElement(nodeId: String): KtNamedFunction? {
-        return try {
-            // Search current graph first, then history (snapshot to avoid CME)
-            currentGraphData?.nodes?.find { it.id == nodeId }?.psiElement?.let {
-                if (it.isValid) return it
-            }
-            val historyCopy = synchronized(history) { history.toList() }
-            for (graphData in historyCopy.asReversed()) {
-                graphData.nodes.find { it.id == nodeId }?.psiElement?.let {
-                    if (it.isValid) return it
-                }
-            }
-            null
-        } catch (e: Exception) {
-            LOG.error("Failed to find PSI element for node: $nodeId", e)
-            null
-        }
+        return history.findPsiElement(nodeId)
     }
 
     private fun analyzeElement(element: PsiElement, indicator: ProgressIndicator): GraphData {
@@ -438,23 +398,17 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     }
 
     private fun handleHistoryBack() {
-        if (historyIndex > 0) {
-            historyIndex--
-            val data = history[historyIndex]
-            currentGraphData = data
-            sendGraphToJs(data)
-            sendHistoryState()
-        }
+        val data = history.back() ?: return
+        currentGraphData = data
+        sendGraphToJs(data)
+        sendHistoryState()
     }
 
     private fun handleHistoryForward() {
-        if (historyIndex < history.size - 1) {
-            historyIndex++
-            val data = history[historyIndex]
-            currentGraphData = data
-            sendGraphToJs(data)
-            sendHistoryState()
-        }
+        val data = history.forward() ?: return
+        currentGraphData = data
+        sendGraphToJs(data)
+        sendHistoryState()
     }
 
     private data class JsMessage(
