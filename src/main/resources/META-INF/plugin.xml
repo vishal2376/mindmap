@@ -36,7 +36,7 @@
 
     <p>For shortcuts, detailed help, and more visit <a href="https://vishal2376.github.io/mindmap">vishal2376.github.io/mindmap</a></p>
 
-    <p><em>Supports Kotlin (K1 &amp; K2) on IntelliJ IDEA 2024.3+ and Android Studio Ladybug+.</em></p>
+    <p><em>Supports Kotlin (K1 &amp; K2) on IntelliJ IDEA 2024.3–2026.1 and Android Studio Ladybug+.</em></p>
     ]]></description>
 
     <change-notes
