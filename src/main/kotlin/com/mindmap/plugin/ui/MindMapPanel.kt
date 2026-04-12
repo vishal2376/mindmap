@@ -362,7 +362,8 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                     val isValid = runReadAction { psiElement.isValid }
                     if (!isValid) return
 
-                    val traceData = analyzeElement(psiElement, indicator)
+                    val function = psiElement as? KtNamedFunction ?: return
+                    val traceData = GraphAnalyzer(project, outboundDepth, 1).buildGraph(function, indicator)
 
                     // Capture current on background thread (volatile read is safe)
                     val current = currentGraphData ?: return
