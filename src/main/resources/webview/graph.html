@@ -1710,6 +1710,70 @@
                     </div>
                 </div>
 
+                <div class="sm-sl" style="margin-top:12px">Retrace Depth <span style="font-size:9px;color:#7f849c;font-weight:400">(double-click)</span></div>
+
+                <!-- Retrace Outbound card -->
+                <div class="sdep out">
+                    <div class="sdep-top">
+                        <div class="sdep-ic">
+                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="8" cy="3" r="1.5" fill="currentColor" stroke="none"/>
+                                <line x1="8" y1="5" x2="8" y2="10.5"/>
+                                <polyline points="5.5,8.5 8,11 10.5,8.5"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="sdep-nm">Outbound Depth</div>
+                            <div class="sdep-ds">Outbound depth when retracing (double-click) a node.</div>
+                        </div>
+                    </div>
+                    <div class="sdep-bot">
+                        <div class="sdep-trk" id="rOutBars">
+                            <div class="sdep-seg on"></div>
+                            <div class="sdep-seg"></div>
+                            <div class="sdep-seg"></div>
+                            <div class="sdep-seg"></div>
+                            <div class="sdep-seg"></div>
+                        </div>
+                        <div class="sstep">
+                            <button class="stepb" data-dir="-1" data-target="rout">−</button>
+                            <span class="stepv" id="routV">1</span>
+                            <button class="stepb" data-dir="1" data-target="rout">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Retrace Inbound card -->
+                <div class="sdep inn">
+                    <div class="sdep-top">
+                        <div class="sdep-ic">
+                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="8" cy="13" r="1.5" fill="currentColor" stroke="none"/>
+                                <line x1="8" y1="5.5" x2="8" y2="11"/>
+                                <polyline points="5.5,7.5 8,5 10.5,7.5"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="sdep-nm">Inbound Depth</div>
+                            <div class="sdep-ds">Inbound depth when retracing (double-click) a node.</div>
+                        </div>
+                    </div>
+                    <div class="sdep-bot">
+                        <div class="sdep-trk" id="rInBars">
+                            <div class="sdep-seg on"></div>
+                            <div class="sdep-seg"></div>
+                            <div class="sdep-seg"></div>
+                            <div class="sdep-seg"></div>
+                            <div class="sdep-seg"></div>
+                        </div>
+                        <div class="sstep">
+                            <button class="stepb" data-dir="-1" data-target="rin">−</button>
+                            <span class="stepv" id="rinV">1</span>
+                            <button class="stepb" data-dir="1" data-target="rin">+</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="sm-ft">
                     <svg viewBox="0 0 16 16" fill="currentColor" width="10" height="10"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm.75 10.5h-1.5v-5h1.5v5zm0-6.5h-1.5V3.5h1.5V5z"/></svg>
                     Takes effect on next trace or graph navigation
@@ -1808,6 +1872,7 @@
         const $bhelp = $('bhelp'), $bres = $('bres'), $bset = $('bset');
         const $sOy = $('sOy'), $sCl = $('sCl');
         const $doutV = $('doutV'), $dinV = $('dinV');
+        const $routV = $('routV'), $rinV = $('rinV');
         const $bzi = $('bzi'), $bzo = $('bzo'), $bzf = $('bzf'), $bzc = $('bzc'), $zlv = $('zlv'), $zc = $('zc');
         const $bpan = $('bpan'), $bsel = $('bsel');
         const $sn = $('sn'), $se = $('se'), $sdp = $('sdp'), $sm = $('sm'), $sh = $('sh');
@@ -2610,9 +2675,13 @@
         }
         // ── Settings state ──
         let _sOut = 3, _sIn = 2;
+        let _rOut = 1, _rIn = 1;
 
         function _sendDepth() {
             if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'set_depth', outbound: _sOut, inbound: _sIn }));
+        }
+        function _sendRetraceDepth() {
+            if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'set_retrace_depth', outbound: _rOut, inbound: _rIn }));
         }
 
         // Settings modal open/close
@@ -2622,13 +2691,16 @@
 
         // Track segment updater
         function _updateTrack(target, val) {
-            const bars = document.getElementById(target === 'dout' ? 'doutBars' : 'dinBars');
+            const barsMap = { dout: 'doutBars', din: 'dinBars', rout: 'rOutBars', rin: 'rInBars' };
+            const bars = document.getElementById(barsMap[target]);
             if (!bars) return;
             bars.querySelectorAll('.sdep-seg').forEach((seg, i) => seg.classList.toggle('on', i < val));
         }
         // Init tracks to match default values
         _updateTrack('dout', _sOut);
         _updateTrack('din', _sIn);
+        _updateTrack('rout', _rOut);
+        _updateTrack('rin', _rIn);
 
         // Stepper buttons (+ / −)
         document.querySelectorAll('.stepb').forEach(btn => {
@@ -2638,17 +2710,25 @@
                 if (target === 'dout') {
                     _sOut = Math.max(1, Math.min(5, _sOut + dir));
                     $doutV.textContent = _sOut;
-                } else {
+                } else if (target === 'din') {
                     _sIn  = Math.max(1, Math.min(5, _sIn  + dir));
                     $dinV.textContent  = _sIn;
+                } else if (target === 'rout') {
+                    _rOut = Math.max(1, Math.min(5, _rOut + dir));
+                    $routV.textContent = _rOut;
+                } else if (target === 'rin') {
+                    _rIn  = Math.max(1, Math.min(5, _rIn  + dir));
+                    $rinV.textContent  = _rIn;
                 }
-                const v = target === 'dout' ? _sOut : _sIn;
+                const vals = { dout: _sOut, din: _sIn, rout: _rOut, rin: _rIn };
+                const v = vals[target];
                 // Update track and disabled state
                 _updateTrack(target, v);
                 btn.closest('.sstep').querySelectorAll('.stepb').forEach(b => {
                     b.disabled = (+b.dataset.dir === -1 && v <= 1) || (+b.dataset.dir === 1 && v >= 5);
                 });
-                _sendDepth();
+                if (target === 'rout' || target === 'rin') _sendRetraceDepth();
+                else _sendDepth();
             });
         });
 

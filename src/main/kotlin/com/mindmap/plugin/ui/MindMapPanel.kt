@@ -43,6 +43,8 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     // User-configurable depth (set via toolbar dropdowns)
     @Volatile private var outboundDepth = 3
     @Volatile private var inboundDepth  = 2
+    @Volatile private var retraceOutboundDepth = 1
+    @Volatile private var retraceInboundDepth  = 1
 
     // Node ID validation: only allow safe characters (alphanumeric, dots, colons, underscores, hyphens)
     private val nodeIdPattern = Regex("^[a-zA-Z0-9._:\\\\\\-<>,?*@\\[\\] ()]+$")
@@ -282,6 +284,11 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                     val inn = message.inbound?.coerceIn(1, 5) ?: return
                     outboundDepth = out; inboundDepth = inn
                 }
+                "set_retrace_depth" -> {
+                    val out = message.outbound?.coerceIn(1, 5) ?: return
+                    val inn = message.inbound?.coerceIn(1, 5) ?: return
+                    retraceOutboundDepth = out; retraceInboundDepth = inn
+                }
                 else -> LOG.debug("Unknown JS message type: ${message.type}")
             }
         } catch (e: Exception) {
@@ -363,7 +370,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                     if (!isValid) return
 
                     val function = psiElement as? KtNamedFunction ?: return
-                    val traceData = GraphAnalyzer(project, outboundDepth, 1).buildGraph(function, indicator)
+                    val traceData = GraphAnalyzer(project, retraceOutboundDepth, retraceInboundDepth).buildGraph(function, indicator)
 
                     // Capture current on background thread (volatile read is safe)
                     val current = currentGraphData ?: return
