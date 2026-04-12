@@ -1763,8 +1763,7 @@
         let net = null, nds = null, eds = null, D = null;
         let tColl = new Set();
         let sf = '', cv = 'graph', sel = null, drag = false, sOpen = false;
-        let panMode = true; const perfMode = true; // performance mode always on
-        const showLib = false; // library nodes always hidden for performance
+        let panMode = true;
         let _spaceHeld = false; // tracks Space key for temp pan
         let _dimmedNodes = new Set(); // tracks nodes dimmed on hover for fast blur restore
         let _hiddenNodes = new Set(); // persists across hover — nodes explicitly hidden by user
@@ -2368,7 +2367,7 @@
                     margin: 8,
                     font: { multi: 'html', face: '-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif', size: 11, color: '#cdd6f4' },
                     borderWidth: 1.5,
-                    shadow: { enabled: !perfMode, color: 'rgba(0,0,0,0.3)', size: 6, x: 0, y: 2 }
+                    shadow: false
                 },
                 edges: {
                     smooth: false,
@@ -2502,8 +2501,8 @@
 
         function rSub(ct, nid, nm, cm, pm, dep, vis, cont) {
             const pName = nm[nid]?.name || 'anonymous';
-            const cids = (cm[nid] || []).filter(id => nm[id] && !vis.has(id) && (showLib || !nm[id]?.isLibrary) && mS(nm[id]));
-            const pids = (pm[nid] || []).filter(id => nm[id] && !vis.has(id) && (showLib || !nm[id]?.isLibrary) && mS(nm[id]));
+            const cids = (cm[nid] || []).filter(id => nm[id] && !vis.has(id) && !nm[id]?.isLibrary && mS(nm[id]));
+            const pids = (pm[nid] || []).filter(id => nm[id] && !vis.has(id) && !nm[id]?.isLibrary && mS(nm[id]));
             if (cids.length > 0) {
                 ct.appendChild(mkSL(pName + ' calls', 'var(--child)', cids.length, dep, cont, true));
                 const g = document.createElement('div'); g.className = 'tg';
@@ -2511,8 +2510,8 @@
                     const cid = cids[ci]; const n = nm[cid]; if (!n) continue;
                     const isLast = ci === cids.length - 1 && pids.length === 0;
                     const cl = tColl.has(cid);
-                    const hc = (cm[cid] || []).some(id => nm[id] && !vis.has(id) && (showLib || !nm[id]?.isLibrary));
-                    const hp = (pm[cid] || []).some(id => nm[id] && !vis.has(id) && (showLib || !nm[id]?.isLibrary));
+                    const hc = (cm[cid] || []).some(id => nm[id] && !vis.has(id) && !nm[id]?.isLibrary);
+                    const hp = (pm[cid] || []).some(id => nm[id] && !vis.has(id) && !nm[id]?.isLibrary);
                     const hk = hc || hp;
                     const lastInGroup = ci === cids.length - 1;
                     g.appendChild(mkTR(n, dep + 1, hk, cl, lastInGroup, cont));
@@ -2526,8 +2525,8 @@
                 for (let pi = 0; pi < pids.length; pi++) {
                     const pid = pids[pi]; const n = nm[pid]; if (!n) continue;
                     const cl = tColl.has(pid);
-                    const hc = (cm[pid] || []).some(id => nm[id] && !vis.has(id) && (showLib || !nm[id]?.isLibrary));
-                    const hp = (pm[pid] || []).some(id => nm[id] && !vis.has(id) && (showLib || !nm[id]?.isLibrary));
+                    const hc = (cm[pid] || []).some(id => nm[id] && !vis.has(id) && !nm[id]?.isLibrary);
+                    const hp = (pm[pid] || []).some(id => nm[id] && !vis.has(id) && !nm[id]?.isLibrary);
                     const hk = hc || hp;
                     const lastInGroup = pi === pids.length - 1;
                     g.appendChild(mkTR(n, dep + 1, hk, cl, lastInGroup, cont));
@@ -2622,7 +2621,7 @@
         function uLeg() {
             if (!D || !D.nodes) return; $li.innerHTML = '';
             const tc = { ROOT: 0, OUTBOUND: 0, INBOUND: 0 }; let lb = 0;
-            for (const n of D.nodes) { if (!showLib && n.isLibrary) continue; if (tc[n.type] !== undefined) tc[n.type]++; if (n.isLibrary) lb++ }
+            for (const n of D.nodes) { if (n.isLibrary) continue; if (tc[n.type] !== undefined) tc[n.type]++; if (n.isLibrary) lb++ }
             $li.innerHTML = `<div class="lr"><span class="lc" style="background:var(--root)"></span>Root<span class="ln">${tc.ROOT}</span></div><div class="lr"><span class="lc" style="background:var(--child)"></span>Children<span class="ln">${tc.OUTBOUND}</span></div><div class="lr"><span class="lc" style="background:var(--parent)"></span>Parents<span class="ln">${tc.INBOUND}</span></div>` + (lb ? `<div class="lr"><span class="lc" style="background:var(--lib)"></span>Library<span class="ln">${lb}</span></div>` : '');
             $leg.classList.toggle('h', cv === 'tree');
         }
