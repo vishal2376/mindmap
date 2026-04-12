@@ -702,82 +702,50 @@
         }
         #sOy.s { display: flex; }
         #sOy.s .mdl { transform: scale(1); opacity: 1; }
-        .smdl { width: 440px; max-width: calc(100vw - 32px); }
-        /* header */
+        .smdl { width: 400px; max-width: calc(100vw - 32px); }
         .smhd {
-            padding: 18px 20px 16px; border-bottom: 1px solid var(--bd);
-            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 20px 24px 16px; border-bottom: 1px solid var(--bd);
+            display: flex; align-items: center; justify-content: space-between;
         }
-        .smhd-l { display: flex; align-items: center; gap: 12px; }
-        .smhd-ico {
-            width: 36px; height: 36px; border-radius: 10px;
-            background: rgba(137,180,250,.1); display: grid; place-items: center;
-            color: var(--accent); flex-shrink: 0;
+        .smhd-ttl { font: 700 15px/1 inherit; color: #e4e8f7; letter-spacing: -.2px; }
+        .smbd { padding: 20px 24px 22px; display: flex; flex-direction: column; gap: 20px; }
+        /* section */
+        .sm-sec { display: flex; flex-direction: column; gap: 12px; }
+        .sm-sec-hdr { display: flex; align-items: baseline; gap: 8px; }
+        .sm-sec-ttl { font: 600 13px/1 inherit; color: #e4e8f7; }
+        .sm-sec-sub { font-size: 11px; color: var(--tx4); }
+        /* slider row */
+        .srow { display: flex; align-items: center; gap: 14px; }
+        .srow-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .srow-dot.out { background: var(--child); }
+        .srow-dot.inn { background: var(--parent); }
+        .srow-lbl { font: 500 13px/1 inherit; color: #d0d4e6; min-width: 76px; }
+        .srow-slider { flex: 1; position: relative; height: 28px; display: flex; align-items: center; }
+        .srow-slider input[type=range] {
+            -webkit-appearance: none; appearance: none; width: 100%; height: 6px;
+            border-radius: 3px; background: var(--sf3); outline: none; cursor: pointer;
         }
-        .smhd-ico svg { width: 18px; height: 18px; }
-        .smhd-ttl { font: 700 13px/1 inherit; color: var(--tx); }
-        .smhd-sub { font-size: 10px; color: var(--tx5); margin-top: 4px; }
-        /* body */
-        .smbd { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 10px; }
-        /* section label */
-        .sm-sl {
-            font: 600 9px/1 'JetBrains Mono', monospace; letter-spacing: 1.2px;
-            text-transform: uppercase; color: var(--tx5); margin-bottom: 4px;
-            display: flex; align-items: center; gap: 10px;
+        .srow-slider input[type=range].out::-webkit-slider-runnable-track { background: linear-gradient(to right, var(--child) var(--fill), var(--sf3) var(--fill)); height: 6px; border-radius: 3px; }
+        .srow-slider input[type=range].inn::-webkit-slider-runnable-track { background: linear-gradient(to right, var(--parent) var(--fill), var(--sf3) var(--fill)); height: 6px; border-radius: 3px; }
+        .srow-slider input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+            background: #e4e8f7; border: 2px solid var(--bg); cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0,0,0,.4); margin-top: -6px;
+            transition: transform .1s;
         }
-        .sm-sl::after { content: ''; flex: 1; height: 1px; background: var(--bd); }
-        /* depth card */
-        .sdep {
-            background: var(--sf); border: 1px solid var(--bd); border-radius: 10px;
-            padding: 14px 16px; position: relative; overflow: hidden;
+        .srow-slider input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        .srow-slider input[type=range]:active::-webkit-slider-thumb { transform: scale(1.05); }
+        .srow-val {
+            min-width: 28px; text-align: center; font: 700 14px/1 'JetBrains Mono', monospace;
+            color: #e4e8f7; user-select: none; flex-shrink: 0;
         }
-        .sdep::before {
-            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-            width: 3px; border-radius: 10px 0 0 10px;
-        }
-        .sdep.out::before { background: var(--child); }
-        .sdep.inn::before { background: var(--parent); }
-        .sdep-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
-        .sdep-ic {
-            width: 36px; height: 36px; border-radius: 9px;
-            display: grid; place-items: center; flex-shrink: 0;
-        }
-        .sdep.out .sdep-ic { background: rgba(137,180,250,.12); color: var(--child); }
-        .sdep.inn .sdep-ic { background: rgba(166,227,161,.12); color: var(--parent); }
-        .sdep-ic svg { width: 18px; height: 18px; }
-        .sdep-nm { font: 600 12px/1.3 inherit; color: var(--tx); margin-bottom: 5px; }
-        .sdep-ds { font-size: 10.5px; color: var(--tx4); line-height: 1.55; }
-        .sdep-ds em { font-style: normal; font-weight: 600; color: var(--tx3); }
-        .sdep-bot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        /* depth track */
-        .sdep-trk { display: flex; align-items: center; gap: 4px; flex: 1; }
-        .sdep-seg { flex: 1; height: 5px; border-radius: 3px; background: var(--sf3); transition: background .15s; }
-        .sdep.out .sdep-seg.on { background: var(--child); }
-        .sdep.inn .sdep-seg.on { background: var(--parent); }
-        /* stepper */
-        .sstep {
-            display: flex; align-items: center; background: var(--bg);
-            border: 1px solid var(--bd); border-radius: 8px; overflow: hidden; flex-shrink: 0;
-        }
-        .stepb {
-            width: 32px; height: 32px; background: 0; border: 0;
-            color: var(--tx3); font-size: 18px; cursor: pointer; line-height: 1;
-            display: grid; place-items: center; transition: background .12s, color .12s;
-            font-family: inherit;
-        }
-        .stepb:hover:not(:disabled) { background: var(--sf); color: var(--tx); }
-        .stepb:active:not(:disabled) { background: var(--sf2); }
-        .stepb:disabled { color: var(--bd2); cursor: default; }
-        .stepv {
-            min-width: 36px; text-align: center; font: 700 13px/1 'JetBrains Mono', monospace;
-            color: var(--tx); user-select: none;
-            border-left: 1px solid var(--bd); border-right: 1px solid var(--bd);
-            height: 32px; display: flex; align-items: center; justify-content: center;
-        }
+        /* ticks under slider */
+        .srow-ticks { display: flex; justify-content: space-between; position: absolute; bottom: -1px; left: 2px; right: 2px; pointer-events: none; }
+        .srow-tick { width: 3px; height: 3px; border-radius: 50%; background: var(--tx5); opacity: .5; }
         /* footer */
         .sm-ft {
-            font-size: 10px; color: var(--tx5); display: flex; align-items: center;
-            justify-content: center; gap: 5px; padding-top: 2px;
+            font-size: 11px; color: var(--tx4); display: flex; align-items: center;
+            justify-content: center; gap: 6px; padding-top: 4px;
         }
 
         /* ── NODE EYE BUTTON ── */
@@ -1631,152 +1599,46 @@
 
     <div id="sOy" onclick="if(event.target===this)this.classList.remove('s')">
         <div class="mdl smdl">
-            <!-- Header -->
             <div class="smhd">
-                <div class="smhd-l">
-                    <div class="smhd-ico">
-                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M13.2 10a1.2 1.2 0 0 0 .24 1.32l.04.04a1.46 1.46 0 0 1-2.06 2.06l-.04-.04a1.2 1.2 0 0 0-1.32-.24 1.2 1.2 0 0 0-.73 1.1V14.5a1.45 1.45 0 1 1-2.9 0v-.06A1.2 1.2 0 0 0 5.66 13a1.2 1.2 0 0 0-1.32.24l-.04.04a1.46 1.46 0 0 1-2.06-2.06l.04-.04A1.2 1.2 0 0 0 2.52 9.8a1.2 1.2 0 0 0-1.1-.73H1.5a1.45 1.45 0 1 1 0-2.9h.06A1.2 1.2 0 0 0 2.9 5.66a1.2 1.2 0 0 0-.24-1.32l-.04-.04a1.46 1.46 0 0 1 2.06-2.06l.04.04A1.2 1.2 0 0 0 6.04 2.52a1.2 1.2 0 0 0 .73-1.1V1.5a1.45 1.45 0 1 1 2.9 0v.06a1.2 1.2 0 0 0 .73 1.1 1.2 1.2 0 0 0 1.32-.24l.04-.04a1.46 1.46 0 0 1 2.06 2.06l-.04.04A1.2 1.2 0 0 0 13.52 6a1.2 1.2 0 0 0 1.1.73H14.5a1.45 1.45 0 1 1 0 2.9h-.06a1.2 1.2 0 0 0-1.1.73z"/></svg>
-                    </div>
-                    <div>
-                        <div class="smhd-ttl">Settings</div>
-                        <div class="smhd-sub">Configure graph analysis</div>
-                    </div>
-                </div>
+                <div class="smhd-ttl">Settings</div>
                 <button class="mc" id="sCl"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg></button>
             </div>
-            <!-- Body -->
             <div class="smbd">
-                <div class="sm-sl">Graph Depth</div>
-
-                <!-- Outbound card -->
-                <div class="sdep out">
-                    <div class="sdep-top">
-                        <div class="sdep-ic">
-                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="8" cy="3" r="1.5" fill="currentColor" stroke="none"/>
-                                <line x1="8" y1="5" x2="8" y2="10.5"/>
-                                <polyline points="5.5,8.5 8,11 10.5,8.5"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <div class="sdep-nm">Outbound Depth</div>
-                            <div class="sdep-ds">How many levels deep to follow calls <em>made by</em> the selected function. Depth 3 means: root → its calls → their calls → their calls.</div>
-                        </div>
+                <div class="sm-sec">
+                    <div class="sm-sec-hdr"><span class="sm-sec-ttl">Graph Depth</span><span class="sm-sec-sub">Alt+G / Cmd+Click</span></div>
+                    <div class="srow">
+                        <div class="srow-dot out"></div>
+                        <span class="srow-lbl">Outbound</span>
+                        <div class="srow-slider"><input type="range" class="out" id="sldDout" min="1" max="5" value="3"><div class="srow-ticks"><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span></div></div>
+                        <span class="srow-val" id="doutV">3</span>
                     </div>
-                    <div class="sdep-bot">
-                        <div class="sdep-trk" id="doutBars">
-                            <div class="sdep-seg on"></div>
-                            <div class="sdep-seg on"></div>
-                            <div class="sdep-seg on"></div>
-                            <div class="sdep-seg"></div>
-                            <div class="sdep-seg"></div>
-                        </div>
-                        <div class="sstep">
-                            <button class="stepb" data-dir="-1" data-target="dout">−</button>
-                            <span class="stepv" id="doutV">3</span>
-                            <button class="stepb" data-dir="1" data-target="dout">+</button>
-                        </div>
+                    <div class="srow">
+                        <div class="srow-dot inn"></div>
+                        <span class="srow-lbl">Inbound</span>
+                        <div class="srow-slider"><input type="range" class="inn" id="sldDin" min="1" max="5" value="2"><div class="srow-ticks"><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span></div></div>
+                        <span class="srow-val" id="dinV">2</span>
                     </div>
                 </div>
 
-                <!-- Inbound card -->
-                <div class="sdep inn">
-                    <div class="sdep-top">
-                        <div class="sdep-ic">
-                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="8" cy="13" r="1.5" fill="currentColor" stroke="none"/>
-                                <line x1="8" y1="5.5" x2="8" y2="11"/>
-                                <polyline points="5.5,7.5 8,5 10.5,7.5"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <div class="sdep-nm">Inbound Depth</div>
-                            <div class="sdep-ds">How many levels up to find functions that <em>call</em> the selected function. Depth 2 means: root ← its callers ← their callers.</div>
-                        </div>
+                <div class="sm-sec">
+                    <div class="sm-sec-hdr"><span class="sm-sec-ttl">Retrace Depth</span><span class="sm-sec-sub">Double-click merge</span></div>
+                    <div class="srow">
+                        <div class="srow-dot out"></div>
+                        <span class="srow-lbl">Outbound</span>
+                        <div class="srow-slider"><input type="range" class="out" id="sldRout" min="1" max="5" value="1"><div class="srow-ticks"><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span></div></div>
+                        <span class="srow-val" id="routV">1</span>
                     </div>
-                    <div class="sdep-bot">
-                        <div class="sdep-trk" id="dinBars">
-                            <div class="sdep-seg on"></div>
-                            <div class="sdep-seg on"></div>
-                            <div class="sdep-seg"></div>
-                            <div class="sdep-seg"></div>
-                            <div class="sdep-seg"></div>
-                        </div>
-                        <div class="sstep">
-                            <button class="stepb" data-dir="-1" data-target="din">−</button>
-                            <span class="stepv" id="dinV">2</span>
-                            <button class="stepb" data-dir="1" data-target="din">+</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="sm-sl" style="margin-top:12px">Retrace Depth <span style="font-size:9px;color:#7f849c;font-weight:400">(double-click)</span></div>
-
-                <!-- Retrace Outbound card -->
-                <div class="sdep out">
-                    <div class="sdep-top">
-                        <div class="sdep-ic">
-                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="8" cy="3" r="1.5" fill="currentColor" stroke="none"/>
-                                <line x1="8" y1="5" x2="8" y2="10.5"/>
-                                <polyline points="5.5,8.5 8,11 10.5,8.5"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <div class="sdep-nm">Outbound Depth</div>
-                            <div class="sdep-ds">Outbound depth when retracing (double-click) a node.</div>
-                        </div>
-                    </div>
-                    <div class="sdep-bot">
-                        <div class="sdep-trk" id="rOutBars">
-                            <div class="sdep-seg on"></div>
-                            <div class="sdep-seg"></div>
-                            <div class="sdep-seg"></div>
-                            <div class="sdep-seg"></div>
-                            <div class="sdep-seg"></div>
-                        </div>
-                        <div class="sstep">
-                            <button class="stepb" data-dir="-1" data-target="rout">−</button>
-                            <span class="stepv" id="routV">1</span>
-                            <button class="stepb" data-dir="1" data-target="rout">+</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Retrace Inbound card -->
-                <div class="sdep inn">
-                    <div class="sdep-top">
-                        <div class="sdep-ic">
-                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="8" cy="13" r="1.5" fill="currentColor" stroke="none"/>
-                                <line x1="8" y1="5.5" x2="8" y2="11"/>
-                                <polyline points="5.5,7.5 8,5 10.5,7.5"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <div class="sdep-nm">Inbound Depth</div>
-                            <div class="sdep-ds">Inbound depth when retracing (double-click) a node.</div>
-                        </div>
-                    </div>
-                    <div class="sdep-bot">
-                        <div class="sdep-trk" id="rInBars">
-                            <div class="sdep-seg on"></div>
-                            <div class="sdep-seg"></div>
-                            <div class="sdep-seg"></div>
-                            <div class="sdep-seg"></div>
-                            <div class="sdep-seg"></div>
-                        </div>
-                        <div class="sstep">
-                            <button class="stepb" data-dir="-1" data-target="rin">−</button>
-                            <span class="stepv" id="rinV">1</span>
-                            <button class="stepb" data-dir="1" data-target="rin">+</button>
-                        </div>
+                    <div class="srow">
+                        <div class="srow-dot inn"></div>
+                        <span class="srow-lbl">Inbound</span>
+                        <div class="srow-slider"><input type="range" class="inn" id="sldRin" min="1" max="5" value="1"><div class="srow-ticks"><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span></div></div>
+                        <span class="srow-val" id="rinV">1</span>
                     </div>
                 </div>
 
                 <div class="sm-ft">
-                    <svg viewBox="0 0 16 16" fill="currentColor" width="10" height="10"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm.75 10.5h-1.5v-5h1.5v5zm0-6.5h-1.5V3.5h1.5V5z"/></svg>
-                    Takes effect on next trace or graph navigation
+                    <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm.75 10.5h-1.5v-5h1.5v5zm0-6.5h-1.5V3.5h1.5V5z"/></svg>
+                    Changes apply on next graph generation
                 </div>
             </div>
         </div>
@@ -2784,46 +2646,30 @@
         $sCl.addEventListener('click',  () => $sOy.classList.remove('s'));
         $sOy.addEventListener('click',  e => { if (e.target === $sOy) $sOy.classList.remove('s'); });
 
-        // Track segment updater
-        function _updateTrack(target, val) {
-            const barsMap = { dout: 'doutBars', din: 'dinBars', rout: 'rOutBars', rin: 'rInBars' };
-            const bars = document.getElementById(barsMap[target]);
-            if (!bars) return;
-            bars.querySelectorAll('.sdep-seg').forEach((seg, i) => seg.classList.toggle('on', i < val));
+        // Slider fill updater
+        function _updateSliderFill(slider) {
+            const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+            slider.style.setProperty('--fill', pct + '%');
         }
-        // Init tracks to match default values
-        _updateTrack('dout', _sOut);
-        _updateTrack('din', _sIn);
-        _updateTrack('rout', _rOut);
-        _updateTrack('rin', _rIn);
 
-        // Stepper buttons (+ / −)
-        document.querySelectorAll('.stepb').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const dir    = +btn.dataset.dir;
-                const target = btn.dataset.target;
-                if (target === 'dout') {
-                    _sOut = Math.max(1, Math.min(5, _sOut + dir));
-                    $doutV.textContent = _sOut;
-                } else if (target === 'din') {
-                    _sIn  = Math.max(1, Math.min(5, _sIn  + dir));
-                    $dinV.textContent  = _sIn;
-                } else if (target === 'rout') {
-                    _rOut = Math.max(1, Math.min(5, _rOut + dir));
-                    $routV.textContent = _rOut;
-                } else if (target === 'rin') {
-                    _rIn  = Math.max(1, Math.min(5, _rIn  + dir));
-                    $rinV.textContent  = _rIn;
-                }
-                const vals = { dout: _sOut, din: _sIn, rout: _rOut, rin: _rIn };
-                const v = vals[target];
-                // Update track and disabled state
-                _updateTrack(target, v);
-                btn.closest('.sstep').querySelectorAll('.stepb').forEach(b => {
-                    b.disabled = (+b.dataset.dir === -1 && v <= 1) || (+b.dataset.dir === 1 && v >= 5);
-                });
-                if (target === 'rout' || target === 'rin') _sendRetraceDepth();
-                else _sendDepth();
+        // Slider config: id → { stateKey, displayEl, sendFn }
+        const _sliders = {
+            sldDout: { get: () => _sOut, set: v => _sOut = v, el: () => $doutV, send: _sendDepth },
+            sldDin:  { get: () => _sIn,  set: v => _sIn = v,  el: () => $dinV,  send: _sendDepth },
+            sldRout: { get: () => _rOut, set: v => _rOut = v, el: () => $routV, send: _sendRetraceDepth },
+            sldRin:  { get: () => _rIn,  set: v => _rIn = v,  el: () => $rinV,  send: _sendRetraceDepth }
+        };
+
+        Object.entries(_sliders).forEach(([id, cfg]) => {
+            const slider = document.getElementById(id);
+            if (!slider) return;
+            _updateSliderFill(slider);
+            slider.addEventListener('input', () => {
+                const v = +slider.value;
+                cfg.set(v);
+                cfg.el().textContent = v;
+                _updateSliderFill(slider);
+                cfg.send();
             });
         });
 
