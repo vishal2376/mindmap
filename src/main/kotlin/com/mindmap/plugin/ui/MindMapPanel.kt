@@ -1,6 +1,5 @@
 package com.mindmap.plugin.ui
 
-import com.google.gson.GsonBuilder
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadAction
@@ -11,15 +10,11 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.Disposable
-import com.intellij.ui.jcef.JBCefBrowser
-import com.intellij.ui.jcef.JBCefJSQuery
 import com.intellij.psi.PsiElement
+import com.intellij.ui.jcef.JBCefBrowser
 import com.mindmap.plugin.analysis.GraphAnalyzer
 import com.mindmap.plugin.analysis.GraphData
 import org.jetbrains.kotlin.psi.KtNamedFunction
-import org.cef.browser.CefBrowser
-import org.cef.browser.CefFrame
-import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.BorderLayout
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
@@ -28,255 +23,83 @@ import javax.swing.SwingUtilities
 class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Disposable {
 
     private val browser = JBCefBrowser()
-    private val gson = GsonBuilder().excludeFieldsWithModifiers(java.lang.reflect.Modifier.TRANSIENT).create()
-    private val jsQuery = JBCefJSQuery.create(browser)
-    @Volatile private var isDisposed = false
-
-    @Volatile private var isBrowserReady = false
-    private var pendingData: GraphData? = null
-    private var currentGraphData: GraphData? = null
-
+    private val bridge = JsBridge(browser) { event -> handleEvent(event) }
     private val history = GraphHistory()
+    @Volatile private var isDisposed = false
+    @Volatile private var currentGraphData: GraphData? = null
 
-    // User-configurable depth (set via toolbar dropdowns)
     @Volatile private var outboundDepth = 3
     @Volatile private var inboundDepth  = 2
     @Volatile private var retraceOutboundDepth = 1
     @Volatile private var retraceInboundDepth  = 1
 
-    // Node ID validation: only allow safe characters (alphanumeric, dots, colons, underscores, hyphens)
-    private val nodeIdPattern = Regex("^[a-zA-Z0-9._:\\\\\\-<>,?*@\\[\\] ()]+$")
-
-    // Allowed URL schemes for BrowserUtil.browse
-    private val allowedSchemes = setOf("http", "https")
-
     companion object {
         private val LOG = Logger.getInstance(MindMapPanel::class.java)
-        private const val MAX_NODE_ID_LENGTH = 500
     }
 
     init {
         add(browser.component, BorderLayout.CENTER)
-        setupJsBridge()
-        loadHtml()
-    }
-
-    private fun setupJsBridge() {
-        jsQuery.addHandler { request ->
-            try {
-                handleJsMessage(request)
-            } catch (e: Exception) {
-                LOG.error("JS bridge handler error", e)
-            }
-            null
-        }
-
-        browser.jbCefClient.addLoadHandler(object : CefLoadHandlerAdapter() {
-            override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
-                try {
-                    val bridgeCode = """
-                        window.jbCefQuery = function(arg) { ${jsQuery.inject("arg")} };
-                    """.trimIndent()
-                    browser.executeJavaScript(bridgeCode, browser.url, 0)
-
-                    SwingUtilities.invokeLater {
-                        if (isDisposed) return@invokeLater
-                        isBrowserReady = true
-                        pendingData?.let {
-                            updateGraph(it)
-                            pendingData = null
-                        }
-                    }
-                } catch (e: Exception) {
-                    LOG.error("Failed to initialize JS bridge", e)
-                }
-            }
-        }, browser.cefBrowser)
-    }
-
-    private fun loadHtml() {
-        try {
-            val htmlContent = javaClass.getResource("/webview/graph.html")?.readText()
-            if (htmlContent != null) {
-                browser.loadHTML(htmlContent)
-            } else {
-                LOG.warn("Could not load graph.html from resources")
-            }
-        } catch (e: Exception) {
-            LOG.error("Failed to load HTML", e)
-        }
+        bridge.setup { updateGraph(currentGraphData ?: return@setup) }
+        bridge.loadHtml()
     }
 
     /** Called from Alt+G action -- resets history and starts fresh */
     fun updateGraph(data: GraphData) {
         currentGraphData = data
-        if (!isBrowserReady) {
-            pendingData = data
+        if (!bridge.isReady) {
+            bridge.markPending(data)
             return
         }
 
         history.reset(data)
-        sendGraphToJs(data)
+        bridge.sendGraph(data)
         sendHistoryState()
     }
 
-    /** Clears all data and history */
+    private fun handleEvent(event: JsBridge.MessageEvent) {
+        when (event) {
+            is JsBridge.MessageEvent.Navigate -> handleNavigate(event.nodeId)
+            is JsBridge.MessageEvent.OpenUrl -> BrowserUtil.browse(event.url)
+            is JsBridge.MessageEvent.Expand -> handleExpand(event.nodeId)
+            is JsBridge.MessageEvent.Trace -> handleTrace(event.nodeId)
+            is JsBridge.MessageEvent.HistoryBack -> SwingUtilities.invokeLater { if (!isDisposed) handleHistoryBack() }
+            is JsBridge.MessageEvent.HistoryForward -> SwingUtilities.invokeLater { if (!isDisposed) handleHistoryForward() }
+            is JsBridge.MessageEvent.Restart -> SwingUtilities.invokeLater { if (!isDisposed) handleRestart() }
+            is JsBridge.MessageEvent.SetDepth -> {
+                outboundDepth = event.outbound; inboundDepth = event.inbound
+            }
+            is JsBridge.MessageEvent.SetRetraceDepth -> {
+                retraceOutboundDepth = event.outbound; retraceInboundDepth = event.inbound
+            }
+        }
+    }
+
+    private fun pushGraph(data: GraphData) {
+        currentGraphData = data
+        if (!bridge.isReady) {
+            bridge.markPending(data)
+            return
+        }
+
+        history.push(data)
+        bridge.sendGraph(data)
+        sendHistoryState()
+    }
+
+    private fun sendHistoryState() {
+        if (isDisposed) return
+        bridge.sendHistoryState(history.canBack, history.canForward, history.position, history.total)
+    }
+
     private fun handleRestart() {
         history.clear()
         currentGraphData = null
         sendHistoryState()
     }
 
-    /** Called from Cmd+Click expand -- pushes to history stack */
-    private fun pushGraph(data: GraphData) {
-        currentGraphData = data
-        if (!isBrowserReady) {
-            pendingData = data
-            return
-        }
-
-        history.push(data)
-        sendGraphToJs(data)
-        sendHistoryState()
-    }
-
-    /**
-     * Safely sends graph data to JS using Base64 encoding to prevent XSS/injection.
-     */
-    private fun sendGraphToJs(data: GraphData) {
+    private fun handleNavigate(nodeId: String) {
         if (isDisposed) return
-        try {
-            val json = gson.toJson(data)
-            val encoded = java.util.Base64.getEncoder().encodeToString(json.toByteArray(Charsets.UTF_8))
 
-            SwingUtilities.invokeLater {
-                if (isDisposed) return@invokeLater
-                try {
-                    browser.cefBrowser.executeJavaScript(
-                        "drawGraph(JSON.parse(atob('$encoded')))",
-                        browser.cefBrowser.url, 0
-                    )
-                } catch (e: Exception) {
-                    LOG.error("Failed to send graph to JS", e)
-                }
-            }
-        } catch (e: Exception) {
-            LOG.error("Failed to encode graph data", e)
-        }
-    }
-
-    /**
-     * Sends merged graph data to JS, preserving existing node positions.
-     * Used for trace (double-click) so the view doesn't jump.
-     */
-    private fun sendMergedGraphToJs(data: GraphData) {
-        if (isDisposed) return
-        try {
-            val json = gson.toJson(data)
-            val encoded = java.util.Base64.getEncoder().encodeToString(json.toByteArray(Charsets.UTF_8))
-
-            SwingUtilities.invokeLater {
-                if (isDisposed) return@invokeLater
-                try {
-                    browser.cefBrowser.executeJavaScript(
-                        "mergeGraph(JSON.parse(atob('$encoded')))",
-                        browser.cefBrowser.url, 0
-                    )
-                } catch (e: Exception) {
-                    LOG.error("Failed to send merged graph to JS", e)
-                }
-            }
-        } catch (e: Exception) {
-            LOG.error("Failed to encode merged graph data", e)
-        }
-    }
-
-    private fun sendHistoryState() {
-        if (isDisposed) return
-        val canBack = history.canBack
-        val canForward = history.canForward
-        val position = history.position
-        val total = history.total
-
-        SwingUtilities.invokeLater {
-            if (isDisposed) return@invokeLater
-            try {
-                browser.cefBrowser.executeJavaScript(
-                    "updateHistoryState($canBack, $canForward, $position, $total)",
-                    browser.cefBrowser.url, 0
-                )
-            } catch (e: Exception) {
-                LOG.error("Failed to send history state", e)
-            }
-        }
-    }
-
-    private fun validateNodeId(nodeId: String?): String? {
-        if (nodeId == null) return null
-        if (nodeId.length > MAX_NODE_ID_LENGTH) {
-            LOG.warn("Node ID exceeds max length: ${nodeId.length}")
-            return null
-        }
-        if (!nodeIdPattern.matches(nodeId)) {
-            LOG.warn("Invalid node ID format rejected")
-            return null
-        }
-        return nodeId
-    }
-
-    private fun handleJsMessage(request: String) {
-        try {
-            if (request.length > 2048) {
-                LOG.warn("JS message too large: ${request.length} bytes")
-                return
-            }
-            val message = gson.fromJson(request, JsMessage::class.java)
-
-            // Dispatch all state-mutating operations to EDT for thread safety
-            when (message.type) {
-                "navigate" -> {
-                    if (message.url != null) {
-                        // Validate URL scheme before opening
-                        try {
-                            val uri = java.net.URI(message.url)
-                            if (uri.scheme?.lowercase() in allowedSchemes) {
-                                BrowserUtil.browse(message.url)
-                            } else {
-                                LOG.warn("Blocked URL with disallowed scheme: ${uri.scheme}")
-                            }
-                        } catch (e: Exception) {
-                            LOG.warn("Invalid URL rejected: ${message.url}", e)
-                        }
-                    } else {
-                        handleNavigate(validateNodeId(message.id))
-                    }
-                }
-                "expand" -> handleExpand(validateNodeId(message.id))
-                "trace" -> handleTrace(validateNodeId(message.id))
-                "history_back" -> SwingUtilities.invokeLater { if (!isDisposed) handleHistoryBack() }
-                "history_forward" -> SwingUtilities.invokeLater { if (!isDisposed) handleHistoryForward() }
-                "restart" -> SwingUtilities.invokeLater { if (!isDisposed) handleRestart() }
-                "set_depth" -> {
-                    val out = message.outbound?.coerceIn(1, 5) ?: return
-                    val inn = message.inbound?.coerceIn(1, 5) ?: return
-                    outboundDepth = out; inboundDepth = inn
-                }
-                "set_retrace_depth" -> {
-                    val out = message.outbound?.coerceIn(1, 5) ?: return
-                    val inn = message.inbound?.coerceIn(1, 5) ?: return
-                    retraceOutboundDepth = out; retraceInboundDepth = inn
-                }
-                else -> LOG.debug("Unknown JS message type: ${message.type}")
-            }
-        } catch (e: Exception) {
-            LOG.warn("Failed to handle JS message", e)
-        }
-    }
-
-    private fun handleNavigate(nodeId: String?) {
-        if (nodeId == null || isDisposed) return
-
-        // Read PSI data on a background thread to avoid blocking EDT
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 val result = runReadAction {
@@ -304,10 +127,10 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         }
     }
 
-    private fun handleExpand(nodeId: String?) {
-        if (nodeId == null || isDisposed) return
+    private fun handleExpand(nodeId: String) {
+        if (isDisposed) return
 
-        val psiElement = findPsiElement(nodeId) ?: return
+        val psiElement = history.findPsiElement(nodeId) ?: return
 
         ProgressManager.getInstance().run(object : Task.Backgroundable(
             project, "Generating Mindmap...", true
@@ -332,10 +155,10 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         })
     }
 
-    private fun handleTrace(nodeId: String?) {
-        if (nodeId == null || isDisposed) return
+    private fun handleTrace(nodeId: String) {
+        if (isDisposed) return
 
-        val psiElement = findPsiElement(nodeId) ?: return
+        val psiElement = history.findPsiElement(nodeId) ?: return
 
         ProgressManager.getInstance().run(object : Task.Backgroundable(
             project, "Tracing function...", true
@@ -349,7 +172,6 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                     val function = psiElement as? KtNamedFunction ?: return
                     val traceData = GraphAnalyzer(project, retraceOutboundDepth, retraceInboundDepth).buildGraph(function, indicator)
 
-                    // Capture current on background thread (volatile read is safe)
                     val current = currentGraphData ?: return
 
                     // Merge using Set-based dedup for O(1) lookups
@@ -376,7 +198,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                         if (isDisposed) return@invokeLater
                         currentGraphData = mergedData
                         history.updateCurrent(mergedData)
-                        sendMergedGraphToJs(mergedData)
+                        bridge.sendMergedGraph(mergedData)
                     }
                 } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                     throw ce
@@ -385,10 +207,6 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                 }
             }
         })
-    }
-
-    private fun findPsiElement(nodeId: String): KtNamedFunction? {
-        return history.findPsiElement(nodeId)
     }
 
     private fun analyzeElement(element: PsiElement, indicator: ProgressIndicator): GraphData {
@@ -400,24 +218,16 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     private fun handleHistoryBack() {
         val data = history.back() ?: return
         currentGraphData = data
-        sendGraphToJs(data)
+        bridge.sendGraph(data)
         sendHistoryState()
     }
 
     private fun handleHistoryForward() {
         val data = history.forward() ?: return
         currentGraphData = data
-        sendGraphToJs(data)
+        bridge.sendGraph(data)
         sendHistoryState()
     }
-
-    private data class JsMessage(
-        val type: String = "",
-        val id: String? = null,
-        val url: String? = null,
-        val outbound: Int? = null,
-        val inbound: Int? = null
-    )
 
     override fun dispose() {
         if (!isDisposed) {
@@ -425,14 +235,11 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
             try {
                 history.clear()
                 currentGraphData = null
-                pendingData = null
-                jsQuery.dispose()
+                bridge.dispose()
                 browser.dispose()
             } catch (e: Exception) {
                 LOG.error("Error during dispose", e)
             }
         }
     }
-
-    // Removed removeNotify() completely to allow IDE's ContentManager to handle lifecycle
 }
