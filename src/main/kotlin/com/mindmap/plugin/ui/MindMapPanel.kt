@@ -5,7 +5,6 @@ import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -309,7 +308,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                     if (isDisposed) return@invokeLater
                     try {
                         val descriptor = OpenFileDescriptor(result.third, result.first, result.second)
-                        FileEditorManager.getInstance(project).openTextEditor(descriptor, false)
+                        descriptor.navigate(true)
                         browser.component.requestFocusInWindow()
                     } catch (e: Exception) {
                         LOG.error("Failed to open editor", e)

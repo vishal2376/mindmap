@@ -8,6 +8,7 @@ import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.searches.OverridingMethodsSearch
 import com.intellij.psi.search.searches.ReferencesSearch
+import com.intellij.psi.search.searches.SuperMethodsSearch
 import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.resolution.singleFunctionCallOrNull
@@ -41,7 +42,21 @@ class GraphAnalyzer(
                 nodes[rootId] = rootNode
 
                 indicator?.text = "Analyzing outbound calls..."
-                analyzeOutbound(function, nodes, edges, edgeKeys, 1, indicator)
+                if (function.bodyExpression != null) {
+                    analyzeOutbound(function, nodes, edges, edgeKeys, 1, indicator)
+                } else {
+                    // Root is abstract/interface — find implementations and analyze their outbound calls
+                    val impls = findImplementations(function)
+                    for (impl in impls.take(3)) {
+                        if (nodes.size >= MAX_NODES) break
+                        val implId = getFunctionId(impl)
+                        if (!nodes.containsKey(implId)) {
+                            nodes[implId] = createNode(impl, NodeType.OUTBOUND, 1)
+                        }
+                        addEdgeIfNew(rootId, implId, nodes, edges, edgeKeys)
+                        analyzeOutbound(impl, nodes, edges, edgeKeys, 2, indicator)
+                    }
+                }
                 indicator?.text = "Finding callers..."
                 analyzeInbound(function, nodes, edges, edgeKeys, 1, indicator)
             }
@@ -118,7 +133,7 @@ class GraphAnalyzer(
                                 // Concrete function — recurse normally
                                 analyzeOutbound(targetPsi, nodes, edges, edgeKeys, currentDepth + 1, indicator)
                             } else {
-                                // Abstract/interface — show up to 3 implementations as leaf nodes (no recursion)
+                                // Abstract/interface — find implementations and recurse into them
                                 val impls = findImplementations(targetPsi)
                                 for (impl in impls.take(3)) {
                                     if (nodes.size >= MAX_NODES) break
@@ -127,6 +142,9 @@ class GraphAnalyzer(
                                         nodes[implId] = createNode(impl, NodeType.OUTBOUND, currentDepth + 1)
                                     }
                                     addEdgeIfNew(targetId, implId, nodes, edges, edgeKeys)
+                                    if (currentDepth + 1 < maxOutboundDepth) {
+                                        analyzeOutbound(impl, nodes, edges, edgeKeys, currentDepth + 2, indicator)
+                                    }
                                 }
                             }
                         }
@@ -158,8 +176,15 @@ class GraphAnalyzer(
 
         val targetId = getFunctionId(function)
         val scope = GlobalSearchScope.projectScope(project)
+
+        // Collect references to this function AND its super declarations
+        // (callers may invoke the abstract base, not the override directly)
         val references = try {
-            val allRefs = ReferencesSearch.search(function, scope).findAll()
+            val searchTargets = mutableListOf(function)
+            searchTargets.addAll(findSuperDeclarations(function))
+            val allRefs = searchTargets.flatMap { target ->
+                ReferencesSearch.search(target, scope).findAll()
+            }.distinctBy { it.element }
             if (allRefs.size > MAX_INBOUND_REFS) allRefs.take(MAX_INBOUND_REFS) else allRefs
         } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
             throw ce
@@ -250,6 +275,18 @@ class GraphAnalyzer(
                     .mapNotNull { it.navigationElement as? KtNamedFunction }
                     .filter { impl -> impl.bodyExpression != null && isSourceCode(impl) }
             }.take(3)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    /** Returns abstract/interface super declarations that this function overrides. */
+    private fun findSuperDeclarations(function: KtNamedFunction): List<KtNamedFunction> {
+        return try {
+            function.toLightMethods().flatMap { lightMethod ->
+                SuperMethodsSearch.search(lightMethod, null, true, false).findAll()
+                    .mapNotNull { it.method.navigationElement as? KtNamedFunction }
+            }.distinct()
         } catch (_: Exception) {
             emptyList()
         }
