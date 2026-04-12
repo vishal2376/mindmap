@@ -707,13 +707,13 @@
             padding: 20px 24px 16px; border-bottom: 1px solid var(--bd);
             display: flex; align-items: center; justify-content: space-between;
         }
-        .smhd-ttl { font: 700 15px/1 inherit; color: #e4e8f7; letter-spacing: -.2px; }
+        .smhd-ttl { font-weight: 600; font-size: 13px; color: var(--tx); }
         .smbd { padding: 20px 24px 22px; display: flex; flex-direction: column; gap: 20px; }
         /* section */
         .sm-sec { display: flex; flex-direction: column; gap: 12px; }
         .sm-sec-hdr { display: flex; align-items: baseline; gap: 8px; }
-        .sm-sec-ttl { font: 600 13px/1 inherit; color: #e4e8f7; }
-        .sm-sec-sub { font-size: 11px; color: var(--tx4); }
+        .sm-sec-ttl { font: 600 12px/1 inherit; color: var(--tx); }
+        .sm-sec-sub { font-size: 12px; color: var(--tx4); font-weight: 400; }
         /* slider row */
         .srow { display: flex; align-items: center; gap: 14px; }
         .srow-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
@@ -742,6 +742,30 @@
         /* ticks under slider */
         .srow-ticks { display: flex; justify-content: space-between; position: absolute; bottom: -1px; left: 2px; right: 2px; pointer-events: none; }
         .srow-tick { width: 3px; height: 3px; border-radius: 50%; background: var(--tx5); opacity: .5; }
+        .sm-sec-desc { font-size: 11px; color: var(--tx4); line-height: 1.5; margin-top: -6px; }
+        /* divider */
+        .sm-div { height: 1px; background: var(--bd); margin: 0; }
+        /* feedback section */
+        .sm-btn-row { display: flex; gap: 10px; }
+        .sm-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            flex: 1; padding: 10px 0; border-radius: 8px;
+            font: 500 12px/1 inherit; cursor: pointer;
+            transition: background .15s, border-color .15s;
+        }
+        .sm-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+        .sm-btn-reset {
+            background: rgba(166,173,200,.08); border: 1px solid rgba(166,173,200,.2); color: var(--tx3);
+        }
+        .sm-btn-reset:hover { background: rgba(166,173,200,.14); border-color: rgba(166,173,200,.35); }
+        .sm-btn-web {
+            background: rgba(137,180,250,.08); border: 1px solid rgba(137,180,250,.2); color: #b4befe;
+        }
+        .sm-btn-web:hover { background: rgba(137,180,250,.14); border-color: rgba(137,180,250,.35); }
+        .sm-btn-report {
+            background: rgba(243,139,168,.08); border: 1px solid rgba(243,139,168,.2); color: #f38ba8;
+        }
+        .sm-btn-report:hover { background: rgba(243,139,168,.14); border-color: rgba(243,139,168,.35); }
         /* footer */
         .sm-ft {
             font-size: 11px; color: var(--tx4); display: flex; align-items: center;
@@ -1606,6 +1630,7 @@
             <div class="smbd">
                 <div class="sm-sec">
                     <div class="sm-sec-hdr"><span class="sm-sec-ttl">Graph Depth</span><span class="sm-sec-sub">Alt+G / Cmd+Click</span></div>
+                    <div class="sm-sec-desc">How many levels to analyze when generating a new call graph.</div>
                     <div class="srow">
                         <div class="srow-dot out"></div>
                         <span class="srow-lbl">Outbound</span>
@@ -1621,7 +1646,8 @@
                 </div>
 
                 <div class="sm-sec">
-                    <div class="sm-sec-hdr"><span class="sm-sec-ttl">Retrace Depth</span><span class="sm-sec-sub">Double-click merge</span></div>
+                    <div class="sm-sec-hdr"><span class="sm-sec-ttl">Retrace Depth</span><span class="sm-sec-sub">Double-click</span></div>
+                    <div class="sm-sec-desc">Depth used when merging a node's call graph into the current view.</div>
                     <div class="srow">
                         <div class="srow-dot out"></div>
                         <span class="srow-lbl">Outbound</span>
@@ -1634,6 +1660,24 @@
                         <div class="srow-slider"><input type="range" class="inn" id="sldRin" min="1" max="5" value="1"><div class="srow-ticks"><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span></div></div>
                         <span class="srow-val" id="rinV">1</span>
                     </div>
+                </div>
+
+                <button class="sm-btn sm-btn-reset" id="sResetBtn" style="flex:none">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2v5h5"/><path d="M3.05 10A6 6 0 1 0 4 4L2 7"/></svg>
+                    Reset to Defaults
+                </button>
+
+                <div class="sm-div"></div>
+
+                <div class="sm-btn-row">
+                    <button class="sm-btn sm-btn-web" id="sWebBtn">
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c-2 2.2-2.5 4.2-2.5 6.5s.5 4.3 2.5 6.5c2-2.2 2.5-4.2 2.5-6.5S10 3.7 8 1.5z"/></svg>
+                        Website
+                    </button>
+                    <button class="sm-btn sm-btn-report" id="sFbBtn">
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><line x1="8" y1="5" x2="8" y2="8.5"/><circle cx="8" cy="11" r=".5" fill="currentColor"/></svg>
+                        Report Bug
+                    </button>
                 </div>
 
                 <div class="sm-ft">
@@ -2645,6 +2689,23 @@
         $bset.addEventListener('click', () => $sOy.classList.add('s'));
         $sCl.addEventListener('click',  () => $sOy.classList.remove('s'));
         $sOy.addEventListener('click',  e => { if (e.target === $sOy) $sOy.classList.remove('s'); });
+        $('sFbBtn').addEventListener('click', () => {
+            if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'navigate', url: 'https://github.com/vishal2376/mindmap/issues' }));
+        });
+        $('sWebBtn').addEventListener('click', () => {
+            if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'navigate', url: 'https://vishal2376.github.io/mindmap' }));
+        });
+        $('sResetBtn').addEventListener('click', () => {
+            const defaults = { sldDout: 3, sldDin: 2, sldRout: 1, sldRin: 1 };
+            _sOut = 3; _sIn = 2; _rOut = 1; _rIn = 1;
+            Object.entries(defaults).forEach(([id, v]) => {
+                const s = document.getElementById(id);
+                if (s) { s.value = v; _updateSliderFill(s); }
+            });
+            $doutV.textContent = 3; $dinV.textContent = 2;
+            $routV.textContent = 1; $rinV.textContent = 1;
+            _sendDepth(); _sendRetraceDepth();
+        });
 
         // Slider fill updater
         function _updateSliderFill(slider) {
