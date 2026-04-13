@@ -11,6 +11,7 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.util.PsiTreeUtil
+import javax.swing.SwingUtilities
 import com.mindmap.plugin.analysis.GraphAnalyzer
 import com.mindmap.plugin.ui.MindMapPanel
 import org.jetbrains.kotlin.psi.KtNamedFunction
@@ -55,9 +56,12 @@ class ShowCallGraphAction : AnAction() {
 
                         val graphData = GraphAnalyzer(project).buildGraph(function, indicator)
 
-                        val content = toolWindow.contentManager.getContent(0) ?: return
-                        val panel = content.component as? MindMapPanel ?: return
-                        panel.updateGraph(graphData)
+                        // UI access and history mutations must happen on EDT.
+                        SwingUtilities.invokeLater {
+                            val content = toolWindow.contentManager.getContent(0) ?: return@invokeLater
+                            val panel = content.component as? MindMapPanel ?: return@invokeLater
+                            panel.updateGraph(graphData)
+                        }
                     } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                         throw ce
                     } catch (ex: Exception) {
