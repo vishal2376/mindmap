@@ -2,7 +2,8 @@ package com.mindmap.plugin.ui
 
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.progress.ProgressIndicator
@@ -114,10 +115,10 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         if (isDisposed) return
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
-                val result = runReadAction {
-                    val psiElement = currentGraphData?.nodes?.find { it.id == nodeId }?.psiElement ?: return@runReadAction null
-                    if (!psiElement.isValid) return@runReadAction null
-                    val virtualFile = psiElement.containingFile?.virtualFile ?: return@runReadAction null
+                val result = ReadAction.compute<Triple<VirtualFile, Int, Project>?, RuntimeException> {
+                    val psiElement = currentGraphData?.nodes?.find { it.id == nodeId }?.psiElement ?: return@compute null
+                    if (!psiElement.isValid) return@compute null
+                    val virtualFile = psiElement.containingFile?.virtualFile ?: return@compute null
                     Triple(virtualFile, psiElement.textOffset, project)
                 } ?: return@executeOnPooledThread
 
@@ -143,7 +144,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
             override fun run(indicator: ProgressIndicator) {
                 try {
                     if (isDisposed) return
-                    if (!runReadAction { psiElement.isValid }) return
+                    if (!ReadAction.compute<Boolean, RuntimeException> { psiElement.isValid }) return
                     val newData = analyzeElement(psiElement, indicator)
                     SwingUtilities.invokeLater { if (!isDisposed) pushGraph(newData) }
                 } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
@@ -162,7 +163,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
             override fun run(indicator: ProgressIndicator) {
                 try {
                     if (isDisposed) return
-                    if (!runReadAction { psiElement.isValid }) return
+                    if (!ReadAction.compute<Boolean, RuntimeException> { psiElement.isValid }) return
                     val function = psiElement as? KtNamedFunction ?: return
                     val d = depths
                     val traceData = GraphAnalyzer(project, d.retraceOutbound, d.retraceInbound).buildGraph(function, indicator)

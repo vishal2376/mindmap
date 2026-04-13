@@ -1,6 +1,6 @@
 package com.mindmap.plugin.analysis
 
-import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
  * to keep graph size manageable. Library functions (outside project source) are included as
  * leaf nodes but are not recursed into.
  *
- * All analysis runs inside a [runReadAction] block on a background thread.
+ * All analysis runs inside a [ReadAction.run] block on a background thread.
  */
 class GraphAnalyzer(
     private val project: Project,
@@ -49,7 +49,7 @@ class GraphAnalyzer(
         val edgeKeys = HashSet<String>()
 
         try {
-            runReadAction {
+            ReadAction.run<RuntimeException> {
                 val rootId = getFunctionId(function)
                 nodes[rootId] = createNode(function, NodeType.ROOT, 0)
 
@@ -115,7 +115,7 @@ class GraphAnalyzer(
                     if (nodes.size >= MAX_NODES) break
                     try {
                         val resolvedCall = callExpr.resolveToCall()?.singleFunctionCallOrNull() ?: continue
-                        val targetPsi = resolvedCall.partiallyAppliedSymbol.symbol.psi as? KtNamedFunction ?: continue
+                        val targetPsi = resolvedCall.symbol.psi as? KtNamedFunction ?: continue
                         if (targetPsi.name.isNullOrEmpty()) continue
                         processOutboundTarget(callerId, targetPsi, nodes, edges, edgeKeys, currentDepth, indicator)
                     } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {

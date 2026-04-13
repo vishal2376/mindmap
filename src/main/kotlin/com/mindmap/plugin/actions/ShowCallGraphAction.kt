@@ -4,7 +4,7 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -38,7 +38,7 @@ class ShowCallGraphAction : AnAction() {
             val offset = editor.caretModel.offset
             val element = psiFile.findElementAt(offset) ?: return
 
-            val function = runReadAction {
+            val function = ReadAction.compute<KtNamedFunction?, RuntimeException> {
                 PsiTreeUtil.getParentOfType(element, KtNamedFunction::class.java)
             } ?: return
 
@@ -82,7 +82,7 @@ class ShowCallGraphAction : AnAction() {
                 val offset = editor.caretModel.offset
                 val element = psiFile.findElementAt(offset)
                 if (element != null) {
-                    visible = runReadAction {
+                    visible = ReadAction.compute<Boolean, RuntimeException> {
                         PsiTreeUtil.getParentOfType(element, KtNamedFunction::class.java) != null
                     }
                 }
