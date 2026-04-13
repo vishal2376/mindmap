@@ -14,6 +14,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.ui.jcef.JBCefBrowser
 import com.mindmap.plugin.analysis.GraphAnalyzer
 import com.mindmap.plugin.analysis.GraphData
+import com.mindmap.plugin.analysis.merge
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import java.awt.BorderLayout
 import javax.swing.JPanel
@@ -27,10 +28,15 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     @Volatile private var isDisposed = false
     @Volatile private var currentGraphData: GraphData? = null
 
-    @Volatile private var outboundDepth = 3
-    @Volatile private var inboundDepth  = 2
-    @Volatile private var retraceOutboundDepth = 1
-    @Volatile private var retraceInboundDepth  = 1
+    // Single volatile reference ensures outbound+inbound are always read as a consistent pair
+    // from background analysis threads (avoids a race when both fields update separately).
+    private data class DepthSettings(
+        val outbound: Int = 3,
+        val inbound: Int = 2,
+        val retraceOutbound: Int = 1,
+        val retraceInbound: Int = 1
+    )
+    @Volatile private var depths = DepthSettings()
 
     companion object {
         private val LOG = Logger.getInstance(MindMapPanel::class.java)
@@ -42,14 +48,13 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         bridge.loadHtml()
     }
 
-    /** Entry point from Alt+G action. */
+    /** Entry point from Alt+G action. Resets history and renders the new graph. */
     fun updateGraph(data: GraphData) {
         currentGraphData = data
         if (!bridge.isReady) {
             bridge.markPending(data)
             return
         }
-
         history.reset(data)
         bridge.sendGraph(data)
         sendHistoryState()
@@ -57,29 +62,25 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
 
     private fun handleEvent(event: JsBridge.MessageEvent) {
         when (event) {
-            is JsBridge.MessageEvent.Navigate -> handleNavigate(event.nodeId)
-            is JsBridge.MessageEvent.OpenUrl -> BrowserUtil.browse(event.url)
-            is JsBridge.MessageEvent.Expand -> handleExpand(event.nodeId)
-            is JsBridge.MessageEvent.Trace -> handleTrace(event.nodeId)
+            is JsBridge.MessageEvent.Navigate    -> handleNavigate(event.nodeId)
+            is JsBridge.MessageEvent.OpenUrl     -> BrowserUtil.browse(event.url)
+            is JsBridge.MessageEvent.Expand      -> handleExpand(event.nodeId)
+            is JsBridge.MessageEvent.Trace       -> handleTrace(event.nodeId)
             is JsBridge.MessageEvent.HistoryBack -> SwingUtilities.invokeLater { if (!isDisposed) handleHistoryBack() }
             is JsBridge.MessageEvent.HistoryForward -> SwingUtilities.invokeLater { if (!isDisposed) handleHistoryForward() }
-            is JsBridge.MessageEvent.Restart -> SwingUtilities.invokeLater { if (!isDisposed) handleRestart() }
-            is JsBridge.MessageEvent.SetDepth -> {
-                outboundDepth = event.outbound; inboundDepth = event.inbound
-            }
-            is JsBridge.MessageEvent.SetRetraceDepth -> {
-                retraceOutboundDepth = event.outbound; retraceInboundDepth = event.inbound
-            }
+            is JsBridge.MessageEvent.Restart     -> SwingUtilities.invokeLater { if (!isDisposed) handleRestart() }
+            is JsBridge.MessageEvent.SetDepth    -> depths = depths.copy(outbound = event.outbound, inbound = event.inbound)
+            is JsBridge.MessageEvent.SetRetraceDepth -> depths = depths.copy(retraceOutbound = event.outbound, retraceInbound = event.inbound)
         }
     }
 
+    // Pushes a new graph onto the history stack (used by expand/re-center).
     private fun pushGraph(data: GraphData) {
         currentGraphData = data
         if (!bridge.isReady) {
             bridge.markPending(data)
             return
         }
-
         history.push(data)
         bridge.sendGraph(data)
         sendHistoryState()
@@ -96,25 +97,22 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         sendHistoryState()
     }
 
+    // PSI access requires a read action on a pooled thread; navigation then switches to EDT.
     private fun handleNavigate(nodeId: String) {
         if (isDisposed) return
-
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 val result = runReadAction {
-                    val node = currentGraphData?.nodes?.find { it.id == nodeId }
-                    val psiElement = node?.psiElement ?: return@runReadAction null
+                    val psiElement = currentGraphData?.nodes?.find { it.id == nodeId }?.psiElement ?: return@runReadAction null
                     if (!psiElement.isValid) return@runReadAction null
                     val virtualFile = psiElement.containingFile?.virtualFile ?: return@runReadAction null
-                    val offset = psiElement.textOffset
-                    Triple(virtualFile, offset, project)
+                    Triple(virtualFile, psiElement.textOffset, project)
                 } ?: return@executeOnPooledThread
 
                 SwingUtilities.invokeLater {
                     if (isDisposed) return@invokeLater
                     try {
-                        val descriptor = OpenFileDescriptor(result.third, result.first, result.second)
-                        descriptor.navigate(true)
+                        OpenFileDescriptor(result.third, result.first, result.second).navigate(true)
                         browser.component.requestFocusInWindow()
                     } catch (e: Exception) {
                         LOG.error("Failed to open editor", e)
@@ -128,23 +126,14 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
 
     private fun handleExpand(nodeId: String) {
         if (isDisposed) return
-
         val psiElement = history.findPsiElement(nodeId) ?: return
-
-        ProgressManager.getInstance().run(object : Task.Backgroundable(
-            project, "Generating Mindmap...", true
-        ) {
+        ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Generating Mindmap...", true) {
             override fun run(indicator: ProgressIndicator) {
                 try {
                     if (isDisposed) return
-                    val isValid = runReadAction { psiElement.isValid }
-                    if (!isValid) return
-
-                    val newGraphData = analyzeElement(psiElement, indicator)
-                    SwingUtilities.invokeLater {
-                        if (isDisposed) return@invokeLater
-                        pushGraph(newGraphData)
-                    }
+                    if (!runReadAction { psiElement.isValid }) return
+                    val newData = analyzeElement(psiElement, indicator)
+                    SwingUtilities.invokeLater { if (!isDisposed) pushGraph(newData) }
                 } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                     throw ce
                 } catch (ex: Exception) {
@@ -156,43 +145,16 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
 
     private fun handleTrace(nodeId: String) {
         if (isDisposed) return
-
         val psiElement = history.findPsiElement(nodeId) ?: return
-
-        ProgressManager.getInstance().run(object : Task.Backgroundable(
-            project, "Tracing function...", true
-        ) {
+        ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Tracing function...", true) {
             override fun run(indicator: ProgressIndicator) {
                 try {
                     if (isDisposed) return
-                    val isValid = runReadAction { psiElement.isValid }
-                    if (!isValid) return
-
+                    if (!runReadAction { psiElement.isValid }) return
                     val function = psiElement as? KtNamedFunction ?: return
-                    val traceData = GraphAnalyzer(project, retraceOutboundDepth, retraceInboundDepth).buildGraph(function, indicator)
-
-                    val current = currentGraphData ?: return
-
-                    // Merge trace results into current graph, deduplicating by ID
-                    val existingNodeIds = current.nodes.mapTo(HashSet()) { it.id }
-                    val existingEdgeKeys = current.edges.mapTo(HashSet()) { "${it.from}\u0000${it.to}" }
-                    val newNodes = current.nodes.toMutableList()
-                    val newEdges = current.edges.toMutableList()
-
-                    for (node in traceData.nodes) {
-                        if (existingNodeIds.add(node.id)) {
-                            newNodes.add(node)
-                        }
-                    }
-                    for (edge in traceData.edges) {
-                        val key = "${edge.from}\u0000${edge.to}"
-                        if (existingEdgeKeys.add(key)) {
-                            newEdges.add(edge)
-                        }
-                    }
-
-                    val mergedData = GraphData(newNodes, newEdges)
-
+                    val d = depths
+                    val traceData = GraphAnalyzer(project, d.retraceOutbound, d.retraceInbound).buildGraph(function, indicator)
+                    val mergedData = (currentGraphData ?: return).merge(traceData)
                     SwingUtilities.invokeLater {
                         if (isDisposed) return@invokeLater
                         currentGraphData = mergedData
@@ -211,7 +173,8 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     private fun analyzeElement(element: PsiElement, indicator: ProgressIndicator): GraphData {
         val function = element as? KtNamedFunction
             ?: throw IllegalArgumentException("Element is not a KtNamedFunction: ${element.javaClass.simpleName}")
-        return GraphAnalyzer(project, outboundDepth, inboundDepth).buildGraph(function, indicator)
+        val d = depths
+        return GraphAnalyzer(project, d.outbound, d.inbound).buildGraph(function, indicator)
     }
 
     private fun handleHistoryBack() {
