@@ -43,9 +43,13 @@
     ><![CDATA[
     <h3>1.0.3</h3>
     <ul>
-        <li><b>Code Refactoring</b> — Split monolithic panel into focused classes: <code>JsBridge</code> (JS communication) and <code>GraphHistory</code> (navigation state)</li>
-        <li><b>Dead Code Removal</b> — Removed unused <code>perfMode</code> and <code>showLib</code> constants; inlined their always-true/always-false values</li>
-        <li><b>Internal Cleanup</b> — Extracted color constants, simplified comments, reorganized frontend JS into named sections for maintainability</li>
+        <li><b>Redesigned Settings</b> — New minimal inline settings panel with sliders, depth track indicators, reset-to-defaults, and clearer labels</li>
+        <li><b>Website &amp; Feedback Buttons</b> — Quick links to the plugin website and GitHub issues directly from the settings panel</li>
+        <li><b>Configurable Retrace Depth</b> — Separate outbound/inbound depth controls for the trace (double-click) operation</li>
+        <li><b>Barycenter Crossing Minimization</b> — Improved hierarchical layout reduces edge crossings for cleaner graphs</li>
+        <li><b>Node Position Persistence</b> — Graph preserves node positions and zoom level after tracing</li>
+        <li><b>Fixed: Empty Blue Boxes</b> — Cascade hiding no longer orphans nodes and leaves empty placeholders</li>
+        <li><b>Fixed: Abstract Function Navigation</b> — Navigation now works correctly for abstract functions and focused-file graphs</li>
     </ul>
 
     <h3>1.0.2</h3>
