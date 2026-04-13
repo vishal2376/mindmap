@@ -1,7 +1,6 @@
 package com.mindmap.plugin.ui
 
 import com.google.gson.GsonBuilder
-import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBase

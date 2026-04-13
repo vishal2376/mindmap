@@ -19,7 +19,6 @@ import java.awt.BorderLayout
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
-@Suppress("DEPRECATION")
 class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Disposable {
 
     private val browser = JBCefBrowser()
