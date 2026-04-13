@@ -1800,6 +1800,9 @@
         function gc(t, d, l) { return l ? '#6c7086' : t === 'ROOT' ? '#f5c2e7' : t === 'INBOUND' ? '#a6e3a1' : t === 'OUTBOUND' ? '#89b4fa' : '#cba6f7' }
         function tr(s, m) { return !s || s.length <= m ? s : s.slice(0, m - 1) + '…' }
         function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML }
+        // Fast label escape using string replace — avoids DOM allocation used by esc().
+        // vis-network multi:'html' mode interprets <b>/<i> tags, so labels must be escaped.
+        function escL(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
         function _send(obj) { if (window.jbCefQuery) window.jbCefQuery(JSON.stringify(obj)); }
 
         // ==== TOAST ====
@@ -1909,8 +1912,8 @@
 
             const bgs = { ROOT: '#352840', OUTBOUND: '#1e2a3d', INBOUND: '#1e3028' };
             const bg = n.isLibrary ? '#2a2a30' : (bgs[n.type] || '#252636');
-            const label = isRoot ? (n.name || 'anonymous') : (n.name || 'anon');
-            const fullLabel = isDup && n.fileName ? label + '\n_' + n.fileName + '_' : label;
+            const label = escL(isRoot ? (n.name || 'anonymous') : (n.name || 'anon'));
+            const fullLabel = isDup && n.fileName ? label + '\n_' + escL(n.fileName) + '_' : label;
 
             const level = isRoot ? 0 : n.type === 'INBOUND' ? -(n.depth || 1) : (n.depth || 1);
             return {

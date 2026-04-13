@@ -120,7 +120,7 @@ class GraphAnalyzer(
                         processOutboundTarget(callerId, targetPsi, nodes, edges, edgeKeys, currentDepth, indicator)
                     } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                         throw ce
-                    } catch (_: Exception) { }
+                    } catch (e: Exception) { LOG.debug("Skipped unresolved outbound call at depth $currentDepth", e) }
                 }
             }
         } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
@@ -209,7 +209,7 @@ class GraphAnalyzer(
                 }
             } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                 throw ce
-            } catch (_: Exception) { }
+            } catch (e: Exception) { LOG.debug("Skipped unresolved inbound reference at depth $currentDepth", e) }
         }
     }
 
