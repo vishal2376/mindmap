@@ -41,6 +41,13 @@
 
     <change-notes
     ><![CDATA[
+    <h3>1.0.3</h3>
+    <ul>
+        <li><b>Code Refactoring</b> — Split monolithic panel into focused classes: <code>JsBridge</code> (JS communication) and <code>GraphHistory</code> (navigation state)</li>
+        <li><b>Dead Code Removal</b> — Removed unused <code>perfMode</code> and <code>showLib</code> constants; inlined their always-true/always-false values</li>
+        <li><b>Internal Cleanup</b> — Extracted color constants, simplified comments, reorganized frontend JS into named sections for maintainability</li>
+    </ul>
+
     <h3>1.0.2</h3>
     <ul>
         <li><b>Live Mini-Map</b> — VS Code-style minimap (top-left) with colored node dots, viewport rectangle, click-to-pan, and drag-to-pan navigation</li>
