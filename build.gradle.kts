@@ -33,11 +33,8 @@ kotlin {
     }
 }
 
-configurations.all {
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
-}
-
 intellijPlatform {
+    buildSearchableOptions = false
     publishing {
         token = providers.environmentVariable("PUBLISH_TOKEN")
     }
@@ -51,7 +48,6 @@ tasks {
 
     patchPluginXml {
         sinceBuild.set("243")
-        untilBuild.set("261.*")
     }
 
     runIde {
@@ -60,7 +56,4 @@ tasks {
         }
     }
 
-    buildSearchableOptions {
-        enabled = false
-    }
 }
