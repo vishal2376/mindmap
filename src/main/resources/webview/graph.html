@@ -2555,37 +2555,24 @@
             return el;
         }
 
-        function mkTR(n, dep, hk, cl, isLast, cont) {
-            const row = document.createElement('div');
-            row.className = 'tr' + (sel === n.id ? ' sel' : '');
-            const c = gc(n.type, n.depth, n.isLibrary);
-            const cc = hk ? (cl ? '' : 'e') : 'l';
-
-            const indent = 10 + dep * 16;
-            row.style.paddingLeft = indent + 'px';
-
+        // Builds the vertical guide line HTML for a tree row. Guides show the
+        // tree structure: continuing lines for ancestor levels still open, and
+        // a half-height line at the last child of a branch.
+        function _mkGuideHtml(dep, isLast, cont) {
             let guides = '';
-
             for (let i = 0; i <= dep; i++) {
                 if (i === dep) {
-
                     if (!isLast && dep > 0) guides += `<div class="t-guide" style="left:${18 + i * 16}px;bottom:0;height:100%"></div>`;
                     else if (isLast && dep > 0) guides += `<div class="t-guide" style="left:${18 + i * 16}px;bottom:50%;height:50%"></div>`;
                 } else if (cont[i]) {
                     guides += `<div class="t-guide" style="left:${18 + i * 16}px"></div>`;
                 }
             }
+            return guides;
+        }
 
-            row.innerHTML = guides + `
-        <span class="trc ${cc}">${_iChev}</span>
-        <span class="tri-c" style="color:${c}">${_nodeIcon(n)}</span>
-        <span class="trn">${esc(n.name || 'anon')}</span>
-        ${n.fileName ? `<span class="trf">${esc(n.fileName)}</span>` : ''}
-        <div class="trr">
-            ${n.loc > 0 ? `<span class="trloc">${n.loc}L</span>` : ''}
-        </div>
-    `;
-
+        // Attaches click, dblclick, chevron toggle, and hover events to a tree row element.
+        function _attachTreeRowEvents(row, n, hk) {
             row.addEventListener('click', e => {
                 sel = n.id; updateShortcuts(); document.querySelectorAll('.tr.sel').forEach(r => r.classList.remove('sel')); row.classList.add('sel');
                 if (e.metaKey || e.ctrlKey) {
@@ -2603,6 +2590,24 @@
             const ch = row.querySelector('.trc');
             if (hk) { ch.style.cursor = 'pointer'; ch.addEventListener('click', e => { e.stopPropagation(); tColl.has(n.id) ? tColl.delete(n.id) : tColl.add(n.id); rTree() }) }
             row.addEventListener('mouseenter', e => showTip(e, n)); row.addEventListener('mouseleave', hideTip);
+        }
+
+        function mkTR(n, dep, hk, cl, isLast, cont) {
+            const row = document.createElement('div');
+            row.className = 'tr' + (sel === n.id ? ' sel' : '');
+            const c = gc(n.type, n.depth, n.isLibrary);
+            const cc = hk ? (cl ? '' : 'e') : 'l';
+            row.style.paddingLeft = (10 + dep * 16) + 'px';
+            row.innerHTML = _mkGuideHtml(dep, isLast, cont) + `
+        <span class="trc ${cc}">${_iChev}</span>
+        <span class="tri-c" style="color:${c}">${_nodeIcon(n)}</span>
+        <span class="trn">${esc(n.name || 'anon')}</span>
+        ${n.fileName ? `<span class="trf">${esc(n.fileName)}</span>` : ''}
+        <div class="trr">
+            ${n.loc > 0 ? `<span class="trloc">${n.loc}L</span>` : ''}
+        </div>
+    `;
+            _attachTreeRowEvents(row, n, hk);
             return row;
         }
 
@@ -2755,48 +2760,55 @@
             if (!_mmRaf) _mmRaf = requestAnimationFrame(_mmFlush);
         }
 
-        function _mmFlush() {
-            _mmRaf = 0;
-            if (!net || !mmCtx || $mmc.classList.contains('h')) return;
-
-            const positions = net.getPositions();
-            const ids = Object.keys(positions);
-            if (!ids.length) return;
-
-
+        // Computes bounding box, scale, and origin so all nodes fit the minimap canvas.
+        // Sets _mmScl/_mmOx/_mmOy for use by the viewport overlay calculation.
+        function _mmCalcTransform(positions, MW, MH) {
             let x0=Infinity, x1=-Infinity, y0=Infinity, y1=-Infinity;
-            for (const id of ids) {
+            for (const id of Object.keys(positions)) {
                 const p = positions[id];
                 if (p.x < x0) x0=p.x; if (p.x > x1) x1=p.x;
                 if (p.y < y0) y0=p.y; if (p.y > y1) y1=p.y;
             }
             const pad = 60;
             x0-=pad; x1+=pad; y0-=pad; y1+=pad;
-
-            const MW = $mmcv.clientWidth, MH = $mmcv.clientHeight;
             const scl = Math.min(MW/(x1-x0), MH/(y1-y0));
             const ox  = (MW - (x1-x0)*scl)/2 - x0*scl;
             const oy  = (MH - (y1-y0)*scl)/2 - y0*scl;
             _mmScl=scl; _mmOx=ox; _mmOy=oy;
+            return { scl, ox, oy };
+        }
 
-            const ctx = mmCtx;
-            ctx.clearRect(0, 0, MW, MH);
-
-
-            const localNodeMap = new Map(D.nodes.map(n => [n.id, n]));
-            for (const id of ids) {
+        // Draws colored dots for each node. Color encodes type: library=gray,
+        // ROOT=pink, INBOUND=green, OUTBOUND=blue. Selected node drawn larger.
+        function _mmDrawNodes(ctx, positions, scl, ox, oy) {
+            const nodeMap = new Map(D.nodes.map(n => [n.id, n]));
+            for (const id of Object.keys(positions)) {
                 const p  = positions[id];
-                const nd = localNodeMap.get(id);
+                const nd = nodeMap.get(id);
                 const mx = p.x*scl+ox, my = p.y*scl+oy;
                 const r  = id === sel ? 4 : 2;
-                ctx.fillStyle = nd?.isLibrary      ? '#6c7086' :
+                ctx.fillStyle = nd?.isLibrary       ? '#6c7086' :
                                 nd?.type==='ROOT'    ? '#f5c2e7' :
                                 nd?.type==='INBOUND' ? '#a6e3a1' :
                                 nd?.type==='OUTBOUND'? '#89b4fa' : '#cba6f7';
                 ctx.beginPath(); ctx.arc(mx, my, r, 0, 6.283); ctx.fill();
             }
+        }
 
+        function _mmFlush() {
+            _mmRaf = 0;
+            if (!net || !mmCtx || $mmc.classList.contains('h')) return;
 
+            const positions = net.getPositions();
+            if (!Object.keys(positions).length) return;
+
+            const MW = $mmcv.clientWidth, MH = $mmcv.clientHeight;
+            const { scl, ox, oy } = _mmCalcTransform(positions, MW, MH);
+
+            mmCtx.clearRect(0, 0, MW, MH);
+            _mmDrawNodes(mmCtx, positions, scl, ox, oy);
+
+            // Viewport overlay: dim area outside current view, draw blue border around it.
             const vp  = net.getViewPosition();
             const vs  = net.getScale();
             const vrW = Math.min(($gc.clientWidth  / vs) * scl, MW);
@@ -2804,17 +2816,15 @@
             const vrL = Math.max(0, vp.x*scl+ox - vrW/2);
             const vrT = Math.max(0, vp.y*scl+oy - vrH/2);
 
+            mmCtx.fillStyle = 'rgba(0,0,0,0.42)';
+            mmCtx.fillRect(0,       0,    vrL,           MH);
+            mmCtx.fillRect(vrL+vrW, 0,    MW-vrL-vrW,    MH);
+            mmCtx.fillRect(vrL,     0,    vrW,           vrT);
+            mmCtx.fillRect(vrL,     vrT+vrH, vrW,        MH-vrT-vrH);
 
-            ctx.fillStyle = 'rgba(0,0,0,0.42)';
-            ctx.fillRect(0,       0,    vrL,           MH);           // left strip
-            ctx.fillRect(vrL+vrW, 0,    MW-vrL-vrW,    MH);           // right strip
-            ctx.fillRect(vrL,     0,    vrW,           vrT);           // top strip
-            ctx.fillRect(vrL,     vrT+vrH, vrW,        MH-vrT-vrH);   // bottom strip
-
-
-            ctx.strokeStyle = 'rgba(137,180,250,0.65)';
-            ctx.lineWidth   = 1;
-            ctx.strokeRect(vrL + 0.5, vrT + 0.5, vrW - 1, vrH - 1);
+            mmCtx.strokeStyle = 'rgba(137,180,250,0.65)';
+            mmCtx.lineWidth   = 1;
+            mmCtx.strokeRect(vrL + 0.5, vrT + 0.5, vrW - 1, vrH - 1);
         }
 
         // ==== ZOOM ====
