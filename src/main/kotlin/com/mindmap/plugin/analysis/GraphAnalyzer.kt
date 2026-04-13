@@ -5,6 +5,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
+import com.intellij.psi.PsiReference
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.searches.OverridingMethodsSearch
 import com.intellij.psi.search.searches.ReferencesSearch
@@ -38,20 +39,16 @@ class GraphAnalyzer(
         try {
             runReadAction {
                 val rootId = getFunctionId(function)
-                val rootNode = createNode(function, NodeType.ROOT, 0)
-                nodes[rootId] = rootNode
+                nodes[rootId] = createNode(function, NodeType.ROOT, 0)
 
                 indicator?.text = "Analyzing outbound calls..."
                 if (function.bodyExpression != null) {
                     analyzeOutbound(function, nodes, edges, edgeKeys, 1, indicator)
                 } else {
-                    val impls = findImplementations(function)
-                    for (impl in impls.take(3)) {
+                    for (impl in findImplementations(function)) {
                         if (nodes.size >= MAX_NODES) break
                         val implId = getFunctionId(impl)
-                        if (!nodes.containsKey(implId)) {
-                            nodes[implId] = createNode(impl, NodeType.OUTBOUND, 1)
-                        }
+                        if (!nodes.containsKey(implId)) nodes[implId] = createNode(impl, NodeType.OUTBOUND, 1)
                         addEdgeIfNew(rootId, implId, nodes, edges, edgeKeys)
                         analyzeOutbound(impl, nodes, edges, edgeKeys, 2, indicator)
                     }
@@ -68,9 +65,7 @@ class GraphAnalyzer(
         return GraphData(nodes.values.toList(), edges)
     }
 
-    private fun edgeKey(from: String, to: String): String {
-        return "$from\u0000$to"
-    }
+    private fun edgeKey(from: String, to: String) = "$from\u0000$to"
 
     private fun addEdgeIfNew(
         from: String, to: String,
@@ -78,14 +73,11 @@ class GraphAnalyzer(
         edges: MutableList<CallGraphEdge>,
         edgeKeys: HashSet<String>
     ): Boolean {
-        val key = edgeKey(from, to)
-        if (edgeKeys.add(key)) {
-            edges.add(CallGraphEdge(from, to))
-            nodes[from]?.children?.add(to)
-            nodes[to]?.parents?.add(from)
-            return true
-        }
-        return false
+        if (!edgeKeys.add(edgeKey(from, to))) return false
+        edges.add(CallGraphEdge(from, to))
+        nodes[from]?.children?.add(to)
+        nodes[to]?.parents?.add(from)
+        return true
     }
 
     private fun analyzeOutbound(
@@ -96,69 +88,77 @@ class GraphAnalyzer(
         currentDepth: Int,
         indicator: ProgressIndicator? = null
     ) {
-        if (currentDepth > maxOutboundDepth) return
-        if (nodes.size >= MAX_NODES) return
+        if (currentDepth > maxOutboundDepth || nodes.size >= MAX_NODES) return
         indicator?.checkCanceled()
 
         val callerId = getFunctionId(function)
-        val callExpressions = PsiTreeUtil.findChildrenOfType(function.bodyExpression, KtCallExpression::class.java)
-
-        val limitedCalls = if (callExpressions.size > MAX_CALLS_PER_FUNCTION) {
-            callExpressions.take(MAX_CALLS_PER_FUNCTION)
-        } else {
-            callExpressions.toList()
-        }
+        val calls = PsiTreeUtil.findChildrenOfType(function.bodyExpression, KtCallExpression::class.java)
+            .let { if (it.size > MAX_CALLS_PER_FUNCTION) it.take(MAX_CALLS_PER_FUNCTION) else it.toList() }
 
         try {
+            // resolveToCall() is a KaSession extension, so resolution must stay inside analyze{}.
+            // processOutboundTarget handles everything that doesn't need the analysis context.
             analyze(function) {
-                for (callExpr in limitedCalls) {
+                for (callExpr in calls) {
                     if (nodes.size >= MAX_NODES) break
                     try {
-                        val callInfo = callExpr.resolveToCall()
-                        if (callInfo == null) continue
-                        val resolvedCall = callInfo.singleFunctionCallOrNull() ?: continue
-                        val targetSymbol = resolvedCall.partiallyAppliedSymbol.symbol
-                        val targetPsi = targetSymbol.psi as? KtNamedFunction ?: continue
-
+                        val resolvedCall = callExpr.resolveToCall()?.singleFunctionCallOrNull() ?: continue
+                        val targetPsi = resolvedCall.partiallyAppliedSymbol.symbol.psi as? KtNamedFunction ?: continue
                         if (targetPsi.name.isNullOrEmpty()) continue
-
-                        val targetId = getFunctionId(targetPsi)
-                        val isLibrary = !isSourceCode(targetPsi)
-
-                        if (!nodes.containsKey(targetId)) {
-                            nodes[targetId] = createNode(targetPsi, NodeType.OUTBOUND, currentDepth, isLibrary)
-                        }
-
-                        addEdgeIfNew(callerId, targetId, nodes, edges, edgeKeys)
-
-                        if (!isLibrary && currentDepth < maxOutboundDepth) {
-                            if (targetPsi.bodyExpression != null) {
-                                analyzeOutbound(targetPsi, nodes, edges, edgeKeys, currentDepth + 1, indicator)
-                            } else {
-                                val impls = findImplementations(targetPsi)
-                                for (impl in impls.take(3)) {
-                                    if (nodes.size >= MAX_NODES) break
-                                    val implId = getFunctionId(impl)
-                                    if (!nodes.containsKey(implId)) {
-                                        nodes[implId] = createNode(impl, NodeType.OUTBOUND, currentDepth + 1)
-                                    }
-                                    addEdgeIfNew(targetId, implId, nodes, edges, edgeKeys)
-                                    if (currentDepth + 1 < maxOutboundDepth) {
-                                        analyzeOutbound(impl, nodes, edges, edgeKeys, currentDepth + 2, indicator)
-                                    }
-                                }
-                            }
-                        }
+                        processOutboundTarget(callerId, targetPsi, nodes, edges, edgeKeys, currentDepth, indicator)
                     } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                         throw ce
-                    } catch (_: Exception) {
-                        }
+                    } catch (_: Exception) { }
                 }
             }
         } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
             throw ce
         } catch (e: Exception) {
             LOG.warn("Error in outbound analysis at depth $currentDepth", e)
+        }
+    }
+
+    private fun processOutboundTarget(
+        callerId: String,
+        targetPsi: KtNamedFunction,
+        nodes: MutableMap<String, CallGraphNode>,
+        edges: MutableList<CallGraphEdge>,
+        edgeKeys: HashSet<String>,
+        currentDepth: Int,
+        indicator: ProgressIndicator?
+    ) {
+        val targetId = getFunctionId(targetPsi)
+        val isLibrary = !isSourceCode(targetPsi)
+        if (!nodes.containsKey(targetId)) nodes[targetId] = createNode(targetPsi, NodeType.OUTBOUND, currentDepth, isLibrary)
+        addEdgeIfNew(callerId, targetId, nodes, edges, edgeKeys)
+
+        if (!isLibrary && currentDepth < maxOutboundDepth) {
+            if (targetPsi.bodyExpression != null) {
+                analyzeOutbound(targetPsi, nodes, edges, edgeKeys, currentDepth + 1, indicator)
+            } else {
+                expandAbstractOutbound(targetId, targetPsi, nodes, edges, edgeKeys, currentDepth, indicator)
+            }
+        }
+    }
+
+    // Abstract/interface target: follow concrete implementations instead of the declaration.
+    private fun expandAbstractOutbound(
+        targetId: String,
+        targetPsi: KtNamedFunction,
+        nodes: MutableMap<String, CallGraphNode>,
+        edges: MutableList<CallGraphEdge>,
+        edgeKeys: HashSet<String>,
+        currentDepth: Int,
+        indicator: ProgressIndicator?
+    ) {
+        for (impl in findImplementations(targetPsi)) {
+            if (nodes.size >= MAX_NODES) break
+            val implId = getFunctionId(impl)
+            if (!nodes.containsKey(implId)) nodes[implId] = createNode(impl, NodeType.OUTBOUND, currentDepth + 1)
+            addEdgeIfNew(targetId, implId, nodes, edges, edgeKeys)
+            if (currentDepth + 1 < maxOutboundDepth) {
+                analyzeOutbound(impl, nodes, edges, edgeKeys, currentDepth + 2, indicator)
+            }
         }
     }
 
@@ -170,43 +170,21 @@ class GraphAnalyzer(
         currentDepth: Int,
         indicator: ProgressIndicator? = null
     ) {
-        if (currentDepth > maxInboundDepth) return
-        if (nodes.size >= MAX_NODES) return
+        if (currentDepth > maxInboundDepth || nodes.size >= MAX_NODES) return
         indicator?.checkCanceled()
 
         val targetId = getFunctionId(function)
         val scope = GlobalSearchScope.projectScope(project)
-
-        // Also search super declarations since callers may invoke the abstract base
-        val references = try {
-            val searchTargets = mutableListOf(function)
-            searchTargets.addAll(findSuperDeclarations(function))
-            val allRefs = searchTargets.flatMap { target ->
-                ReferencesSearch.search(target, scope).findAll()
-            }.distinctBy { it.element }
-            if (allRefs.size > MAX_INBOUND_REFS) allRefs.take(MAX_INBOUND_REFS) else allRefs
-        } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
-            throw ce
-        } catch (e: Exception) {
-            LOG.warn("Error searching references", e)
-            return
-        }
+        val references = collectInboundReferences(function, scope) ?: return
 
         for (ref in references) {
             if (nodes.size >= MAX_NODES) break
             try {
-                val callerFunction = PsiTreeUtil.getParentOfType(
-                    ref.element, KtNamedFunction::class.java
-                ) ?: continue
-
+                val callerFunction = PsiTreeUtil.getParentOfType(ref.element, KtNamedFunction::class.java) ?: continue
                 val callerId = getFunctionId(callerFunction)
                 val isLibrary = !isSourceCode(callerFunction)
 
-
-                if (!nodes.containsKey(callerId)) {
-                    nodes[callerId] = createNode(callerFunction, NodeType.INBOUND, currentDepth, isLibrary)
-                }
-
+                if (!nodes.containsKey(callerId)) nodes[callerId] = createNode(callerFunction, NodeType.INBOUND, currentDepth, isLibrary)
                 addEdgeIfNew(callerId, targetId, nodes, edges, edgeKeys)
 
                 if (!isLibrary && currentDepth < maxInboundDepth) {
@@ -214,8 +192,25 @@ class GraphAnalyzer(
                 }
             } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                 throw ce
-            } catch (_: Exception) {
-            }
+            } catch (_: Exception) { }
+        }
+    }
+
+    // Callers may call the abstract base rather than the concrete override, so we
+    // include super declarations in the search to catch those call sites too.
+    private fun collectInboundReferences(
+        function: KtNamedFunction,
+        scope: GlobalSearchScope
+    ): List<PsiReference>? {
+        return try {
+            val targets = mutableListOf(function).also { it.addAll(findSuperDeclarations(function)) }
+            val refs = targets.flatMap { ReferencesSearch.search(it, scope).findAll() }.distinctBy { it.element }
+            if (refs.size > MAX_INBOUND_REFS) refs.take(MAX_INBOUND_REFS) else refs
+        } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
+            throw ce
+        } catch (e: Exception) {
+            LOG.warn("Error searching references", e)
+            null
         }
     }
 
@@ -225,43 +220,33 @@ class GraphAnalyzer(
         depth: Int,
         isLibrary: Boolean = false
     ): CallGraphNode {
-        val id = getFunctionId(function)
-        val name = function.name ?: "anonymous"
-        val signature = buildSignature(function)
-        val fileName = function.containingFile?.name ?: ""
-        val loc = function.text?.lines()?.size ?: 0
-
         return CallGraphNode(
-            id = id,
-            name = name,
-            signature = signature,
-            fileName = fileName,
+            id = getFunctionId(function),
+            name = function.name ?: "anonymous",
+            signature = buildSignature(function),
+            fileName = function.containingFile?.name ?: "",
             type = type,
             depth = depth,
             isLibrary = isLibrary,
-            loc = loc
-        ).also {
-            it.psiElement = function
-        }
+            loc = function.text?.lines()?.size ?: 0
+        ).also { it.psiElement = function }
     }
 
+    // Local/anonymous functions have no fqName, so fall back to filePath::name.
     private fun getFunctionId(function: KtNamedFunction): String {
         val paramSig = function.valueParameters.joinToString(",") { it.typeReference?.text ?: "Any" }
         val fqName = function.fqName?.asString()
         if (fqName != null) return "$fqName($paramSig)"
-
         val filePath = function.containingFile?.virtualFile?.path ?: function.containingFile?.name ?: "unknown"
-        val name = function.name ?: "anonymous"
-        return "$filePath::$name($paramSig)"
+        return "$filePath::${function.name ?: "anonymous"}($paramSig)"
     }
 
     private fun buildSignature(function: KtNamedFunction): String {
-        val params = function.valueParameters.joinToString(", ") { param ->
-            "${param.name ?: "_"}: ${param.typeReference?.text ?: "Any"}"
+        val params = function.valueParameters.joinToString(", ") { p ->
+            "${p.name ?: "_"}: ${p.typeReference?.text ?: "Any"}"
         }
-        val returnType = function.typeReference?.text ?: ""
-        val returnSuffix = if (returnType.isNotEmpty()) ": $returnType" else ""
-        return "${function.name}($params)$returnSuffix"
+        val ret = function.typeReference?.text?.let { ": $it" } ?: ""
+        return "${function.name}($params)$ret"
     }
 
     /** Finds concrete overrides of an abstract/interface function. */
@@ -272,11 +257,9 @@ class GraphAnalyzer(
             function.toLightMethods().flatMap { lightMethod ->
                 OverridingMethodsSearch.search(lightMethod, scope, true).toList()
                     .mapNotNull { it.navigationElement as? KtNamedFunction }
-                    .filter { impl -> impl.bodyExpression != null && isSourceCode(impl) }
+                    .filter { it.bodyExpression != null && isSourceCode(it) }
             }.take(3)
-        } catch (_: Exception) {
-            emptyList()
-        }
+        } catch (_: Exception) { emptyList() }
     }
 
     /** Finds abstract/interface declarations that this function overrides. */
@@ -286,9 +269,7 @@ class GraphAnalyzer(
                 SuperMethodsSearch.search(lightMethod, null, true, false).findAll()
                     .mapNotNull { it.method.navigationElement as? KtNamedFunction }
             }.distinct()
-        } catch (_: Exception) {
-            emptyList()
-        }
+        } catch (_: Exception) { emptyList() }
     }
 
     private fun isSourceCode(function: KtNamedFunction): Boolean {
