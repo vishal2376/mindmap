@@ -45,7 +45,6 @@ class GraphAnalyzer(
                 if (function.bodyExpression != null) {
                     analyzeOutbound(function, nodes, edges, edgeKeys, 1, indicator)
                 } else {
-                    // Root is abstract/interface — find implementations and analyze their outbound calls
                     val impls = findImplementations(function)
                     for (impl in impls.take(3)) {
                         if (nodes.size >= MAX_NODES) break
@@ -121,7 +120,6 @@ class GraphAnalyzer(
                         val targetSymbol = resolvedCall.partiallyAppliedSymbol.symbol
                         val targetPsi = targetSymbol.psi as? KtNamedFunction ?: continue
 
-                        // Skip functions with no name (synthetic/generated)
                         if (targetPsi.name.isNullOrEmpty()) continue
 
                         val targetId = getFunctionId(targetPsi)
@@ -137,7 +135,6 @@ class GraphAnalyzer(
                             if (targetPsi.bodyExpression != null) {
                                 analyzeOutbound(targetPsi, nodes, edges, edgeKeys, currentDepth + 1, indicator)
                             } else {
-                                // Abstract/interface — find implementations and recurse
                                 val impls = findImplementations(targetPsi)
                                 for (impl in impls.take(3)) {
                                     if (nodes.size >= MAX_NODES) break
@@ -155,8 +152,7 @@ class GraphAnalyzer(
                     } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                         throw ce
                     } catch (_: Exception) {
-                        // Skip unresolvable calls
-                    }
+                        }
                 }
             }
         } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
@@ -181,8 +177,7 @@ class GraphAnalyzer(
         val targetId = getFunctionId(function)
         val scope = GlobalSearchScope.projectScope(project)
 
-        // Collect references to this function AND its super declarations
-        // (callers may invoke the abstract base, not the override directly)
+        // Also search super declarations since callers may invoke the abstract base
         val references = try {
             val searchTargets = mutableListOf(function)
             searchTargets.addAll(findSuperDeclarations(function))
@@ -220,7 +215,6 @@ class GraphAnalyzer(
             } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                 throw ce
             } catch (_: Exception) {
-                // Skip unresolvable references
             }
         }
     }
@@ -270,7 +264,7 @@ class GraphAnalyzer(
         return "${function.name}($params)$returnSuffix"
     }
 
-    /** Returns concrete (non-abstract) overrides of an abstract/interface function. */
+    /** Finds concrete overrides of an abstract/interface function. */
     private fun findImplementations(function: KtNamedFunction): List<KtNamedFunction> {
         if (function.bodyExpression != null) return emptyList()
         return try {
@@ -285,7 +279,7 @@ class GraphAnalyzer(
         }
     }
 
-    /** Returns abstract/interface super declarations that this function overrides. */
+    /** Finds abstract/interface declarations that this function overrides. */
     private fun findSuperDeclarations(function: KtNamedFunction): List<KtNamedFunction> {
         return try {
             function.toLightMethods().flatMap { lightMethod ->

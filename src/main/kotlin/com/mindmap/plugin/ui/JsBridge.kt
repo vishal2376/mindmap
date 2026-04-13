@@ -11,10 +11,7 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import javax.swing.SwingUtilities
 
-/**
- * Handles all JS<->Kotlin communication over JCEF.
- * Owns the JBCefJSQuery, message parsing, validation, and graph data injection.
- */
+/** JS<->Kotlin communication over JCEF. Owns message parsing, validation, and graph data injection. */
 @Suppress("DEPRECATION")
 class JsBridge(
     private val browser: JBCefBrowser,
@@ -36,7 +33,6 @@ class JsBridge(
         private val ALLOWED_SCHEMES = setOf("http", "https")
     }
 
-    /** Parsed message from the JS frontend */
     sealed class MessageEvent {
         data class Navigate(val nodeId: String) : MessageEvent()
         data class OpenUrl(val url: String) : MessageEvent()
@@ -103,12 +99,11 @@ class JsBridge(
         pendingData = data
     }
 
-    /** Sends full graph data (replaces current view) */
     fun sendGraph(data: GraphData) {
         executeWithEncodedData(data, "drawGraph")
     }
 
-    /** Sends merged graph data (preserves existing positions) */
+    /** Preserves existing node positions (used by trace merge). */
     fun sendMergedGraph(data: GraphData) {
         executeWithEncodedData(data, "mergeGraph")
     }

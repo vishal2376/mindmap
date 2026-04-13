@@ -11,6 +11,15 @@ import javax.swing.*
 
 class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
 
+    companion object {
+        // Catppuccin Mocha palette
+        private val BG = Color(30, 30, 46)
+        private val SURFACE1 = Color(49, 50, 68)
+        private val SURFACE2 = Color(88, 91, 112)
+        private val RED = Color(243, 139, 168)
+        private val BLUE = Color(137, 180, 250)
+    }
+
     override fun shouldBeAvailable(project: Project): Boolean = true
 
     override fun init(toolWindow: ToolWindow) {
@@ -32,16 +41,16 @@ class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
 
     private fun createJcefErrorPanel(): JPanel {
         val panel = JPanel(GridBagLayout())
-        panel.background = Color(30, 30, 46)
+        panel.background = BG
 
         val inner = object : JPanel() {
             override fun paintComponent(g: Graphics) {
                 super.paintComponent(g)
                 val g2 = g.create() as Graphics2D
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-                g2.color = Color(49, 50, 68) // Surface1
+                g2.color = SURFACE1
                 g2.fillRoundRect(0, 0, width, height, 16, 16)
-                g2.color = Color(88, 91, 112) // Surface2
+                g2.color = SURFACE2
                 g2.stroke = BasicStroke(1.0f)
                 g2.drawRoundRect(0, 0, width - 1, height - 1, 16, 16)
                 g2.dispose()
@@ -53,7 +62,7 @@ class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
         }
 
         val title = JLabel("JCEF Not Available").apply {
-            foreground = Color(243, 139, 168)
+            foreground = RED
             font = Font("SansSerif", Font.BOLD, 16)
             alignmentX = Component.CENTER_ALIGNMENT
         }
@@ -78,7 +87,7 @@ class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
             "https://vishal2376.github.io/mindmap#troubleshoot"
         ).apply {
             alignmentX = Component.CENTER_ALIGNMENT
-            foreground = Color(137, 180, 250) // Catppuccin Blue
+            foreground = BLUE
         }
 
         inner.add(title)

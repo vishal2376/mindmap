@@ -43,7 +43,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         bridge.loadHtml()
     }
 
-    /** Called from Alt+G action -- resets history and starts fresh */
+    /** Entry point from Alt+G action. */
     fun updateGraph(data: GraphData) {
         currentGraphData = data
         if (!bridge.isReady) {
@@ -174,7 +174,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
 
                     val current = currentGraphData ?: return
 
-                    // Merge using Set-based dedup for O(1) lookups
+                    // Merge trace results into current graph, deduplicating by ID
                     val existingNodeIds = current.nodes.mapTo(HashSet()) { it.id }
                     val existingEdgeKeys = current.edges.mapTo(HashSet()) { "${it.from}\u0000${it.to}" }
                     val newNodes = current.nodes.toMutableList()

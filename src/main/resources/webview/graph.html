@@ -1764,10 +1764,10 @@
         let tColl = new Set();
         let sf = '', cv = 'graph', sel = null, drag = false, sOpen = false;
         let panMode = true;
-        let _spaceHeld = false; // tracks Space key for temp pan
-        let _dimmedNodes = new Set(); // tracks nodes dimmed on hover for fast blur restore
-        let _hiddenNodes = new Set(); // persists across hover — nodes explicitly hidden by user
-        let _hiddenNodeSpecs = new Map(); // id → original vis node spec, for restore
+        let _spaceHeld = false;
+        let _dimmedNodes = new Set();
+        let _hiddenNodes = new Set();
+        let _hiddenNodeSpecs = new Map();
 
         // ==== DOM CACHE ====
         const $ = id => document.getElementById(id);
@@ -1785,7 +1785,7 @@
         const $mmc = $('mmc'), $mmcv = $('mmcv');
         const $neye = $('neyeBtn');
         let mmCtx = null, _mmRaf = 0, _mmHov = false;
-        let _mmScl = 1, _mmOx = 0, _mmOy = 0; // transform saved for click-to-pan
+        let _mmScl = 1, _mmOx = 0, _mmOy = 0;
         const $ntip = $('ntip'), $ti = $('ti'), $tn = $('tn'), $tp = $('tp'), $tsg = $('tsg'), $tfl = $('tfl'), $tss = $('tss');
         const $ttip = $('ttip'), $toast = $('toast'), $tdot = $('tdot'), $ttx = $('ttx');
         const $mOy = $('mOy'), $mCl = $('mCl');
@@ -1814,19 +1814,18 @@
                 const t = document.createTextNode(el.dataset.t);
                 $ttip.appendChild(t);
                 if (el.dataset.k) { const k = document.createElement('kbd'); k.textContent = el.dataset.k; $ttip.appendChild(k) }
-                // Position below element centered, then clamp to viewport
                 $ttip.style.left = '0px'; $ttip.style.top = '-9999px'; $ttip.style.transform = 'none';
                 $ttip.classList.add('s');
-                // After render, measure and clamp
+
                 requestAnimationFrame(() => {
                     const tw = $ttip.offsetWidth, th = $ttip.offsetHeight;
                     const vw = window.innerWidth, vh = window.innerHeight;
                     let lf = r.left + r.width / 2 - tw / 2;
                     let tp = r.bottom + 5;
-                    // clamp horizontally
+
                     if (lf + tw > vw - 4) lf = vw - tw - 4;
                     if (lf < 4) lf = 4;
-                    // flip above if clipped at bottom
+
                     if (tp + th > vh - 4) tp = r.top - th - 5;
                     $ttip.style.left = lf + 'px';
                     $ttip.style.top = tp + 'px';
@@ -1907,12 +1906,12 @@
         function mkN(n, isDup) {
             const c = gc(n.type, n.depth, n.isLibrary);
             const isRoot = n.type === 'ROOT';
-            // Solid dark backgrounds per type
+
             const bgs = { ROOT: '#352840', OUTBOUND: '#1e2a3d', INBOUND: '#1e3028' };
             const bg = n.isLibrary ? '#2a2a30' : (bgs[n.type] || '#252636');
             const label = isRoot ? (n.name || 'anonymous') : (n.name || 'anon');
             const fullLabel = isDup && n.fileName ? label + '\n_' + n.fileName + '_' : label;
-            // Assign hierarchical level: INBOUND on left (negative), ROOT at 0, OUTBOUND on right (positive)
+
             const level = isRoot ? 0 : n.type === 'INBOUND' ? -(n.depth || 1) : (n.depth || 1);
             return {
                 id: n.id, label: fullLabel, shape: 'box',
@@ -1969,7 +1968,7 @@
         function _positionEye(nt, nodeId) {
             const pos = nt.canvasToDOM(nt.getPosition(nodeId));
             const rc  = $gc.getBoundingClientRect();
-            // Place the eye button top-right of the node bounding box
+
             const bb  = nt.getBoundingBox(nodeId);
             const tl  = nt.canvasToDOM({ x: bb.right, y: bb.top });
             $neye.style.left = (tl.x - 11) + 'px';
@@ -1982,7 +1981,7 @@
             const isHidden = _hiddenNodes.has(nodeId);
             $neye.className = isHidden ? 'unhide' : '';
             $neye.title     = isHidden ? 'Unhide node' : 'Hide node';
-            // eye-off SVG when hidden
+
             $neye.innerHTML = isHidden
                 ? `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l12 12M6.5 6.6A2 2 0 0 0 9.4 9.5M4.2 4.3C2.8 5.3 1.7 6.6 1 8c1.5 3 4 5 7 5 1.2 0 2.3-.3 3.3-.8M7 3.1C7.3 3 7.7 3 8 3c3 0 5.5 2 7 5a12 12 0 0 1-1.7 2.7"/></svg>`
                 : `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>`;
@@ -2015,7 +2014,7 @@
             if (hide.length) eds.update(hide);
         }
 
-        // Unhide a single node
+
         function _unhideOne(nodeId) {
             if (!_hiddenNodes.has(nodeId)) return;
             _hiddenNodes.delete(nodeId);
@@ -2040,7 +2039,7 @@
             if (restore.length) eds.update(restore);
         }
 
-        // BFS from ROOT through visible nodes — returns set of reachable nodeIds
+        // BFS from ROOT through visible nodes to find reachable set
         function _reachableFromRoot() {
             const root = D?.nodes?.find(n => n.type === 'ROOT');
             const reached = new Set();
@@ -2063,16 +2062,14 @@
             return reached;
         }
 
-        // Sync cascade: hide nodes disconnected from ROOT, unhide cascade nodes that reconnected
+        // Hide nodes disconnected from ROOT, restore cascade-hidden nodes that reconnected
         function _syncCascade() {
             if (!nds || !eds || !D) return;
-            // Only cascade when user has explicitly hidden nodes — otherwise orphaned
-            // nodes (connected only through filtered library intermediaries) get
-            // wrongly hidden as empty blue boxes.
+            // Skip cascade when no nodes hidden -- otherwise library-filtered orphans become empty boxes
             if (!_hiddenNodes.size) return;
             const reachable = _reachableFromRoot();
 
-            // Hide unreachable visible nodes
+
             nds.forEach(n => {
                 if (!_hiddenNodes.has(n.id) && !reachable.has(n.id)) {
                     _cascadeSet.add(n.id);
@@ -2080,7 +2077,7 @@
                 }
             });
 
-            // Unhide cascade-hidden nodes that are now reachable again
+
             const revive = [];
             _cascadeSet.forEach(nid => { if (reachable.has(nid)) revive.push(nid); });
             for (const nid of revive) {
@@ -2103,7 +2100,7 @@
         function _updateHiddenPanel() {
             const count = _hiddenNodes.size;
             $hnpCnt.textContent = count;
-            // Auto-show when hidden nodes exist, auto-hide when none
+
             $hnp.classList.toggle('v', count > 0 && cv === 'graph');
             if (count === 0) { $hnpBody.innerHTML = ''; return; }
 
@@ -2130,7 +2127,7 @@
                 _cascadeSet.delete(nodeId);
                 _unhideOne(nodeId);
                 if (!wasCascade) {
-                    // Explicitly hidden node — re-sync to revive its cascade children
+
                     _syncCascade();
                 }
                 toast('Node shown', 'var(--accent)');
@@ -2144,7 +2141,7 @@
             scheduleMinimap();
         }
 
-        // Eye button click
+
         $neye.addEventListener('mousedown', e => { e.stopPropagation(); e.preventDefault(); });
         $neye.addEventListener('click', e => {
             e.stopPropagation();
@@ -2164,7 +2161,7 @@
                     if (nd?._data) { const pos = nt.canvasToDOM(nt.getPosition(p.node)); const rc = nt.body.container.getBoundingClientRect(); showTip({ clientX: rc.left + pos.x, clientY: rc.top + pos.y }, nodeMap[p.node] || nd._data) }
                     showEyeBtn(nt, p.node);
                     const c = new Set(nt.getConnectedNodes(p.node)); c.add(p.node);
-                    // only update nodes that actually change opacity
+
                     _dimmedNodes.clear();
                     const up = [];
                     nds.forEach(n => {
@@ -2196,7 +2193,7 @@
         function drawGraph(json) {
             try { D = typeof json === 'string' ? JSON.parse(json) : json } catch (e) { return }
             if (!D || !Array.isArray(D.nodes) || !Array.isArray(D.edges)) return;
-            // Clear hidden state from previous graph so stale IDs don't ghost new nodes
+            // Reset hidden state so stale IDs from previous graph don't ghost new nodes
             _hiddenNodes.clear(); _hiddenNodeSpecs.clear(); _cascadeSet.clear(); _dimmedNodes.clear();
             $hnp.classList.remove('v'); $hnpBody.innerHTML = ''; $hnpCnt.textContent = '0';
             $es.classList.add('h'); $ld.classList.remove('h');
@@ -2214,7 +2211,7 @@
             try { D = typeof json === 'string' ? JSON.parse(json) : json } catch (e) { return }
             if (!D || !Array.isArray(D.nodes) || !Array.isArray(D.edges)) return;
             const focusId = sel;
-            // Capture existing node positions and viewport before rebuild
+
             const savedPositions = net ? net.getPositions() : {};
             const savedScale = net ? net.getScale() : null;
             const savedView = net ? net.getViewPosition() : null;
@@ -2222,7 +2219,7 @@
             _buildNet(focusId, savedPositions, savedScale, savedView);
         }
 
-        // Phase 1: Ghost node appearance only (before layout — keeps edges so layout positions correctly)
+        // Ghost hidden nodes but keep edges visible so vis.js computes correct positions
         function _reapplyHiddenAppearance() {
             if (!_hiddenNodes.size || !nds) return;
             _hiddenNodes.forEach(nodeId => {
@@ -2237,7 +2234,7 @@
             });
         }
 
-        // Phase 2: Hide edges connected to hidden nodes (after layout has computed positions)
+        // Hide edges after layout -- positions are already computed
         function _hideEdgesForHidden() {
             if (!_hiddenNodes.size || !eds) return;
             const hide = [];
@@ -2250,16 +2247,14 @@
         }
 
         // Barycenter crossing minimization: reorder nodes within each level to reduce edge crossings
-        // After vis.js hierarchical layout, reorder nodes within each column (level)
-        // so edges cross as little as possible. Uses the median heuristic with
-        // multiple forward+backward sweeps (same core idea as Graphviz dot).
+        // Median heuristic with forward+backward sweeps (same approach as Graphviz dot)
         function _minimizeCrossings() {
             if (!net || !nds || !eds) return;
             const positions = net.getPositions();
             const ids = Object.keys(positions);
             if (ids.length < 3) return;
 
-            // Build adjacency (both directions for bidirectional sweep)
+
             const adj = {};   // id → Set of neighbor ids
             ids.forEach(id => adj[id] = new Set());
             eds.forEach(e => {
@@ -2269,7 +2264,7 @@
                 }
             });
 
-            // Group nodes into levels by x-position (LR layout → x = level)
+
             const levelMap = {};  // roundedX → [{ id, y }]
             ids.forEach(id => {
                 const p = positions[id];
@@ -2280,11 +2275,11 @@
             const levels = Object.keys(levelMap).map(Number).sort((a, b) => a - b);
             const levelNodes = levels.map(lx => levelMap[lx].sort((a, b) => a.y - b.y));
 
-            // Build level index: id → which level index it's in
+
             const levelIdx = {};
             levelNodes.forEach((lnodes, li) => lnodes.forEach(n => levelIdx[n.id] = li));
 
-            // Median heuristic: for a node, compute median y of its neighbors in the adjacent level
+
             function medianY(nodeId, adjLevelIndex) {
                 const neighbors = [];
                 adj[nodeId].forEach(nid => {
@@ -2298,7 +2293,7 @@
                 return neighbors.length % 2 === 1 ? neighbors[mid] : (neighbors[mid - 1] + neighbors[mid]) / 2;
             }
 
-            // Sweep: reorder each level based on median of neighbors in adjacent level
+
             function sweep(forward) {
                 const range = forward
                     ? levels.map((_, i) => i).slice(1)        // 1, 2, 3, ...
@@ -2306,14 +2301,14 @@
                 for (const li of range) {
                     const adjLi = forward ? li - 1 : li + 1;
                     const lnodes = levelNodes[li];
-                    // Compute median for each node
+
                     lnodes.forEach(n => {
                         const m = medianY(n.id, adjLi);
                         n._median = m !== null ? m : n.y; // keep original if no neighbors
                     });
-                    // Sort by median
+
                     lnodes.sort((a, b) => a._median - b._median);
-                    // Reassign y-positions with even spacing (use original spacing from vis.js)
+
                     const spacing = lnodes.length > 1
                         ? Math.max(80, (lnodes[lnodes.length - 1].y - lnodes[0].y) / (lnodes.length - 1))
                         : 0;
@@ -2326,13 +2321,13 @@
                 }
             }
 
-            // Run 4 sweeps (forward, backward, forward, backward) for convergence
+
             for (let i = 0; i < 4; i++) {
                 sweep(true);
                 sweep(false);
             }
 
-            // Apply new positions
+
             const updates = [];
             ids.forEach(id => {
                 updates.push({ id, y: positions[id].y });
@@ -2352,7 +2347,7 @@
 
         function _applyFilters() {
             if (sf) { const up = []; nds.forEach(n => { if (!isVis(n._data)) up.push({ id: n.id, hidden: true }) }); if (up.length) nds.update(up) }
-            // Ghost hidden nodes but keep edges so layout positions them correctly
+
             _reapplyHiddenAppearance();
             _syncCascade();
             _updateHiddenPanel();
@@ -2406,7 +2401,7 @@
         function _schedulePostLayout(focusId, savedPositions, savedScale, savedView) {
             const hasSaved = savedPositions && Object.keys(savedPositions).length > 0;
 
-            // After first draw: disable hierarchical constraint so nodes can be freely dragged
+            // Disable hierarchical after first draw so nodes can be freely dragged
             net.once('afterDrawing', () => {
                 net.setOptions({ layout: { hierarchical: { enabled: false } }, interaction: { dragNodes: !panMode } });
                 if (hasSaved) {
@@ -2418,7 +2413,7 @@
                 } else {
                     _minimizeCrossings();
                 }
-                // Hide edges for hidden nodes after layout computed correct positions
+
                 _hideEdgesForHidden();
                 $gc.classList.remove('loading');
             });
@@ -2452,17 +2447,17 @@
             if (cv === 'tree') rTree();
         }
 
-        // Visibility test — only search filter (library handled at dataset level in _buildNet)
+
         function isVis(d) { if (!d || !sf) return true; const q = sf.toLowerCase(); return (d.name || '').toLowerCase().includes(q) || (d.id || '').toLowerCase().includes(q) }
 
-        // Fast filter — toggles hidden flag for search only
+
         function filt() {
             if (!nds) return;
             const up = []; nds.forEach(n => { const v = isVis(n._data); if (!!n.hidden !== !v) up.push({ id: n.id, hidden: !v }) });
             if (up.length) nds.update(up); uSt();
         }
 
-        // Unified filter
+
         function filtAll() { filt(); if (cv === 'tree') rTree() }
 
         // ==== TREE VIEW ====
@@ -2473,24 +2468,24 @@
             const cm = {}, pm = {};
             for (const e of D.edges) { (cm[e.from] = cm[e.from] || []).push(e.to); (pm[e.to] = pm[e.to] || []).push(e.from) }
 
-            // Sticky header
+
             const hb = document.createElement('div'); hb.className = 'thb';
             const visCount = D.nodes.filter(n => !sf || mS(n)).length;
             hb.innerHTML = `<div class="thb-i">${_iFn}</div><div class="thb-t">${esc(root.name || 'anonymous')}</div><div class="thb-s">${esc(root.fileName || '')}</div><div class="thb-c">${visCount} node${visCount !== 1 ? 's' : ''}${sf ? ' matched' : ''}</div>`;
             $tc.appendChild(hb);
 
-            // If filter active and root doesn't match, still show it but check children
+
             $tc.appendChild(mkTR(root, 0, false, false, false, []));
             rSub($tc, root.id, nm, cm, pm, 0, new Set([root.id]), []);
 
-            // Empty filter result state
+
             if (sf && visCount <= 1) {
                 const em = document.createElement('div'); em.className = 'tree-empty';
                 em.textContent = 'No nodes match "' + sf + '"';
                 $tc.appendChild(em);
             }
 
-            // Scroll selected row into view
+
             const selRow = $tc.querySelector('.tr.sel');
             if (selRow) selRow.scrollIntoView({ block: 'nearest' });
         }
@@ -2532,7 +2527,7 @@
             }
         }
 
-        // SVG icon helpers for tree view
+
         const _iChev = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,4 10,8 6,12"/></svg>';
         const _iFn   = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13c0-3.5 1.5-5 4-5s4-1.5 4-5"/><line x1="2" y1="8" x2="8" y2="8"/></svg>';
         const _iOut  = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="3" x2="8" y2="11"/><polyline points="5,8 8,11 11,8"/><circle cx="8" cy="13" r="1.2" fill="currentColor" stroke="none"/></svg>';
@@ -2570,10 +2565,10 @@
             row.style.paddingLeft = indent + 'px';
 
             let guides = '';
-            // We only draw vertical guides up to current depth based on `cont` array
+
             for (let i = 0; i <= dep; i++) {
                 if (i === dep) {
-                    // Not drawing horizontal guides anymore, just the indentation handles it
+
                     if (!isLast && dep > 0) guides += `<div class="t-guide" style="left:${18 + i * 16}px;bottom:0;height:100%"></div>`;
                     else if (isLast && dep > 0) guides += `<div class="t-guide" style="left:${18 + i * 16}px;bottom:50%;height:50%"></div>`;
                 } else if (cont[i]) {
@@ -2613,7 +2608,7 @@
 
         function mS(n) { if (!sf) return true; const q = sf.toLowerCase(); return (n.name || '').toLowerCase().includes(q) || (n.id || '').toLowerCase().includes(q) }
 
-        // Legend & Stats
+
         function uLeg() {
             if (!D || !D.nodes) return; $li.innerHTML = '';
             const tc = { ROOT: 0, OUTBOUND: 0, INBOUND: 0 }; let lb = 0;
@@ -2623,7 +2618,7 @@
         }
         function uSt() {
             if (!D || !D.nodes || !D.edges) return; const tn = D.nodes.length, te = D.edges.length;
-            // P3.1: avoid array spread (stack risk for large node counts); use simple loop
+            // Loop instead of spread to avoid stack overflow on large node counts
             let md = 0; for (const n of D.nodes) if ((n.depth || 0) > md) md = n.depth || 0;
             let vn = tn; if (nds) vn = nds.get().filter(n => !n.hidden).length;
             $sn.textContent = vn === tn ? tn + ' nodes' : vn + '/' + tn + ' nodes';
@@ -2638,21 +2633,21 @@
             $gc.classList.toggle('off', v !== 'graph'); $tc.classList.toggle('on', v === 'tree');
             $leg.classList.toggle('h', v === 'tree');
             $zc.classList.toggle('h', v !== 'graph');
-            // Minimap: only in graph view, and only when there are nodes
+
             if (v === 'graph' && D && D.nodes && D.nodes.length > 0) {
                 $mmc.classList.remove('h');
                 if (!mmCtx) initMinimap();
             } else {
                 $mmc.classList.add('h');
             }
-            // Hidden nodes panel: only in graph view
+
             $hnp.classList.toggle('v', v === 'graph' && _hiddenNodes.size > 0);
             if (v === 'tree' && D) rTree();
             if (v === 'graph' && net) { setTimeout(() => { net.redraw(); updateZoomLabel() }, 30) }
             uLeg(); uSt(); updateShortcuts();
         }
 
-        // Events
+
         $bg.addEventListener('click', () => sw('graph'));
         $bt.addEventListener('click', () => sw('tree'));
         $bres.addEventListener('click', () => resetGraph());
@@ -2680,7 +2675,7 @@
             _send({ type: 'set_retrace_depth', outbound: _rOut, inbound: _rIn });
         }
 
-        // Settings modal open/close
+
         $bset.addEventListener('click', () => $sOy.classList.add('s'));
         $sCl.addEventListener('click',  () => $sOy.classList.remove('s'));
         $sOy.addEventListener('click',  e => { if (e.target === $sOy) $sOy.classList.remove('s'); });
@@ -2698,13 +2693,13 @@
             _sendDepth(); _sendRetraceDepth();
         });
 
-        // Slider fill updater
+
         function _updateSliderFill(slider) {
             const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
             slider.style.setProperty('--fill', pct + '%');
         }
 
-        // Slider config: id → { stateKey, displayEl, sendFn }
+
         const _sliders = {
             sldDout: { get: () => _sOut, set: v => _sOut = v, el: () => $doutV, send: _sendDepth },
             sldDin:  { get: () => _sIn,  set: v => _sIn = v,  el: () => $dinV,  send: _sendDepth },
@@ -2741,7 +2736,7 @@
             if (net) net.setOptions({ interaction: { dragNodes: !on } });
             updateShortcuts();
         }
-        // initialise to pan mode
+
         setPanMode(true);
         $bpan.addEventListener('click', () => setPanMode(true));
         $bsel.addEventListener('click', () => setPanMode(false));
@@ -2768,7 +2763,7 @@
             const ids = Object.keys(positions);
             if (!ids.length) return;
 
-            // bounding box of all nodes
+
             let x0=Infinity, x1=-Infinity, y0=Infinity, y1=-Infinity;
             for (const id of ids) {
                 const p = positions[id];
@@ -2787,7 +2782,7 @@
             const ctx = mmCtx;
             ctx.clearRect(0, 0, MW, MH);
 
-            // node dots — colors match gc() in the main graph
+
             const localNodeMap = new Map(D.nodes.map(n => [n.id, n]));
             for (const id of ids) {
                 const p  = positions[id];
@@ -2801,7 +2796,7 @@
                 ctx.beginPath(); ctx.arc(mx, my, r, 0, 6.283); ctx.fill();
             }
 
-            // viewport rect
+
             const vp  = net.getViewPosition();
             const vs  = net.getScale();
             const vrW = Math.min(($gc.clientWidth  / vs) * scl, MW);
@@ -2809,14 +2804,14 @@
             const vrL = Math.max(0, vp.x*scl+ox - vrW/2);
             const vrT = Math.max(0, vp.y*scl+oy - vrH/2);
 
-            // VS Code-style: dim everything outside the viewport
+
             ctx.fillStyle = 'rgba(0,0,0,0.42)';
             ctx.fillRect(0,       0,    vrL,           MH);           // left strip
             ctx.fillRect(vrL+vrW, 0,    MW-vrL-vrW,    MH);           // right strip
             ctx.fillRect(vrL,     0,    vrW,           vrT);           // top strip
             ctx.fillRect(vrL,     vrT+vrH, vrW,        MH-vrT-vrH);   // bottom strip
 
-            // viewport border
+
             ctx.strokeStyle = 'rgba(137,180,250,0.65)';
             ctx.lineWidth   = 1;
             ctx.strokeRect(vrL + 0.5, vrT + 0.5, vrW - 1, vrH - 1);
@@ -2862,21 +2857,21 @@
             if (e.key === 'r' || e.key === 'R') { resetGraph(); return }
             if (e.key === 'h' || e.key === 'H') { setPanMode(true); return }
             if (e.key === 'v' || e.key === 'V') { setPanMode(false); return }
-            // Space held = temp pan
+
             if (e.key === ' ' && !_spaceHeld && cv === 'graph') { e.preventDefault(); _spaceHeld = true; if (!panMode) { $gc.classList.add('pan-mode', 'sel-mode-temp') } return }
 
-            // Search
+
             if (e.key === '/') { e.preventDefault(); if (!sOpen) { sOpen = true; $sbn.classList.add('op'); setTimeout(() => $sin.focus(), 250) } else $sin.focus(); return }
 
-            // View switch
+
             if (e.key === '1') { sw('graph'); return }
             if (e.key === '2') { sw('tree'); return }
 
-            // History (Alt+Arrow)
+
             if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); $bbk.click(); return }
             if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); $bfw.click(); return }
 
-            // Minimap arrow-key pan (when hovering minimap)
+
             if (cv === 'graph' && _mmHov && e.key.startsWith('Arrow') && !e.altKey) {
                 e.preventDefault();
                 if (!net) return;
@@ -2888,23 +2883,23 @@
                 return;
             }
 
-            // Graph Keyboard Navigation
+
             if (cv === 'graph' && sel && e.key.startsWith('Arrow') && !e.altKey && !e.metaKey && !e.ctrlKey) {
                 e.preventDefault();
                 let newSel = null;
                 if (e.key === 'ArrowRight') {
-                    // Go to first child (outbound edge from sel)
+
                     const edge = D.edges.find(ed => ed.from === sel);
                     if (edge) newSel = edge.to;
                 } else if (e.key === 'ArrowLeft') {
-                    // Go to first parent (inbound edge to sel)
+
                     const edge = D.edges.find(ed => ed.to === sel);
                     if (edge) newSel = edge.from;
                 } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                    // Sibling: finding the parent of this node first
+
                     const pEdge = D.edges.find(ed => ed.to === sel);
                     if (pEdge) {
-                        // Get all children of this parent
+
                         const siblings = D.edges.filter(ed => ed.from === pEdge.from).map(ed => ed.to);
                         const idx = siblings.indexOf(sel);
                         if (idx !== -1) {
@@ -2912,7 +2907,7 @@
                             newSel = siblings[ni];
                         }
                     } else {
-                        // If it's a Root node, we could jump to the first inbound node (just a fallback)
+
                         const edge = D.edges.find(ed => ed.from === sel);
                         if (edge) newSel = edge.to;
                     }
@@ -2928,22 +2923,22 @@
                 return;
             }
 
-            // Escape = deselect all nodes
+
             if (e.key === 'Escape' && cv === 'graph' && net) { net.unselectAll(); selCount = 0; updateShortcuts(); return }
 
-            // Graph-only keys (no Alt/Cmd modifier)
+
             if (cv === 'graph' && !e.altKey && !e.metaKey && !e.ctrlKey) {
-                // Enter = open file for selected node
+
                 if (e.key === 'Enter' && sel) {
                     e.preventDefault();
                     _send({ type: 'navigate', id: sel });
                     return;
                 }
-                // C = center on selected node
+
                 if (e.key === 'c' || e.key === 'C') { centerOnSel(); return }
-                // F = fit all
+
                 if (e.key === 'F' || e.key === 'f') { doFit(); setTimeout(updateZoomLabel, 20); return }
-                // Zoom +/-
+
                 if (e.key === '=' || e.key === '+') { doZoom(1); return }
                 if (e.key === '-') { doZoom(-1); return }
             }
@@ -2960,7 +2955,7 @@
         // Scroll + pinch zoom -- rAF-batched to single moveTo per frame
         // Two paths: wheel+ctrlKey (Chromium pinch), gesturechange (WebKit fallback)
         let _zF = 1, _zMx = 0, _zMy = 0, _zRaf = 0;
-        // Cache bounding rect so event handlers never trigger layout reflow
+        // Cached to avoid layout reflow in event handlers
         let _gcRect = $gc.getBoundingClientRect();
         window.addEventListener('resize', () => { _gcRect = $gc.getBoundingClientRect(); }, { passive: true });
 
@@ -2983,27 +2978,25 @@
             if (!_zRaf) _zRaf = requestAnimationFrame(_flushZoom);
         }
 
-        // Path 1: wheel events — trackpad scroll AND Chromium-encoded pinch (ctrlKey)
+        // Wheel: trackpad scroll and Chromium-encoded pinch (ctrlKey)
         $gc.addEventListener('wheel', e => {
             e.preventDefault();
             if (!net || cv !== 'graph') return;
             const mx = e.clientX - _gcRect.left, my = e.clientY - _gcRect.top;
             if (e.ctrlKey) {
-                // Pinch — Chromium/JCEF encodes macOS pinch as ctrlKey+wheel
-                // deltaY is small (±1–10); use stronger base for responsive feel
+                // Chromium encodes macOS pinch as ctrlKey+wheel with small deltaY
                 _zoomAt(mx, my, Math.pow(0.97, e.deltaY));
             } else if (e.deltaMode === 0) {
-                // Trackpad two-finger scroll; drop sub-pixel momentum tail
+                // Trackpad scroll; drop sub-pixel momentum tail
                 if (Math.abs(e.deltaY) < 1) return;
                 _zoomAt(mx, my, Math.pow(0.996, e.deltaY));
             } else {
-                // Physical mouse wheel — discrete notches (~15% per click)
+                // Mouse wheel
                 _zoomAt(mx, my, Math.pow(0.85, e.deltaY / 3));
             }
         }, { passive: false });
 
-        // Path 2: native gesture events — WebKit / older JCEF pinch fallback
-        // gesturechange.scale is cumulative from gesturestart, so track delta manually
+        // WebKit gesture fallback; scale is cumulative so track delta manually
         let _gestScale = 1;
         $gc.addEventListener('gesturestart',  e => { e.preventDefault(); _gestScale = 1; }, { passive: false });
         $gc.addEventListener('gesturechange', e => {
@@ -3015,7 +3008,7 @@
         }, { passive: false });
         $gc.addEventListener('gestureend', e => { e.preventDefault(); _gestScale = 1; }, { passive: false });
 
-        // Minimap interaction
+
         let _mmDragging = false;
 
         function _mmPanTo(e) {
@@ -3037,7 +3030,7 @@
         });
         document.addEventListener('mouseup', () => { _mmDragging = false; });
 
-        // Track hover so arrow keys know to pan instead of navigate nodes
+        // Arrow keys pan minimap when hovering it
         $mmc.addEventListener('mouseenter', () => { _mmHov = true;  });
         $mmc.addEventListener('mouseleave', () => { _mmHov = false; });
 
@@ -3057,14 +3050,14 @@
             const nodeUnder = net.getNodeAt(dp);
 
             if (panMode && nodeUnder && !_spaceHeld) {
-                // P3.2: pan mode over a node → temporarily allow vis to drag it
+                // Pan mode: temporarily allow vis to drag individual nodes
                 net.setOptions({ interaction: { dragNodes: true } });
                 net.once('dragEnd', () => net.setOptions({ interaction: { dragNodes: false } }));
                 return; // let vis-network handle the node drag
             }
 
             if (panMode || _spaceHeld) {
-                // Pan mode over empty canvas (or space-held temp pan) → pan the view
+                // Pan the view
                 e.preventDefault(); e.stopPropagation();
                 _pan = { x: e.clientX, y: e.clientY, pos: net.getViewPosition(), scale: net.getScale() };
                 $gc.classList.add('panning');
@@ -3073,7 +3066,7 @@
                 return;
             }
 
-            if (nodeUnder) return; // clicking a node in select mode — let vis handle it
+            if (nodeUnder) return;
             _bx = { x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, active: false };
             document.removeEventListener('pointermove', _bxMove);
             document.removeEventListener('pointerup', _bxUp);
@@ -3098,12 +3091,12 @@
             $selbox.style.display = 'none';
             if (!_bx || !net) { _bx = null; return }
             if (_bx.active) {
-                // Find nodes inside the box
+
                 const rect = $gc.getBoundingClientRect();
                 const x1 = Math.min(_bx.x0, _bx.x) - rect.left, y1 = Math.min(_bx.y0, _bx.y) - rect.top;
                 const x2 = Math.max(_bx.x0, _bx.x) - rect.left, y2 = Math.max(_bx.y0, _bx.y) - rect.top;
                 const ids = [];
-                // P3.1: single batched getPositions() call instead of one call per node
+                // Batch getPositions() to avoid per-node calls
                 const visibleIds = [];
                 nds.forEach(n => { if (!n.hidden) visibleIds.push(n.id) });
                 const allPos = net.getPositions(visibleIds);
@@ -3120,7 +3113,6 @@
                     net.unselectAll(); selCount = 0; updateShortcuts();
                 }
             } else {
-                // Tiny drag = click on empty = deselect
                 net.unselectAll(); selCount = 0; updateShortcuts();
             }
             _bx = null;
