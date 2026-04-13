@@ -1,5 +1,6 @@
 package com.mindmap.plugin.ui
 
+import com.intellij.openapi.application.ReadAction
 import com.mindmap.plugin.analysis.GraphData
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
@@ -76,15 +77,13 @@ class GraphHistory(private val maxSize: Int = 50) {
      */
     fun findPsiElement(nodeId: String): KtNamedFunction? {
         return try {
-            current?.nodes?.find { it.id == nodeId }?.psiElement?.let {
-                if (it.isValid) return it
+            // .isValid is a PSI read — must be inside ReadAction regardless of calling thread.
+            ReadAction.compute<KtNamedFunction?, RuntimeException> {
+                current?.nodes?.find { it.id == nodeId }?.psiElement?.takeIf { it.isValid }
+                    ?: entries.asReversed().firstNotNullOfOrNull { graphData ->
+                        graphData.nodes.find { it.id == nodeId }?.psiElement?.takeIf { it.isValid }
+                    }
             }
-            for (graphData in entries.asReversed()) {
-                graphData.nodes.find { it.id == nodeId }?.psiElement?.let {
-                    if (it.isValid) return it
-                }
-            }
-            null
         } catch (_: Exception) {
             null
         }
