@@ -1,6 +1,7 @@
 package com.mindmap.plugin.ui
 
 import com.google.gson.GsonBuilder
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBase
@@ -29,8 +30,11 @@ class JsBridge(
     private val jsQuery = JBCefJSQuery.create(browser as JBCefBrowserBase)
     @Volatile private var isDisposed = false
     @Volatile private var isBrowserReady = false
-    private var pendingData: GraphData? = null
-    private var pendingAction: (() -> Unit)? = null
+    // @Volatile: written from background threads (markPending), read from CEF thread (onLoadEnd).
+    @Volatile private var pendingData: GraphData? = null
+    @Volatile private var pendingAction: (() -> Unit)? = null
+    // Stored so it can be removed in dispose() to prevent post-dispose callbacks and memory leaks.
+    private var loadHandler: CefLoadHandlerAdapter? = null
 
     companion object {
         private val LOG = Logger.getInstance(JsBridge::class.java)
@@ -76,7 +80,7 @@ class JsBridge(
             null
         }
 
-        browser.jbCefClient.addLoadHandler(object : CefLoadHandlerAdapter() {
+        loadHandler = object : CefLoadHandlerAdapter() {
             override fun onLoadEnd(cefBrowser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
                 try {
                     val bridgeCode = """
@@ -98,19 +102,26 @@ class JsBridge(
                     LOG.error("Failed to initialize JS bridge", e)
                 }
             }
-        }, browser.cefBrowser)
+        }
+        browser.jbCefClient.addLoadHandler(loadHandler!!, browser.cefBrowser)
     }
 
     fun loadHtml() {
-        try {
-            val htmlContent = javaClass.getResource("/webview/graph.html")?.readText()
-            if (htmlContent != null) {
-                browser.loadHTML(htmlContent)
-            } else {
-                LOG.warn("Could not load graph.html from resources")
+        // Read the 124KB resource on a pooled thread to avoid blocking the EDT at startup.
+        ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                val htmlContent = javaClass.getResource("/webview/graph.html")?.readText()
+                SwingUtilities.invokeLater {
+                    if (isDisposed) return@invokeLater
+                    if (htmlContent != null) {
+                        browser.loadHTML(htmlContent)
+                    } else {
+                        LOG.warn("Could not load graph.html from resources")
+                    }
+                }
+            } catch (e: Exception) {
+                LOG.error("Failed to load HTML", e)
             }
-        } catch (e: Exception) {
-            LOG.error("Failed to load HTML", e)
         }
     }
 
@@ -144,24 +155,29 @@ class JsBridge(
         }
     }
 
+    // JSON serialization and Base64 encoding run on a pooled thread so the EDT is never
+    // blocked by data processing — only the lightweight JS dispatch hits the EDT.
     private fun executeWithEncodedData(data: GraphData, jsFunction: String) {
         if (isDisposed) return
-        try {
-            val json = gson.toJson(data)
-            val encoded = java.util.Base64.getEncoder().encodeToString(json.toByteArray(Charsets.UTF_8))
-            SwingUtilities.invokeLater {
-                if (isDisposed) return@invokeLater
-                try {
-                    browser.cefBrowser.executeJavaScript(
-                        "$jsFunction(JSON.parse(atob('$encoded')))",
-                        browser.cefBrowser.url, 0
-                    )
-                } catch (e: Exception) {
-                    LOG.error("Failed to execute $jsFunction", e)
+        ApplicationManager.getApplication().executeOnPooledThread {
+            if (isDisposed) return@executeOnPooledThread
+            try {
+                val json = gson.toJson(data)
+                val encoded = java.util.Base64.getEncoder().encodeToString(json.toByteArray(Charsets.UTF_8))
+                SwingUtilities.invokeLater {
+                    if (isDisposed) return@invokeLater
+                    try {
+                        browser.cefBrowser.executeJavaScript(
+                            "$jsFunction(JSON.parse(atob('$encoded')))",
+                            browser.cefBrowser.url, 0
+                        )
+                    } catch (e: Exception) {
+                        LOG.error("Failed to execute $jsFunction", e)
+                    }
                 }
+            } catch (e: Exception) {
+                LOG.error("Failed to encode graph data for $jsFunction", e)
             }
-        } catch (e: Exception) {
-            LOG.error("Failed to encode graph data for $jsFunction", e)
         }
     }
 
@@ -252,6 +268,8 @@ class JsBridge(
         pendingData = null
         pendingAction = null
         try {
+            loadHandler?.let { browser.jbCefClient.removeLoadHandler(it, browser.cefBrowser) }
+            loadHandler = null
             jsQuery.dispose()
         } catch (e: Exception) {
             LOG.error("Error disposing JsBridge", e)
