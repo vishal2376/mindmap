@@ -1517,7 +1517,7 @@
                 <kbd>G</kbd>
             </div>
             <a href="#" class="el"
-                onclick="if(window.jbCefQuery)window.jbCefQuery(JSON.stringify({type:'navigate',url:'https://vishal2376.github.io/mindmap'}));return false;">
+                onclick="_send({type:'navigate',url:'https://vishal2376.github.io/mindmap'});return false;">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
                     style="width:12px;height:12px">
                     <path d="M10 2h4v4M6 10l8-8M13 14H2V3h5" />
@@ -1754,12 +1754,12 @@
     </div>
 
     <script>
-        // ── OS Detection ──
+        // ==== CONFIG ====
         const _isMac = /Mac|iPhone|iPad/.test(navigator.platform) || navigator.userAgent.includes('Mac OS X');
         const _altKey = _isMac ? '⌥ Option' : 'Alt';
         const _altShort = _isMac ? '⌥' : 'Alt';
 
-        // ── State ──
+        // ==== STATE ====
         let net = null, nds = null, eds = null, D = null;
         let tColl = new Set();
         let sf = '', cv = 'graph', sel = null, drag = false, sOpen = false;
@@ -1769,7 +1769,7 @@
         let _hiddenNodes = new Set(); // persists across hover — nodes explicitly hidden by user
         let _hiddenNodeSpecs = new Map(); // id → original vis node spec, for restore
 
-        // ── Cached DOM ──
+        // ==== DOM CACHE ====
         const $ = id => document.getElementById(id);
         const $gc = $('gc'), $tc = $('tc'), $ld = $('ld'), $es = $('es');
         const $bg = $('bg'), $bt = $('bt'), $bbk = $('bbk'), $bfw = $('bfw'), $hbg = $('hbg');
@@ -1790,22 +1790,23 @@
         const $ttip = $('ttip'), $toast = $('toast'), $tdot = $('tdot'), $ttx = $('ttx');
         const $mOy = $('mOy'), $mCl = $('mCl');
 
-        // ── Apply OS-specific key labels ──
+        // Apply OS-specific key labels
         document.getElementById('ekAlt').textContent = _altKey;
         document.getElementById('mAlt').textContent = _altShort;
         $bbk.dataset.k = _altShort + '+←';
         $bfw.dataset.k = _altShort + '+→';
 
-        // ── Helpers ──
+        // ==== UTILITIES ====
         function gc(t, d, l) { return l ? '#6c7086' : t === 'ROOT' ? '#f5c2e7' : t === 'INBOUND' ? '#a6e3a1' : t === 'OUTBOUND' ? '#89b4fa' : '#cba6f7' }
         function tr(s, m) { return !s || s.length <= m ? s : s.slice(0, m - 1) + '…' }
         function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML }
+        function _send(obj) { if (window.jbCefQuery) window.jbCefQuery(JSON.stringify(obj)); }
 
-        // ── Toast ──
+        // ==== TOAST ====
         let _tt;
         function toast(m, c) { $tdot.style.background = c || 'var(--accent)'; $ttx.textContent = m; $toast.classList.add('s'); clearTimeout(_tt); _tt = setTimeout(() => $toast.classList.remove('s'), 1600) }
 
-        // ── Button Tips ──
+        // ==== TOOLTIP ====
         document.querySelectorAll('[data-t]').forEach(el => {
             el.addEventListener('mouseenter', () => {
                 const r = el.getBoundingClientRect();
@@ -1834,19 +1835,19 @@
             el.addEventListener('mouseleave', () => $ttip.classList.remove('s'));
         });
 
-        // ── Search ──
+        // ==== SEARCH ====
         let _sf;
         $sbn.addEventListener('click', e => { if (!sOpen) { sOpen = true; $sbn.classList.add('op'); setTimeout(() => $sin.focus(), 250); e.stopPropagation() } });
         $sin.addEventListener('click', e => e.stopPropagation());
         $sin.addEventListener('input', e => { clearTimeout(_sf); _sf = setTimeout(() => { sf = e.target.value; filtAll() }, 80) });
         document.addEventListener('click', e => { if (sOpen && !$sbn.contains(e.target)) { sOpen = false; $sbn.classList.remove('op'); sf = ''; $sin.value = ''; filtAll() } });
 
-        // ── Help Modal ──
+        // Help Modal
         $bhelp.addEventListener('click', () => $mOy.classList.add('s'));
         $mCl.addEventListener('click', () => $mOy.classList.remove('s'));
         $mOy.addEventListener('click', e => { if (e.target === $mOy) $mOy.classList.remove('s') });
 
-        // ── Tooltip ──
+        // Node info tooltip
         function showTip(e, n) {
             if (drag) return;
             const c = gc(n.type, n.depth, n.isLibrary);
@@ -1865,7 +1866,7 @@
         }
         function hideTip() { $ntip.classList.remove('v') }
 
-        // ── Dynamic Shortcuts ──
+        // ==== STATUS & LEGEND ====
         function _sk(kbd, label) { return `<div class="sk"><kbd>${kbd}</kbd><span>${label}</span></div>` }
         let selCount = 0;
         function updateShortcuts() {
@@ -1893,18 +1894,16 @@
             $sh.innerHTML = h;
         }
 
-        // ── History ──
+        // ==== HISTORY ====
         function updateHistoryState(cb, cf, p, t) {
             $bbk.disabled = !cb; $bfw.disabled = !cf;
             if (t > 1) { $hbg.textContent = p + '/' + t; $hbg.classList.remove('h') } else $hbg.classList.add('h');
         }
-        $bbk.addEventListener('click', () => { if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'history_back' })) });
-        $bfw.addEventListener('click', () => { if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'history_forward' })) });
+        $bbk.addEventListener('click', () => _send({ type: 'history_back' }));
+        $bfw.addEventListener('click', () => _send({ type: 'history_forward' }));
 
-        // ── Node map for O(1) lookups ──
+        // ==== NODE BUILDERS ====
         let nodeMap = {};
-
-        // ── Node/Edge Builders (CallFlow-Visualizer style: box nodes, hierarchical LR) ──
         function mkN(n, isDup) {
             const c = gc(n.type, n.depth, n.isLibrary);
             const isRoot = n.type === 'ROOT';
@@ -1943,7 +1942,7 @@
             }
         }
 
-        // ── Shared Handlers ──
+        // ==== GRAPH EVENTS ====
         function onClk(p) {
             if (p.nodes.length !== 1) { sel = null; updateShortcuts(); return }
             const nid = p.nodes[0]; sel = nid; updateShortcuts();
@@ -1951,19 +1950,19 @@
             if (p.event?.srcEvent?.metaKey || p.event?.srcEvent?.ctrlKey) {
                 const nd = D?.nodes?.find(n => n.id === nid);
                 if (nd?.type === 'ROOT') { toast('Already viewing this function', 'var(--warn)'); return }
-                if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'expand', id: nid }));
+                _send({ type: 'expand', id: nid });
             } else {
-                if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'navigate', id: nid }));
+                _send({ type: 'navigate', id: nid });
             }
         }
         function onDbl(p) {
-            if (p.nodes.length !== 1 || !window.jbCefQuery) return;
+            if (p.nodes.length !== 1) return;
             const nid = p.nodes[0];
             if (_hiddenNodes.has(nid)) { toast('Unhide node first', 'var(--warn)'); return }
             const nd = D?.nodes?.find(n => n.id === nid);
             if (nd?.type === 'ROOT') { toast('Already the root function', 'var(--warn)'); return }
             toast('Tracing ' + tr(nd?.name || nid, 20) + '…', 'var(--accent)');
-            window.jbCefQuery(JSON.stringify({ type: 'trace', id: nid }));
+            _send({ type: 'trace', id: nid });
         }
         let _hovT = null, _neyeHideT = null, _neyeNodeId = null;
 
@@ -1997,9 +1996,8 @@
             _neyeHideT = setTimeout(() => { $neye.style.display = 'none'; _neyeNodeId = null; }, 300);
         }
 
-        let _cascadeSet = new Set(); // nodes auto-hidden by cascade (vs explicitly hidden by user)
-
-        // Apply ghost style to a single node
+        // ==== HIDDEN NODES ====
+        let _cascadeSet = new Set();
         function _hideOne(nodeId) {
             if (_hiddenNodes.has(nodeId)) return;
             _hiddenNodes.add(nodeId);
@@ -2091,7 +2089,7 @@
             }
         }
 
-        // ── Hidden Nodes Panel ──
+        // Hidden Nodes Panel
         const $hnp = $('hnp'), $hnpBody = $('hnp-body'), $hnpCnt = $('hnp-cnt');
         let _hnpMin = false;
 
@@ -2155,6 +2153,7 @@
         $neye.addEventListener('mouseenter', () => clearTimeout(_neyeHideT));
         $neye.addEventListener('mouseleave', () => hideEyeBtn(false));
 
+        // ==== HOVER EFFECTS ====
         function onHov(nt) {
             return p => {
                 if (drag) return;
@@ -2193,7 +2192,7 @@
             }
         }
 
-        // ── Draw Graph (hierarchical LR — callers LEFT, root CENTER, callees RIGHT) ──
+        // ==== GRAPH CORE ====
         function drawGraph(json) {
             try { D = typeof json === 'string' ? JSON.parse(json) : json } catch (e) { return }
             if (!D || !Array.isArray(D.nodes) || !Array.isArray(D.edges)) return;
@@ -2210,7 +2209,7 @@
             _buildNet();
         }
 
-        // ── Merge Graph (trace: add new nodes while perfectly layouting) ──
+        // Merge graph: trace adds new nodes while preserving existing positions
         function mergeGraph(json) {
             try { D = typeof json === 'string' ? JSON.parse(json) : json } catch (e) { return }
             if (!D || !Array.isArray(D.nodes) || !Array.isArray(D.edges)) return;
@@ -2250,7 +2249,7 @@
             if (hide.length) eds.update(hide);
         }
 
-        // ── Barycenter crossing minimization ──
+        // Barycenter crossing minimization: reorder nodes within each level to reduce edge crossings
         // After vis.js hierarchical layout, reorder nodes within each column (level)
         // so edges cross as little as possible. Uses the median heuristic with
         // multiple forward+backward sweeps (same core idea as Graphviz dot).
@@ -2341,39 +2340,35 @@
             if (updates.length) nds.update(updates);
         }
 
-        // Rebuild network from D with current filters, perfectly spacing all nodes to avoid overlap
-        function _buildNet(focusId, savedPositions, savedScale, savedView) {
-            if (!D) return;
-            // Always remove library nodes for performance as requested
+        function _createDataSets() {
             const visNodes = D.nodes.filter(n => !n.isLibrary);
             const visIds = new Set(visNodes.map(n => n.id));
             nodeMap = {}; for (const n of visNodes) nodeMap[n.id] = n;
             const nc = {}; for (const n of visNodes) nc[n.name] = (nc[n.name] || 0) + 1;
             nds = new vis.DataSet(visNodes.map(n => mkN(n, nc[n.name] > 1)));
             eds = new vis.DataSet(D.edges.filter(e => visIds.has(e.from) && visIds.has(e.to)).map(mkE));
-            // Detect graph size for performance optimizations
-            const isLarge = visNodes.length > 150;
+            return visNodes.length > 150;
+        }
 
-            // Apply search filter
+        function _applyFilters() {
             if (sf) { const up = []; nds.forEach(n => { if (!isVis(n._data)) up.push({ id: n.id, hidden: true }) }); if (up.length) nds.update(up) }
-            // Phase 1: ghost hidden nodes but KEEP edges (so layout positions them correctly)
+            // Ghost hidden nodes but keep edges so layout positions them correctly
             _reapplyHiddenAppearance();
             _syncCascade();
             _updateHiddenPanel();
-            const options = {
+        }
+
+        function _buildNetOptions(isLarge) {
+            return {
                 nodes: {
-                    shape: 'box',
-                    fixed: false,
-                    margin: 8,
+                    shape: 'box', fixed: false, margin: 8,
                     font: { multi: 'html', face: '-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif', size: 11, color: '#cdd6f4' },
-                    borderWidth: 1.5,
-                    shadow: false
+                    borderWidth: 1.5, shadow: false
                 },
                 edges: {
                     smooth: false,
                     color: { color: '#3e3f58', highlight: '#89b4fa', hover: '#7f849c' },
-                    width: 1,
-                    selectionWidth: 2,
+                    width: 1, selectionWidth: 2,
                     arrows: { to: { enabled: true, scaleFactor: 0.8 } }
                 },
                 physics: { enabled: false },
@@ -2381,20 +2376,18 @@
                 layout: {
                     improvedLayout: true,
                     hierarchical: {
-                        enabled: true,
-                        direction: 'LR',
-                        sortMethod: 'directed',
+                        enabled: true, direction: 'LR', sortMethod: 'directed',
                         levelSeparation: isLarge ? 180 : 220,
                         nodeSpacing: isLarge ? 100 : 130,
                         treeSpacing: isLarge ? 140 : 180,
-                        parentCentralization: true,
-                        blockShifting: true,
-                        edgeMinimization: true,
-                        shakeTowards: 'leaves'
+                        parentCentralization: true, blockShifting: true,
+                        edgeMinimization: true, shakeTowards: 'leaves'
                     }
                 }
             };
+        }
 
+        function _initOrUpdateNetwork(options) {
             if (!net) {
                 $gc.classList.add('loading');
                 net = new vis.Network($gc, { nodes: nds, edges: eds }, options);
@@ -2408,29 +2401,24 @@
                 net.setOptions(options);
                 net.setData({ nodes: nds, edges: eds });
             }
+        }
 
-            // Unlock X-axis dragging: wait for layout to draw once, then disable hierarchical constraint
+        function _schedulePostLayout(focusId, savedPositions, savedScale, savedView) {
             const hasSaved = savedPositions && Object.keys(savedPositions).length > 0;
+
+            // After first draw: disable hierarchical constraint so nodes can be freely dragged
             net.once('afterDrawing', () => {
-                net.setOptions({
-                    layout: { hierarchical: { enabled: false } },
-                    interaction: { dragNodes: !panMode }
-                });
-                // Restore saved positions for existing nodes (merge/trace preserves layout)
+                net.setOptions({ layout: { hierarchical: { enabled: false } }, interaction: { dragNodes: !panMode } });
                 if (hasSaved) {
                     const updates = [];
                     nds.forEach(n => {
-                        if (savedPositions[n.id]) {
-                            updates.push({ id: n.id, x: savedPositions[n.id].x, y: savedPositions[n.id].y });
-                        }
+                        if (savedPositions[n.id]) updates.push({ id: n.id, x: savedPositions[n.id].x, y: savedPositions[n.id].y });
                     });
                     if (updates.length) nds.update(updates);
                 } else {
-                    // Barycenter crossing minimization — reorder nodes within each level
-                    // to minimize edge crossings (same algorithm as Graphviz dot / Obsidian)
                     _minimizeCrossings();
                 }
-                // Phase 2: NOW hide edges — layout already computed correct positions
+                // Hide edges for hidden nodes after layout computed correct positions
                 _hideEdgesForHidden();
                 $gc.classList.remove('loading');
             });
@@ -2439,7 +2427,6 @@
             setTimeout(() => {
                 $ld.classList.add('h');
                 if (net) {
-                    // Restore viewport if we have saved state (merge/trace)
                     if (hasSaved && savedScale != null && savedView) {
                         net.moveTo({ position: savedView, scale: savedScale });
                     } else if (focusId && nds.get(focusId)) {
@@ -2451,6 +2438,15 @@
                     setTimeout(updateZoomLabel, 20);
                 }
             }, 20);
+        }
+
+        function _buildNet(focusId, savedPositions, savedScale, savedView) {
+            if (!D) return;
+            const isLarge = _createDataSets();
+            _applyFilters();
+            const options = _buildNetOptions(isLarge);
+            _initOrUpdateNetwork(options);
+            _schedulePostLayout(focusId, savedPositions, savedScale, savedView);
             if (cv === 'graph') $zc.classList.remove('h');
             uLeg(); uSt(); updateShortcuts();
             if (cv === 'tree') rTree();
@@ -2469,7 +2465,7 @@
         // Unified filter
         function filtAll() { filt(); if (cv === 'tree') rTree() }
 
-        // ── Tree ──
+        // ==== TREE VIEW ====
         function rTree() {
             if (!D || !D.nodes || !D.edges) return; $tc.innerHTML = '';
             const root = D.nodes.find(n => n.type === 'ROOT'); if (!root) return;
@@ -2597,17 +2593,17 @@
 
             row.addEventListener('click', e => {
                 sel = n.id; updateShortcuts(); document.querySelectorAll('.tr.sel').forEach(r => r.classList.remove('sel')); row.classList.add('sel');
-                if ((e.metaKey || e.ctrlKey) && window.jbCefQuery) {
+                if (e.metaKey || e.ctrlKey) {
                     if (n.type === 'ROOT') { toast('Already viewing this function', 'var(--warn)'); return }
-                    window.jbCefQuery(JSON.stringify({ type: 'expand', id: n.id }));
-                } else if (window.jbCefQuery) {
-                    window.jbCefQuery(JSON.stringify({ type: 'navigate', id: n.id }));
+                    _send({ type: 'expand', id: n.id });
+                } else {
+                    _send({ type: 'navigate', id: n.id });
                 }
             });
             row.addEventListener('dblclick', e => {
                 e.stopPropagation();
                 if (n.type === 'ROOT') { toast('Already the root function', 'var(--warn)'); return }
-                if (window.jbCefQuery) { toast('Tracing ' + tr(n.name || n.id, 20) + '…', 'var(--accent)'); window.jbCefQuery(JSON.stringify({ type: 'trace', id: n.id })) }
+                toast('Tracing ' + tr(n.name || n.id, 20) + '…', 'var(--accent)'); _send({ type: 'trace', id: n.id });
             });
             const ch = row.querySelector('.trc');
             if (hk) { ch.style.cursor = 'pointer'; ch.addEventListener('click', e => { e.stopPropagation(); tColl.has(n.id) ? tColl.delete(n.id) : tColl.add(n.id); rTree() }) }
@@ -2617,7 +2613,7 @@
 
         function mS(n) { if (!sf) return true; const q = sf.toLowerCase(); return (n.name || '').toLowerCase().includes(q) || (n.id || '').toLowerCase().includes(q) }
 
-        // ── Legend & Stats ──
+        // Legend & Stats
         function uLeg() {
             if (!D || !D.nodes) return; $li.innerHTML = '';
             const tc = { ROOT: 0, OUTBOUND: 0, INBOUND: 0 }; let lb = 0;
@@ -2635,7 +2631,7 @@
             $sm.textContent = cv === 'graph' ? 'Graph' : 'Tree';
         }
 
-        // ── View Switch ──
+        // ==== VIEW SWITCHING ====
         function sw(v) {
             cv = v;
             $bg.classList.toggle('on', v === 'graph'); $bt.classList.toggle('on', v === 'tree');
@@ -2656,7 +2652,7 @@
             uLeg(); uSt(); updateShortcuts();
         }
 
-        // ── Events ──
+        // Events
         $bg.addEventListener('click', () => sw('graph'));
         $bt.addEventListener('click', () => sw('tree'));
         $bres.addEventListener('click', () => resetGraph());
@@ -2670,30 +2666,26 @@
             $es.classList.remove('h'); $zc.classList.add('h'); $ld.classList.add('h');
             $mmc.classList.add('h');
             $bcn.textContent = 'No function selected';
-            if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'restart' }));
+            _send({ type: 'restart' });
             toast('Memory cleared', 'var(--accent)');
         }
-        // ── Settings state ──
+        // ==== SETTINGS ====
         let _sOut = 3, _sIn = 2;
         let _rOut = 1, _rIn = 1;
 
         function _sendDepth() {
-            if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'set_depth', outbound: _sOut, inbound: _sIn }));
+            _send({ type: 'set_depth', outbound: _sOut, inbound: _sIn });
         }
         function _sendRetraceDepth() {
-            if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'set_retrace_depth', outbound: _rOut, inbound: _rIn }));
+            _send({ type: 'set_retrace_depth', outbound: _rOut, inbound: _rIn });
         }
 
         // Settings modal open/close
         $bset.addEventListener('click', () => $sOy.classList.add('s'));
         $sCl.addEventListener('click',  () => $sOy.classList.remove('s'));
         $sOy.addEventListener('click',  e => { if (e.target === $sOy) $sOy.classList.remove('s'); });
-        $('sFbBtn').addEventListener('click', () => {
-            if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'navigate', url: 'https://github.com/vishal2376/mindmap/issues' }));
-        });
-        $('sWebBtn').addEventListener('click', () => {
-            if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'navigate', url: 'https://vishal2376.github.io/mindmap' }));
-        });
+        $('sFbBtn').addEventListener('click', () => _send({ type: 'navigate', url: 'https://github.com/vishal2376/mindmap/issues' }));
+        $('sWebBtn').addEventListener('click', () => _send({ type: 'navigate', url: 'https://vishal2376.github.io/mindmap' }));
         $('sResetBtn').addEventListener('click', () => {
             const defaults = { sldDout: 3, sldDin: 2, sldRout: 1, sldRin: 1 };
             _sOut = 3; _sIn = 2; _rOut = 1; _rIn = 1;
@@ -2733,7 +2725,7 @@
             });
         });
 
-        // ── Tool Mode ──
+        // ==== TOOL MODE ====
         function setPanMode(on, temp) {
             const wasPan = panMode;
             panMode = on;
@@ -2754,7 +2746,7 @@
         $bpan.addEventListener('click', () => setPanMode(true));
         $bsel.addEventListener('click', () => setPanMode(false));
 
-        // ── Minimap ──
+        // ==== MINIMAP ====
         function initMinimap() {
             const dpr = window.devicePixelRatio || 1;
             const W = $mmcv.clientWidth, H = $mmcv.clientHeight;
@@ -2830,7 +2822,7 @@
             ctx.strokeRect(vrL + 0.5, vrT + 0.5, vrW - 1, vrH - 1);
         }
 
-        // ── Zoom Controls ──
+        // ==== ZOOM ====
         function doFit() { if (net) net.fit({}) }
         function updateZoomLabel() { if (!net) return; const s = net.getScale(); $zlv.textContent = Math.round(s * 100) + '%' }
         function doZoom(dir) {
@@ -2852,7 +2844,7 @@
             net.moveTo({ position: pos, scale: net.getScale() });
         }
 
-        // ── Keyboard ──
+        // ==== KEYBOARD ====
         document.addEventListener('keydown', e => {
             if (e.target.tagName === 'INPUT') {
                 if (e.key === 'Escape') { sOpen = false; $sbn.classList.remove('op'); sf = ''; $sin.value = ''; $sin.blur(); filtAll() }
@@ -2944,7 +2936,7 @@
                 // Enter = open file for selected node
                 if (e.key === 'Enter' && sel) {
                     e.preventDefault();
-                    if (window.jbCefQuery) window.jbCefQuery(JSON.stringify({ type: 'navigate', id: sel }));
+                    _send({ type: 'navigate', id: sel });
                     return;
                 }
                 // C = center on selected node
@@ -2965,11 +2957,8 @@
             }
         });
 
-        // ── Zoom (scroll + pinch) — Figma/Excalidraw style, rAF-batched ──
-        // Accumulate all deltas between animation frames → single moveTo per frame.
-        // Two pinch paths:
-        //   1) wheel + ctrlKey=true  — standard Chromium / JCEF pinch encoding
-        //   2) gesturechange         — WebKit/older-JCEF native gesture fallback
+        // Scroll + pinch zoom -- rAF-batched to single moveTo per frame
+        // Two paths: wheel+ctrlKey (Chromium pinch), gesturechange (WebKit fallback)
         let _zF = 1, _zMx = 0, _zMy = 0, _zRaf = 0;
         // Cache bounding rect so event handlers never trigger layout reflow
         let _gcRect = $gc.getBoundingClientRect();
@@ -3026,7 +3015,7 @@
         }, { passive: false });
         $gc.addEventListener('gestureend', e => { e.preventDefault(); _gestScale = 1; }, { passive: false });
 
-        // ── Minimap interaction ──
+        // Minimap interaction
         let _mmDragging = false;
 
         function _mmPanTo(e) {
@@ -3052,7 +3041,7 @@
         $mmc.addEventListener('mouseenter', () => { _mmHov = true;  });
         $mmc.addEventListener('mouseleave', () => { _mmHov = false; });
 
-        // ── Box / Marquee Selection ──
+        // ==== BOX SELECTION ====
         const $selbox = $('selbox');
         let _bx = null; // active box state
         let _boxSelInit = false;
@@ -3137,10 +3126,8 @@
             _bx = null;
         }
 
-        // ── Disable browser context menu ──
+        // ==== PAN ====
         document.addEventListener('contextmenu', e => e.preventDefault());
-
-        // ── Right-click / Middle-click Pan ──
         let _pan = null;
         $gc.addEventListener('pointerdown', e => {
             if (!net || cv !== 'graph') return;
