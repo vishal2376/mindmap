@@ -3,7 +3,16 @@ package com.mindmap.plugin.ui
 import com.mindmap.plugin.analysis.GraphData
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
-/** Navigation history for mindmap graphs. All methods must be called on EDT. */
+/**
+ * Browser-like back/forward navigation stack for call graph views.
+ *
+ * [reset] starts a fresh history (used when Alt+G opens a new root function).
+ * [push] adds a new entry and discards any forward history (used by expand/re-center).
+ * [updateCurrent] replaces the current entry in-place (used when a trace merges new nodes
+ * into the visible graph without creating a new history step).
+ *
+ * All methods must be called on the EDT.
+ */
 class GraphHistory(private val maxSize: Int = 50) {
 
     private val entries = mutableListOf<GraphData>()
@@ -21,7 +30,7 @@ class GraphHistory(private val maxSize: Int = 50) {
         index = 0
     }
 
-    /** Trims forward history before pushing. */
+    /** Discards forward history, then appends [data]. Evicts oldest entry if over [maxSize]. */
     fun push(data: GraphData) {
         if (index < entries.size - 1) {
             while (entries.size > index + 1) {
@@ -60,7 +69,11 @@ class GraphHistory(private val maxSize: Int = 50) {
         index = -1
     }
 
-    /** Searches current graph then history for a valid PSI element matching this node ID. */
+    /**
+     * Finds a live PSI element for [nodeId] by searching current and past history entries.
+     * History is searched because PSI elements can become invalid after file edits,
+     * and an older snapshot may still hold a valid reference for the same node.
+     */
     fun findPsiElement(nodeId: String): KtNamedFunction? {
         return try {
             current?.nodes?.find { it.id == nodeId }?.psiElement?.let {

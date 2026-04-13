@@ -11,7 +11,15 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import javax.swing.SwingUtilities
 
-/** JS<->Kotlin communication over JCEF. Owns message parsing, validation, and graph data injection. */
+/**
+ * Handles all JS<->Kotlin communication over JCEF.
+ *
+ * Receives JSON messages from the browser via [JBCefJSQuery], parses and validates them
+ * into typed [MessageEvent] objects, then forwards them to [onMessage].
+ * Sends graph data to the browser by serializing to JSON, Base64-encoding, then calling
+ * a JS function with the decoded object. Base64 prevents XSS from node names that
+ * contain quotes or script tags.
+ */
 class JsBridge(
     private val browser: JBCefBrowser,
     private val onMessage: (MessageEvent) -> Unit
@@ -32,18 +40,32 @@ class JsBridge(
         private val ALLOWED_SCHEMES = setOf("http", "https")
     }
 
+    /** Typed representation of each incoming JS message type. */
     sealed class MessageEvent {
+        /** User clicked a node: navigate editor to that function. */
         data class Navigate(val nodeId: String) : MessageEvent()
+        /** User clicked an external link (e.g. help link in the JCEF error panel). */
         data class OpenUrl(val url: String) : MessageEvent()
+        /** User expanded a node: rebuild graph centered on that function. */
         data class Expand(val nodeId: String) : MessageEvent()
+        /** User triggered trace: overlay callers/callees of that node on the current graph. */
         data class Trace(val nodeId: String) : MessageEvent()
         data object HistoryBack : MessageEvent()
         data object HistoryForward : MessageEvent()
+        /** User restarted: clear graph and history. */
         data object Restart : MessageEvent()
+        /** User changed depth sliders for normal graph generation. */
         data class SetDepth(val outbound: Int, val inbound: Int) : MessageEvent()
+        /** User changed depth sliders specifically for trace operations. */
         data class SetRetraceDepth(val outbound: Int, val inbound: Int) : MessageEvent()
     }
 
+    /**
+     * Registers the JS query handler and installs a load handler that injects the bridge
+     * function into the page on every load. The bridge code must be injected in [onLoadEnd]
+     * because the page context is not available before that point.
+     * [onReady] is called once the page is ready and a pending graph is waiting to be drawn.
+     */
     fun setup(onReady: () -> Unit) {
         jsQuery.addHandler { request ->
             try {
@@ -188,6 +210,8 @@ class JsBridge(
         }
     }
 
+    // Defense-in-depth: node IDs come from the browser, so we validate length and charset
+    // before using them to look up PSI elements. An overly long or script-like ID is rejected.
     private fun validateNodeId(nodeId: String?): String? {
         if (nodeId == null) return null
         if (nodeId.length > MAX_NODE_ID_LENGTH) {

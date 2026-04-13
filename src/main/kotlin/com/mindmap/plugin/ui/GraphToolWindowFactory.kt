@@ -9,6 +9,13 @@ import com.intellij.ui.jcef.JBCefApp
 import java.awt.*
 import javax.swing.*
 
+/**
+ * Creates the Mindmap tool window content.
+ *
+ * When JCEF is available, creates a [MindMapPanel] that renders the call graph.
+ * When JCEF is unavailable (common in Android Studio or non-JBR runtime setups),
+ * shows a styled error panel with instructions to switch to a JBR runtime.
+ */
 class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
 
     companion object {
@@ -38,7 +45,6 @@ class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
         toolWindow.contentManager.addContent(content)
     }
 
-    // Shown when JCEF is unavailable (common in Android Studio or non-JBR runtime setups).
     private fun createJcefErrorPanel(): JPanel {
         val outer = JPanel(GridBagLayout()).apply { background = BG }
         val card = buildInnerCard()
@@ -55,7 +61,7 @@ class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
         return outer
     }
 
-    // Rounded card panel using Catppuccin surface colors.
+    /** Rounded card panel with a Catppuccin surface background and a 1px border. */
     private fun buildInnerCard(): JPanel = object : JPanel() {
         override fun paintComponent(g: Graphics) {
             super.paintComponent(g)

@@ -20,6 +20,13 @@ import java.awt.BorderLayout
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
+/**
+ * Hosts the JCEF browser and coordinates the call graph lifecycle.
+ *
+ * Owns three stateful components: [browser] (renders graph.html), [bridge] (JS<->Kotlin IPC),
+ * and [history] (back/forward navigation). Graph analysis runs on background threads via
+ * [ProgressManager]; all UI and history mutations happen on the EDT.
+ */
 class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Disposable {
 
     private val browser = JBCefBrowser()
@@ -28,8 +35,9 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     @Volatile private var isDisposed = false
     @Volatile private var currentGraphData: GraphData? = null
 
-    // Single volatile reference ensures outbound+inbound are always read as a consistent pair
-    // from background analysis threads (avoids a race when both fields update separately).
+    // A single volatile reference to an immutable snapshot ensures background threads always
+    // read outbound+inbound as a consistent pair. Separate @Volatile fields would let a
+    // background thread read a new outbound value alongside a stale inbound value.
     private data class DepthSettings(
         val outbound: Int = 3,
         val inbound: Int = 2,
@@ -48,7 +56,10 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         bridge.loadHtml()
     }
 
-    /** Entry point from Alt+G action. Resets history and renders the new graph. */
+    /**
+     * Entry point from Alt+G. Resets history and renders [data] as the new root graph.
+     * Use [pushGraph] instead when navigating within an existing session (expand/re-center).
+     */
     fun updateGraph(data: GraphData) {
         currentGraphData = data
         if (!bridge.isReady) {
@@ -97,7 +108,8 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         sendHistoryState()
     }
 
-    // PSI access requires a read action on a pooled thread; navigation then switches to EDT.
+    // PSI reads must not block the EDT, so we dispatch to a pooled thread first.
+    // Once we have the virtual file and offset, we hand off to the EDT for actual navigation.
     private fun handleNavigate(nodeId: String) {
         if (isDisposed) return
         ApplicationManager.getApplication().executeOnPooledThread {

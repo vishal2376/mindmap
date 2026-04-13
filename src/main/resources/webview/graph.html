@@ -1996,6 +1996,11 @@
         }
 
         // ==== HIDDEN NODES ====
+        // Two separate sets track why a node is hidden:
+        //   _hiddenNodes  - all currently hidden node IDs (user-hidden and cascade-hidden)
+        //   _cascadeSet   - nodes hidden automatically because they became unreachable from ROOT
+        // The distinction matters for restore: cascade-hidden nodes can be re-shown when the
+        // path from ROOT is restored. User-hidden nodes stay hidden until explicitly unhidden.
         let _cascadeSet = new Set();
         function _hideOne(nodeId) {
             if (_hiddenNodes.has(nodeId)) return;

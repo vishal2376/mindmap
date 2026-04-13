@@ -15,6 +15,12 @@ import com.mindmap.plugin.analysis.GraphAnalyzer
 import com.mindmap.plugin.ui.MindMapPanel
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
+/**
+ * Alt+G action that triggers call graph generation for the Kotlin function at the cursor.
+ *
+ * Finds the innermost [KtNamedFunction] at the caret position, opens the Mindmap tool window,
+ * then runs [GraphAnalyzer] on a background thread to avoid blocking the EDT.
+ */
 class ShowCallGraphAction : AnAction() {
 
     companion object {
@@ -64,6 +70,8 @@ class ShowCallGraphAction : AnAction() {
         }
     }
 
+    // BGT thread required: PSI reads must not block the EDT.
+    // Action is enabled only when the caret is inside a named Kotlin function.
     override fun update(e: AnActionEvent) {
         try {
             val psiFile = e.getData(CommonDataKeys.PSI_FILE)

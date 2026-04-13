@@ -18,6 +18,17 @@ import org.jetbrains.kotlin.asJava.toLightMethods
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
+/**
+ * Builds a bidirectional call graph for a given Kotlin function.
+ *
+ * Outbound traversal follows calls made by the function (callees).
+ * Inbound traversal finds all callers of the function.
+ * Both directions are bounded by [maxOutboundDepth] / [maxInboundDepth] and by [MAX_NODES]
+ * to keep graph size manageable. Library functions (outside project source) are included as
+ * leaf nodes but are not recursed into.
+ *
+ * All analysis runs inside a [runReadAction] block on a background thread.
+ */
 class GraphAnalyzer(
     private val project: Project,
     private val maxOutboundDepth: Int = 3,
@@ -31,6 +42,7 @@ class GraphAnalyzer(
         private const val MAX_INBOUND_REFS = 30
     }
 
+    /** Builds and returns the full call graph. Must be called on a background thread. */
     fun buildGraph(function: KtNamedFunction, indicator: ProgressIndicator? = null): GraphData {
         val nodes = mutableMapOf<String, CallGraphNode>()
         val edges = mutableListOf<CallGraphEdge>()
@@ -118,6 +130,11 @@ class GraphAnalyzer(
         }
     }
 
+    /**
+     * Adds [targetPsi] to the graph and recurses into it if it is a project function.
+     * Called inside an [analyze] block so it has access to resolved PSI but does not
+     * need the Kotlin Analysis API directly.
+     */
     private fun processOutboundTarget(
         callerId: String,
         targetPsi: KtNamedFunction,
@@ -196,8 +213,12 @@ class GraphAnalyzer(
         }
     }
 
-    // Callers may call the abstract base rather than the concrete override, so we
-    // include super declarations in the search to catch those call sites too.
+    /**
+     * Collects all call sites for [function] within the project scope.
+     * Super declarations are included because callers often call the abstract base;
+     * searching only the concrete override would miss those sites.
+     * Results are capped at [MAX_INBOUND_REFS] to prevent runaway searches on widely-used functions.
+     */
     private fun collectInboundReferences(
         function: KtNamedFunction,
         scope: GlobalSearchScope
@@ -232,7 +253,11 @@ class GraphAnalyzer(
         ).also { it.psiElement = function }
     }
 
-    // Local/anonymous functions have no fqName, so fall back to filePath::name.
+    /**
+     * Returns a stable unique ID for [function].
+     * Uses the fully qualified name plus parameter types when available.
+     * Falls back to filePath::name for local and anonymous functions that have no fqName.
+     */
     private fun getFunctionId(function: KtNamedFunction): String {
         val paramSig = function.valueParameters.joinToString(",") { it.typeReference?.text ?: "Any" }
         val fqName = function.fqName?.asString()
