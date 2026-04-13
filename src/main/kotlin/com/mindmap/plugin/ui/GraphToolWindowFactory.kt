@@ -13,11 +13,11 @@ class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
 
     companion object {
         // Catppuccin Mocha palette
-        private val BG = Color(30, 30, 46)
+        private val BG       = Color(30, 30, 46)
         private val SURFACE1 = Color(49, 50, 68)
         private val SURFACE2 = Color(88, 91, 112)
-        private val RED = Color(243, 139, 168)
-        private val BLUE = Color(137, 180, 250)
+        private val RED      = Color(243, 139, 168)
+        private val BLUE     = Color(137, 180, 250)
     }
 
     override fun shouldBeAvailable(project: Project): Boolean = true
@@ -28,8 +28,7 @@ class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         if (!JBCefApp.isSupported()) {
-            val errorPanel = createJcefErrorPanel()
-            val content = ContentFactory.getInstance().createContent(errorPanel, "Call Graph", false)
+            val content = ContentFactory.getInstance().createContent(createJcefErrorPanel(), "Call Graph", false)
             toolWindow.contentManager.addContent(content)
             return
         }
@@ -39,63 +38,51 @@ class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
         toolWindow.contentManager.addContent(content)
     }
 
+    // Shown when JCEF is unavailable (common in Android Studio or non-JBR runtime setups).
     private fun createJcefErrorPanel(): JPanel {
-        val panel = JPanel(GridBagLayout())
-        panel.background = BG
-
-        val inner = object : JPanel() {
-            override fun paintComponent(g: Graphics) {
-                super.paintComponent(g)
-                val g2 = g.create() as Graphics2D
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-                g2.color = SURFACE1
-                g2.fillRoundRect(0, 0, width, height, 16, 16)
-                g2.color = SURFACE2
-                g2.stroke = BasicStroke(1.0f)
-                g2.drawRoundRect(0, 0, width - 1, height - 1, 16, 16)
-                g2.dispose()
-            }
-        }.apply {
-            isOpaque = false
-            layout = BoxLayout(this, BoxLayout.Y_AXIS)
-            border = BorderFactory.createEmptyBorder(28, 36, 28, 36)
-        }
-
-        val title = JLabel("JCEF Not Available").apply {
-            foreground = RED
-            font = Font("SansSerif", Font.BOLD, 16)
-            alignmentX = Component.CENTER_ALIGNMENT
-        }
-
-        val msg = JLabel(
-            "<html><div style='text-align:center;width:260px;color:#cdd6f4;font-family:sans-serif;font-size:12px;line-height:1.6;'>" +
-            "Mindmap requires <b style='color:#bac2de;'>Chromium (JCEF)</b>.<br><br>" +
-            "<div style='text-align:left;display:inline-block;'>" +
-            "<b style='color:#89b4fa;'>1. Go to <b>Help → Find Action</b><br>" +
-            "<b style='color:#89b4fa;'>2.</b> Search: <i>\"Choose Boot Java Runtime\"</i><br>" +
-            "<b style='color:#89b4fa;'>3.</b> Select latest runtime with <b>JCEF</b><br>" +
-            "<b style='color:#89b4fa;'>4.</b> Restart IDE<br>" +
-            "</div><br><br>" +
-            "<span style='color:#6c7086;font-size:11px;'>(IntelliJ IDEA includes JCEF by default)</span>" +
-            "</div></html>"
-        ).apply {
-            alignmentX = Component.CENTER_ALIGNMENT
-        }
-
-        val link = com.intellij.ui.components.BrowserLink(
-            "Not working? Checkout help",
-            "https://vishal2376.github.io/mindmap#troubleshoot"
-        ).apply {
-            alignmentX = Component.CENTER_ALIGNMENT
-            foreground = BLUE
-        }
-
-        inner.add(title)
-        inner.add(Box.createVerticalStrut(12))
-        inner.add(msg)
-        inner.add(Box.createVerticalStrut(16))
-        inner.add(link)
-        panel.add(inner)
-        return panel
+        val outer = JPanel(GridBagLayout()).apply { background = BG }
+        val card = buildInnerCard()
+        card.add(JLabel("JCEF Not Available").apply {
+            foreground = RED; font = Font("SansSerif", Font.BOLD, 16); alignmentX = Component.CENTER_ALIGNMENT
+        })
+        card.add(Box.createVerticalStrut(12))
+        card.add(JLabel(jcefInstructionsHtml()).apply { alignmentX = Component.CENTER_ALIGNMENT })
+        card.add(Box.createVerticalStrut(16))
+        card.add(com.intellij.ui.components.BrowserLink("Not working? Checkout help", "https://vishal2376.github.io/mindmap#troubleshoot").apply {
+            alignmentX = Component.CENTER_ALIGNMENT; foreground = BLUE
+        })
+        outer.add(card)
+        return outer
     }
+
+    // Rounded card panel using Catppuccin surface colors.
+    private fun buildInnerCard(): JPanel = object : JPanel() {
+        override fun paintComponent(g: Graphics) {
+            super.paintComponent(g)
+            val g2 = g.create() as Graphics2D
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+            g2.color = SURFACE1
+            g2.fillRoundRect(0, 0, width, height, 16, 16)
+            g2.color = SURFACE2
+            g2.stroke = BasicStroke(1.0f)
+            g2.drawRoundRect(0, 0, width - 1, height - 1, 16, 16)
+            g2.dispose()
+        }
+    }.apply {
+        isOpaque = false
+        layout = BoxLayout(this, BoxLayout.Y_AXIS)
+        border = BorderFactory.createEmptyBorder(28, 36, 28, 36)
+    }
+
+    private fun jcefInstructionsHtml(): String =
+        "<html><div style='text-align:center;width:260px;color:#cdd6f4;font-family:sans-serif;font-size:12px;line-height:1.6;'>" +
+        "Mindmap requires <b style='color:#bac2de;'>Chromium (JCEF)</b>.<br><br>" +
+        "<div style='text-align:left;display:inline-block;'>" +
+        "<b style='color:#89b4fa;'>1. Go to <b>Help → Find Action</b><br>" +
+        "<b style='color:#89b4fa;'>2.</b> Search: <i>\"Choose Boot Java Runtime\"</i><br>" +
+        "<b style='color:#89b4fa;'>3.</b> Select latest runtime with <b>JCEF</b><br>" +
+        "<b style='color:#89b4fa;'>4.</b> Restart IDE<br>" +
+        "</div><br><br>" +
+        "<span style='color:#6c7086;font-size:11px;'>(IntelliJ IDEA includes JCEF by default)</span>" +
+        "</div></html>"
 }
