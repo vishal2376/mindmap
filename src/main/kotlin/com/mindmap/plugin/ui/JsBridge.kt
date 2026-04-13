@@ -4,6 +4,7 @@ import com.google.gson.GsonBuilder
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.ui.jcef.JBCefBrowser
+import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import com.mindmap.plugin.analysis.GraphData
 import org.cef.browser.CefBrowser
@@ -12,14 +13,13 @@ import org.cef.handler.CefLoadHandlerAdapter
 import javax.swing.SwingUtilities
 
 /** JS<->Kotlin communication over JCEF. Owns message parsing, validation, and graph data injection. */
-@Suppress("DEPRECATION")
 class JsBridge(
     private val browser: JBCefBrowser,
     private val onMessage: (MessageEvent) -> Unit
 ) {
 
     private val gson = GsonBuilder().excludeFieldsWithModifiers(java.lang.reflect.Modifier.TRANSIENT).create()
-    private val jsQuery = JBCefJSQuery.create(browser)
+    private val jsQuery = JBCefJSQuery.create(browser as JBCefBrowserBase)
     @Volatile private var isDisposed = false
     @Volatile private var isBrowserReady = false
     private var pendingData: GraphData? = null
