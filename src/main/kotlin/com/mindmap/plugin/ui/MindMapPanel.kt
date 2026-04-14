@@ -3,6 +3,7 @@ package com.mindmap.plugin.ui
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.application.WriteIntentReadAction
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
@@ -122,10 +123,14 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                     Triple(virtualFile, psiElement.textOffset, project)
                 } ?: return@executeOnPooledThread
 
+                // WriteIntentReadAction required: newer IntelliJ/Android Studio enforces
+                // read access for editor model operations (caret movement) on EDT.
                 SwingUtilities.invokeLater {
                     if (isDisposed) return@invokeLater
                     try {
-                        OpenFileDescriptor(result.third, result.first, result.second).navigate(true)
+                        WriteIntentReadAction.run {
+                            OpenFileDescriptor(result.third, result.first, result.second).navigate(true)
+                        }
                     } catch (e: Exception) {
                         LOG.error("Failed to open editor", e)
                     }
