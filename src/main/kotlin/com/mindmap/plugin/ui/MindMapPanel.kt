@@ -126,7 +126,6 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                     if (isDisposed) return@invokeLater
                     try {
                         OpenFileDescriptor(result.third, result.first, result.second).navigate(true)
-                        browser.component.requestFocusInWindow()
                     } catch (e: Exception) {
                         LOG.error("Failed to open editor", e)
                     }
