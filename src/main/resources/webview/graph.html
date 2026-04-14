@@ -2165,7 +2165,7 @@
                 if (drag) return;
                 clearTimeout(_hovT);
                 _hovT = setTimeout(() => {
-                    if (!nds) return;
+                    if (!nds || drag) return;
                     const nd = nds.get(p.node);
                     if (nd?._data) { const pos = nt.canvasToDOM(nt.getPosition(p.node)); const rc = nt.body.container.getBoundingClientRect(); showTip({ clientX: rc.left + pos.x, clientY: rc.top + pos.y }, nodeMap[p.node] || nd._data) }
                     showEyeBtn(nt, p.node);
@@ -2399,6 +2399,14 @@
                 net.on('hoverNode', onHov(net)); net.on('blurNode', onBlr());
                 net.on('dragStart', (p) => {
                     drag = true; hideTip(); hideEyeBtn(true);
+                    // Cancel pending hover dim and restore already-dimmed nodes
+                    // so nds.update() doesn't fire mid-drag and break multi-node tracking
+                    clearTimeout(_hovT);
+                    if (_dimmedNodes.size > 0 && nds) {
+                        const restore = [..._dimmedNodes].map(id => ({ id, opacity: undefined }));
+                        _dimmedNodes.clear();
+                        nds.update(restore);
+                    }
                     const selected = net.getSelectedNodes();
                     if (selected.length > 1 && p.nodes.length === 1) {
                         const positions = net.getPositions(selected);
