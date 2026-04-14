@@ -414,32 +414,39 @@
 
         .thb-btns {
             display: flex;
-            gap: 2px;
+            gap: 4px;
             margin-left: 6px;
             flex-shrink: 0
         }
 
         .thb-btn {
-            width: 22px;
+            width: 24px;
             height: 22px;
             display: grid;
             place-items: center;
-            background: none;
-            border: none;
-            border-radius: 4px;
+            background: rgba(166,173,200,.06);
+            border: 1px solid rgba(166,173,200,.15);
+            border-radius: 5px;
             color: var(--tx4);
             cursor: pointer;
-            padding: 0
+            padding: 0;
+            transition: background .15s, border-color .15s, color .15s
         }
 
         .thb-btn:hover {
-            background: var(--bg-h);
-            color: var(--tx)
+            background: rgba(137,180,250,.12);
+            border-color: rgba(137,180,250,.35);
+            color: var(--accent)
+        }
+
+        .thb-btn:active {
+            background: rgba(137,180,250,.2);
+            transform: scale(.95)
         }
 
         .thb-btn svg {
-            width: 14px;
-            height: 14px
+            width: 13px;
+            height: 13px
         }
 
         .tg {
@@ -542,28 +549,41 @@
             min-width: 0
         }
 
-        .trf {
-            font: 400 11px/1 inherit;
-            color: var(--tx4);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 140px;
-            margin-left: 8px
-        }
-
         .trr {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             flex-shrink: 0;
             margin-left: auto
         }
 
-        .trloc {
+        .tr-info {
+            display: flex;
+            align-items: center;
+            gap: 4px;
             font: 10px/1 'JetBrains Mono', monospace;
             color: var(--tx5);
-            opacity: 0.8
+            background: rgba(166,173,200,.06);
+            border-radius: 3px;
+            padding: 2px 5px;
+            white-space: nowrap;
+            max-width: 160px;
+            overflow: hidden
+        }
+
+        .tr-info-file {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: .7
+        }
+
+        .tr-info-sep {
+            opacity: .3
+        }
+
+        .tr-info-loc {
+            flex-shrink: 0;
+            color: var(--tx4)
         }
 
         .t-guide {
@@ -2642,14 +2662,13 @@
             const c = gc(n.type, n.depth, n.isLibrary);
             const cc = hk ? (cl ? '' : 'e') : 'l';
             row.style.paddingLeft = (10 + dep * 16) + 'px';
+            const hasInfo = n.fileName || n.loc > 0;
+            const infoHtml = hasInfo ? `<div class="tr-info">${n.fileName ? `<span class="tr-info-file">${esc(n.fileName)}</span>` : ''}${n.fileName && n.loc > 0 ? '<span class="tr-info-sep">·</span>' : ''}${n.loc > 0 ? `<span class="tr-info-loc">${n.loc}L</span>` : ''}</div>` : '';
             row.innerHTML = _mkGuideHtml(dep, isLast, cont) + `
         <span class="trc ${cc}">${_iChev}</span>
         <span class="tri-c" style="color:${c}">${_nodeIcon(n)}</span>
         <span class="trn">${esc(n.name || 'anon')}</span>
-        ${n.fileName ? `<span class="trf">${esc(n.fileName)}</span>` : ''}
-        <div class="trr">
-            ${n.loc > 0 ? `<span class="trloc">${n.loc}L</span>` : ''}
-        </div>
+        <div class="trr">${infoHtml}</div>
     `;
             _attachTreeRowEvents(row, n, hk);
             return row;
