@@ -743,6 +743,20 @@
         .srow-ticks { display: flex; justify-content: space-between; position: absolute; bottom: -1px; left: 2px; right: 2px; pointer-events: none; }
         .srow-tick { width: 3px; height: 3px; border-radius: 50%; background: var(--tx5); opacity: .5; }
         .sm-sec-desc { font-size: 11px; color: var(--tx4); line-height: 1.5; margin-top: -6px; }
+        .sm-sec-desc a { color: var(--accent); text-decoration: underline; cursor: pointer; }
+        /* toggle switch */
+        .sm-toggle { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+        .sm-toggle input { opacity: 0; width: 0; height: 0; }
+        .sm-toggle-track {
+            position: absolute; inset: 0; border-radius: 10px; cursor: pointer;
+            background: var(--bg-s2); transition: background .2s;
+        }
+        .sm-toggle-track::after {
+            content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px;
+            background: var(--tx3); border-radius: 50%; transition: transform .2s;
+        }
+        .sm-toggle input:checked + .sm-toggle-track { background: var(--accent); }
+        .sm-toggle input:checked + .sm-toggle-track::after { transform: translateX(16px); background: #1e1e2e; }
         /* divider */
         .sm-div { height: 1px; background: var(--bd); margin: 0; }
         /* feedback section */
@@ -1659,6 +1673,22 @@
                         <span class="srow-lbl">Inbound</span>
                         <div class="srow-slider"><input type="range" class="inn" id="sldRin" min="1" max="5" value="1"><div class="srow-ticks"><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span><span class="srow-tick"></span></div></div>
                         <span class="srow-val" id="rinV">1</span>
+                    </div>
+                </div>
+
+                <div class="sm-sec">
+                    <div class="sm-sec-hdr"><span class="sm-sec-ttl">Debug Mode</span></div>
+                    <div class="sm-sec-desc">Enable verbose logging for diagnosing plugin issues.</div>
+                    <div class="srow" style="justify-content:space-between">
+                        <span class="srow-lbl">Debug Logging</span>
+                        <label class="sm-toggle">
+                            <input type="checkbox" id="sDebug">
+                            <span class="sm-toggle-track"></span>
+                        </label>
+                    </div>
+                    <div class="sm-sec-desc" id="debugHint" style="display:none;margin-top:4px">
+                        Logs written to IDE log file. Open via <b>Help → Show Log in Explorer/Finder</b>.<br>
+                        Share logs with developer via <a id="debugIssueLink">GitHub Issues</a>.
                     </div>
                 </div>
 
@@ -2680,6 +2710,7 @@
         // ==== SETTINGS ====
         let _sOut = 3, _sIn = 2;
         let _rOut = 1, _rIn = 1;
+        let _debugMode = false;
 
         function _sendDepth() {
             _send({ type: 'set_depth', outbound: _sOut, inbound: _sIn });
@@ -2694,9 +2725,21 @@
         $sOy.addEventListener('click',  e => { if (e.target === $sOy) $sOy.classList.remove('s'); });
         $('sFbBtn').addEventListener('click', () => _send({ type: 'navigate', url: 'https://github.com/vishal2376/mindmap/issues' }));
         $('sWebBtn').addEventListener('click', () => _send({ type: 'navigate', url: 'https://vishal2376.github.io/mindmap' }));
+        const $sDebug = document.getElementById('sDebug');
+        $sDebug.addEventListener('change', () => {
+            _debugMode = $sDebug.checked;
+            document.getElementById('debugHint').style.display = _debugMode ? 'block' : 'none';
+            _send({ type: 'set_debug', enabled: _debugMode });
+        });
+        document.getElementById('debugIssueLink')?.addEventListener('click', e => {
+            e.preventDefault();
+            _send({ type: 'navigate', url: 'https://github.com/vishal2376/mindmap/issues/new' });
+        });
         $('sResetBtn').addEventListener('click', () => {
             const defaults = { sldDout: 3, sldDin: 2, sldRout: 1, sldRin: 1 };
             _sOut = 3; _sIn = 2; _rOut = 1; _rIn = 1;
+            _debugMode = false; $sDebug.checked = false;
+            document.getElementById('debugHint').style.display = 'none';
             Object.entries(defaults).forEach(([id, v]) => {
                 const s = document.getElementById(id);
                 if (s) { s.value = v; _updateSliderFill(s); }
@@ -2704,6 +2747,7 @@
             $doutV.textContent = 3; $dinV.textContent = 2;
             $routV.textContent = 1; $rinV.textContent = 1;
             _sendDepth(); _sendRetraceDepth();
+            _send({ type: 'set_debug', enabled: false });
         });
 
 

@@ -62,6 +62,8 @@ class JsBridge(
         data class SetDepth(val outbound: Int, val inbound: Int) : MessageEvent()
         /** User changed depth sliders specifically for trace operations. */
         data class SetRetraceDepth(val outbound: Int, val inbound: Int) : MessageEvent()
+        /** User toggled debug mode in settings. */
+        data class SetDebug(val enabled: Boolean) : MessageEvent()
     }
 
     /**
@@ -219,6 +221,7 @@ class JsBridge(
                 val inn = msg.inbound?.coerceIn(1, 5) ?: return null
                 MessageEvent.SetRetraceDepth(out, inn)
             }
+            "set_debug" -> MessageEvent.SetDebug(msg.enabled ?: false)
             else -> {
                 LOG.debug("Unknown JS message type: ${msg.type}")
                 null
@@ -260,7 +263,8 @@ class JsBridge(
         val id: String? = null,
         val url: String? = null,
         val outbound: Int? = null,
-        val inbound: Int? = null
+        val inbound: Int? = null,
+        val enabled: Boolean? = null
     )
 
     fun dispose() {

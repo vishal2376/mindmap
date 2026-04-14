@@ -84,6 +84,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
             is JsBridge.MessageEvent.Restart     -> SwingUtilities.invokeLater { if (!isDisposed) handleRestart() }
             is JsBridge.MessageEvent.SetDepth    -> depths = depths.copy(outbound = event.outbound, inbound = event.inbound)
             is JsBridge.MessageEvent.SetRetraceDepth -> depths = depths.copy(retraceOutbound = event.outbound, retraceInbound = event.inbound)
+            is JsBridge.MessageEvent.SetDebug -> LOG.info("Debug mode ${if (event.enabled) "enabled" else "disabled"}")
         }
     }
 
