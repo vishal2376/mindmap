@@ -2597,7 +2597,7 @@
             });
             const ch = row.querySelector('.trc');
             if (hk) { ch.style.cursor = 'pointer'; ch.addEventListener('click', e => { e.stopPropagation(); tColl.has(n.id) ? tColl.delete(n.id) : tColl.add(n.id); rTree() }) }
-            row.addEventListener('mouseenter', e => showTip(e, n)); row.addEventListener('mouseleave', hideTip);
+            // Tooltip disabled in tree view — overlaps node text and hinders readability (issue #7)
         }
 
         function mkTR(n, dep, hk, cl, isLast, cont) {
