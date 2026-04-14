@@ -412,6 +412,36 @@
             margin-left: auto
         }
 
+        .thb-btns {
+            display: flex;
+            gap: 2px;
+            margin-left: 6px;
+            flex-shrink: 0
+        }
+
+        .thb-btn {
+            width: 22px;
+            height: 22px;
+            display: grid;
+            place-items: center;
+            background: none;
+            border: none;
+            border-radius: 4px;
+            color: var(--tx4);
+            cursor: pointer;
+            padding: 0
+        }
+
+        .thb-btn:hover {
+            background: var(--bg-h);
+            color: var(--tx)
+        }
+
+        .thb-btn svg {
+            width: 14px;
+            height: 14px
+        }
+
         .tg {
             padding: 0;
             position: relative
@@ -2479,8 +2509,14 @@
 
             const hb = document.createElement('div'); hb.className = 'thb';
             const visCount = D.nodes.filter(n => !sf || mS(n)).length;
-            hb.innerHTML = `<div class="thb-i">${_iFn}</div><div class="thb-t">${esc(root.name || 'anonymous')}</div><div class="thb-s">${esc(root.fileName || '')}</div><div class="thb-c">${visCount} node${visCount !== 1 ? 's' : ''}${sf ? ' matched' : ''}</div>`;
+            hb.innerHTML = `<div class="thb-i">${_iFn}</div><div class="thb-t">${esc(root.name || 'anonymous')}</div><div class="thb-s">${esc(root.fileName || '')}</div><div class="thb-c">${visCount} node${visCount !== 1 ? 's' : ''}${sf ? ' matched' : ''}</div><div class="thb-btns"><button class="thb-btn" id="tExpandAll" title="Expand All"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,6 8,10 12,6"/><polyline points="4,2 8,6 12,2"/></svg></button><button class="thb-btn" id="tCollapseAll" title="Collapse All"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,6 8,2 12,6"/><polyline points="4,10 8,6 12,10"/></svg></button></div>`;
             $tc.appendChild(hb);
+            document.getElementById('tExpandAll')?.addEventListener('click', () => { tColl.clear(); rTree() });
+            document.getElementById('tCollapseAll')?.addEventListener('click', () => {
+                if (!D) return;
+                D.nodes.forEach(n => { if ((n.children?.length > 0) || (n.parents?.length > 0)) tColl.add(n.id) });
+                rTree();
+            });
 
 
             $tc.appendChild(mkTR(root, 0, false, false, false, []));
