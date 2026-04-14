@@ -1765,6 +1765,7 @@
         let sf = '', cv = 'graph', sel = null, drag = false, sOpen = false;
         let panMode = true;
         let _spaceHeld = false;
+        let _dragSel = null;
         let _dimmedNodes = new Set();
         let _hiddenNodes = new Set();
         let _hiddenNodeSpecs = new Map();
@@ -2396,7 +2397,22 @@
                 net = new vis.Network($gc, { nodes: nds, edges: eds }, options);
                 net.on('click', onClk); net.on('doubleClick', onDbl);
                 net.on('hoverNode', onHov(net)); net.on('blurNode', onBlr());
-                net.on('dragStart', () => { drag = true; hideTip(); hideEyeBtn(true); }); net.on('dragEnd', () => { drag = false });
+                net.on('dragStart', (p) => {
+                    drag = true; hideTip(); hideEyeBtn(true);
+                    const selected = net.getSelectedNodes();
+                    if (selected.length > 1 && p.nodes.length === 1) {
+                        const positions = net.getPositions(selected);
+                        _dragSel = { start: new Map(Object.entries(positions)), id: p.nodes[0], origin: positions[p.nodes[0]] };
+                    }
+                });
+                net.on('dragging', () => {
+                    if (!_dragSel) return;
+                    const cur = net.getPositions([_dragSel.id])[_dragSel.id];
+                    if (!cur || !_dragSel.origin) return;
+                    const dx = cur.x - _dragSel.origin.x, dy = cur.y - _dragSel.origin.y;
+                    _dragSel.start.forEach((pos, id) => { if (id !== _dragSel.id) net.moveNode(id, pos.x + dx, pos.y + dy) });
+                });
+                net.on('dragEnd', () => { drag = false; _dragSel = null });
                 net.on('afterDrawing', scheduleMinimap);
                 net.on('selectNode', () => { selCount = net.getSelectedNodes().length; updateShortcuts() });
                 net.on('deselectNode', () => { selCount = net.getSelectedNodes().length; updateShortcuts() });
