@@ -68,10 +68,10 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
      * Use [pushGraph] instead when navigating within an existing session (expand/re-center).
      */
     fun updateGraph(data: GraphData) {
-        debug { "updateGraph: ${data.nodes.size} nodes, ${data.edges.size} edges, root=${data.nodes.find { it.type == NodeType.ROOT }?.name}" }
+        debug { "New graph received — root: ${data.nodes.find { it.type == NodeType.ROOT }?.name}, nodes: ${data.nodes.size}, edges: ${data.edges.size}" }
         currentGraphData = data
         if (!bridge.isReady) {
-            debug { "updateGraph: bridge not ready, marking pending" }
+            debug { "Browser not ready yet — graph queued, will render when JCEF finishes loading" }
             bridge.markPending(data)
             return
         }
@@ -127,18 +127,18 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     // Once we have the virtual file and offset, we hand off to the EDT for actual navigation.
     private fun handleNavigate(nodeId: String) {
         if (isDisposed) return
-        debug { "navigate: nodeId=$nodeId" }
+        debug { "Navigate requested — clicking node to open in editor (id: $nodeId)" }
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 val result = ReadAction.compute<Triple<VirtualFile, Int, Project>?, RuntimeException> {
                     val node = currentGraphData?.nodes?.find { it.id == nodeId }
                     val psiElement = node?.psiElement
-                    if (node == null) { debug { "navigate: node not found in graph data" }; return@compute null }
-                    if (psiElement == null) { debug { "navigate: psiElement is null for ${node.name}" }; return@compute null }
-                    if (!psiElement.isValid) { debug { "navigate: psiElement invalid for ${node.name}" }; return@compute null }
+                    if (node == null) { debug { "Navigate failed — node ID not found in current graph data, may have been cleared" }; return@compute null }
+                    if (psiElement == null) { debug { "Navigate failed — PSI element missing for '${node.name}', function reference was lost after graph serialization" }; return@compute null }
+                    if (!psiElement.isValid) { debug { "Navigate failed — PSI element for '${node.name}' is stale, file was likely modified since graph was built" }; return@compute null }
                     val virtualFile = psiElement.containingFile?.virtualFile
-                    if (virtualFile == null) { debug { "navigate: virtualFile is null for ${node.name}" }; return@compute null }
-                    debug { "navigate: → ${virtualFile.name}:${psiElement.textOffset} (${node.name})" }
+                    if (virtualFile == null) { debug { "Navigate failed — '${node.name}' has no file on disk, may be an in-memory or generated class" }; return@compute null }
+                    debug { "Navigate success — opening '${node.name}' at ${virtualFile.name}:offset=${psiElement.textOffset}" }
                     Triple(virtualFile, psiElement.textOffset, project)
                 } ?: return@executeOnPooledThread
 
@@ -162,19 +162,19 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
 
     private fun handleExpand(nodeId: String) {
         if (isDisposed) return
-        debug { "expand: nodeId=$nodeId" }
+        debug { "Expand requested — rebuilding graph centered on node (id: $nodeId)" }
         val psiElement = history.findPsiElement(nodeId)
-        if (psiElement == null) { debug { "expand: PSI element not found in history" }; return }
+        if (psiElement == null) { debug { "Expand failed — no valid PSI element found in current or past graph history for this node" }; return }
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Generating Mindmap...", true) {
             override fun run(indicator: ProgressIndicator) {
                 try {
                     if (isDisposed) return
                     if (!ReadAction.compute<Boolean, RuntimeException> { psiElement.isValid }) {
-                        debug { "expand: psiElement no longer valid" }; return
+                        debug { "Expand failed — PSI element became stale, file was modified since graph was built" }; return
                     }
                     val startTime = System.currentTimeMillis()
                     val newData = analyzeElement(psiElement, indicator)
-                    debug { "expand: built graph in ${System.currentTimeMillis() - startTime}ms — ${newData.nodes.size} nodes, ${newData.edges.size} edges" }
+                    debug { "Expand complete — analyzed in ${System.currentTimeMillis() - startTime}ms, result: ${newData.nodes.size} nodes, ${newData.edges.size} edges" }
                     SwingUtilities.invokeLater { if (!isDisposed) pushGraph(newData) }
                 } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                     throw ce
@@ -187,23 +187,23 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
 
     private fun handleTrace(nodeId: String) {
         if (isDisposed) return
-        debug { "trace: nodeId=$nodeId" }
+        debug { "Trace requested — merging callers/callees of node into current graph (id: $nodeId)" }
         val psiElement = history.findPsiElement(nodeId)
-        if (psiElement == null) { debug { "trace: PSI element not found in history" }; return }
+        if (psiElement == null) { debug { "Trace failed — no valid PSI element found in current or past graph history for this node" }; return }
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Tracing function...", true) {
             override fun run(indicator: ProgressIndicator) {
                 try {
                     if (isDisposed) return
                     if (!ReadAction.compute<Boolean, RuntimeException> { psiElement.isValid }) {
-                        debug { "trace: psiElement no longer valid" }; return
+                        debug { "Trace failed — PSI element became stale, file was modified since graph was built" }; return
                     }
                     val function = psiElement as? KtNamedFunction ?: return
                     val d = depths
-                    debug { "trace: ${function.name} with depth out=${d.retraceOutbound} in=${d.retraceInbound}" }
+                    debug { "Tracing '${function.name}' — outbound depth: ${d.retraceOutbound}, inbound depth: ${d.retraceInbound}" }
                     val startTime = System.currentTimeMillis()
                     val traceData = GraphAnalyzer(project, d.retraceOutbound, d.retraceInbound, debugMode).buildGraph(function, indicator)
                     val mergedData = (currentGraphData ?: return).merge(traceData)
-                    debug { "trace: done in ${System.currentTimeMillis() - startTime}ms — merged to ${mergedData.nodes.size} nodes, ${mergedData.edges.size} edges" }
+                    debug { "Trace complete — analyzed in ${System.currentTimeMillis() - startTime}ms, merged graph: ${mergedData.nodes.size} nodes, ${mergedData.edges.size} edges" }
                     SwingUtilities.invokeLater {
                         if (isDisposed) return@invokeLater
                         currentGraphData = mergedData
@@ -228,7 +228,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
 
     private fun handleHistoryBack() {
         val data = history.back() ?: return
-        debug { "history back: position ${history.position}/${history.total}, ${data.nodes.size} nodes" }
+        debug { "History back — viewing graph ${history.position} of ${history.total} (${data.nodes.size} nodes)" }
         currentGraphData = data
         bridge.sendGraph(data)
         sendHistoryState()
@@ -236,7 +236,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
 
     private fun handleHistoryForward() {
         val data = history.forward() ?: return
-        debug { "history forward: position ${history.position}/${history.total}, ${data.nodes.size} nodes" }
+        debug { "History forward — viewing graph ${history.position} of ${history.total} (${data.nodes.size} nodes)" }
         currentGraphData = data
         bridge.sendGraph(data)
         sendHistoryState()

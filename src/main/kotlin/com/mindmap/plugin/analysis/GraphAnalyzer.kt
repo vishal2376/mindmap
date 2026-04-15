@@ -52,7 +52,7 @@ class GraphAnalyzer(
         val edgeKeys = HashSet<String>()
         val startTime = System.currentTimeMillis()
 
-        debug { "buildGraph: root=${function.name}, file=${function.containingFile?.name}, outDepth=$maxOutboundDepth, inDepth=$maxInboundDepth" }
+        debug { "Building call graph for '${function.name}' in ${function.containingFile?.name} — max outbound depth: $maxOutboundDepth, max inbound depth: $maxInboundDepth" }
 
         try {
             ReadAction.run<RuntimeException> {
@@ -63,7 +63,7 @@ class GraphAnalyzer(
                 if (function.bodyExpression != null) {
                     analyzeOutbound(function, nodes, edges, edgeKeys, 1, indicator)
                 } else {
-                    debug { "buildGraph: root has no body, searching implementations" }
+                    debug { "Root function has no body (abstract/interface) — searching for concrete implementations" }
                     for (impl in findImplementations(function)) {
                         if (nodes.size >= MAX_NODES) break
                         val implId = getFunctionId(impl)
@@ -72,10 +72,10 @@ class GraphAnalyzer(
                         analyzeOutbound(impl, nodes, edges, edgeKeys, 2, indicator)
                     }
                 }
-                debug { "buildGraph: outbound done — ${nodes.size} nodes, ${edges.size} edges" }
+                debug { "Outbound analysis done — found ${nodes.size} functions called (directly and transitively)" }
                 indicator?.text = "Finding callers..."
                 analyzeInbound(function, nodes, edges, edgeKeys, 1, indicator)
-                debug { "buildGraph: inbound done — ${nodes.size} nodes, ${edges.size} edges" }
+                debug { "Inbound analysis done — found ${nodes.size} total nodes including callers" }
             }
         } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
             throw ce
@@ -83,7 +83,7 @@ class GraphAnalyzer(
             LOG.error("Error building graph", e)
         }
 
-        debug { "buildGraph: completed in ${System.currentTimeMillis() - startTime}ms — ${nodes.size} nodes, ${edges.size} edges" }
+        debug { "Graph build complete in ${System.currentTimeMillis() - startTime}ms — total: ${nodes.size} nodes, ${edges.size} edges" }
         return GraphData(nodes.values.toList(), edges)
     }
 
