@@ -749,13 +749,13 @@
         .sm-toggle input { opacity: 0; width: 0; height: 0; }
         .sm-toggle-track {
             position: absolute; inset: 0; border-radius: 10px; cursor: pointer;
-            background: var(--bg-s2); transition: background .2s;
+            background: var(--bg-s2); border: 1px solid #585b70; transition: background .2s, border-color .2s;
         }
         .sm-toggle-track::after {
-            content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px;
+            content: ''; position: absolute; width: 14px; height: 14px; left: 2px; top: 2px;
             background: var(--tx3); border-radius: 50%; transition: transform .2s;
         }
-        .sm-toggle input:checked + .sm-toggle-track { background: var(--accent); }
+        .sm-toggle input:checked + .sm-toggle-track { background: var(--accent); border-color: var(--accent); }
         .sm-toggle input:checked + .sm-toggle-track::after { transform: translateX(16px); background: #1e1e2e; }
         /* divider */
         .sm-div { height: 1px; background: var(--bd); margin: 0; }
