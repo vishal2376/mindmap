@@ -420,6 +420,7 @@
         }
 
         .thb-btn {
+            position: relative;
             width: 24px;
             height: 22px;
             display: grid;
@@ -447,6 +448,29 @@
         .thb-btn svg {
             width: 13px;
             height: 13px
+        }
+
+        .thb-btn[data-tip]::after {
+            content: attr(data-tip);
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            font: 11px/1 inherit;
+            color: #cdd6f4;
+            background: #313244;
+            border: 1px solid #45475a;
+            border-radius: 4px;
+            padding: 4px 8px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .15s;
+            z-index: 20
+        }
+
+        .thb-btn[data-tip]:hover::after {
+            opacity: 1
         }
 
         .tg {
@@ -2529,7 +2553,7 @@
 
             const hb = document.createElement('div'); hb.className = 'thb';
             const visCount = D.nodes.filter(n => !sf || mS(n)).length;
-            hb.innerHTML = `<div class="thb-i">${_iFn}</div><div class="thb-t">${esc(root.name || 'anonymous')}</div><div class="thb-s">${esc(root.fileName || '')}</div><div class="thb-c">${visCount} node${visCount !== 1 ? 's' : ''}${sf ? ' matched' : ''}</div><div class="thb-btns"><button class="thb-btn" id="tExpandAll" title="Expand All"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7,10 12,15 17,10"/><polyline points="7,3 12,8 17,3"/><line x1="7" y1="21" x2="17" y2="21"/></svg></button><button class="thb-btn" id="tCollapseAll" title="Collapse All"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7,14 12,9 17,14"/><polyline points="7,21 12,16 17,21"/><line x1="7" y1="3" x2="17" y2="3"/></svg></button></div>`;
+            hb.innerHTML = `<div class="thb-i">${_iFn}</div><div class="thb-t">${esc(root.name || 'anonymous')}</div><div class="thb-s">${esc(root.fileName || '')}</div><div class="thb-c">${visCount} node${visCount !== 1 ? 's' : ''}${sf ? ' matched' : ''}</div><div class="thb-btns"><button class="thb-btn" id="tCollapseAll" data-tip="Collapse All"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7,14 12,9 17,14"/><polyline points="7,21 12,16 17,21"/><line x1="7" y1="3" x2="17" y2="3"/></svg></button><button class="thb-btn" id="tExpandAll" data-tip="Expand All"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7,10 12,15 17,10"/><polyline points="7,3 12,8 17,3"/><line x1="7" y1="21" x2="17" y2="21"/></svg></button></div>`;
             $tc.appendChild(hb);
             document.getElementById('tExpandAll')?.addEventListener('click', () => { tColl.clear(); rTree() });
             document.getElementById('tCollapseAll')?.addEventListener('click', () => {
