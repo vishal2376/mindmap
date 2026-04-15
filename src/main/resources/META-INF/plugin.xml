@@ -41,6 +41,19 @@
 
     <change-notes
     ><![CDATA[
+    <h3>1.0.4</h3>
+    <ul>
+        <li><b>Collapse/Expand All</b> — New buttons in tree view header to collapse or expand all nested nodes at once (#8)</li>
+        <li><b>Debug Mode</b> — Toggle in settings to save plugin logs to a dedicated <code>mindmap-debug.log</code> file for bug reports; crashes are always logged (#9)</li>
+        <li><b>Tree View Info Badge</b> — File name and LOC combined into a compact badge with improved text contrast</li>
+        <li><b>Tree Tooltip Removed</b> — Disabled tooltip popup in tree view that was overlapping node text (#7)</li>
+        <li><b>Fixed: Multi-Node Drag</b> — Selecting multiple nodes and dragging with trackpad now moves all selected nodes together (#10)</li>
+        <li><b>Fixed: Android Studio Navigation</b> — Wrapped editor navigation in WriteIntentReadAction to fix crash on newer IntelliJ/Android Studio builds</li>
+        <li><b>Fixed: EDT Threading</b> — Moved JSON serialization, HTML loading, and graph updates off the main thread for smoother UI</li>
+        <li><b>Fixed: Memory Leak</b> — JCEF load handler is now properly removed on dispose</li>
+        <li><b>Removed Deprecated APIs</b> — Replaced <code>runReadAction</code> and <code>partiallyAppliedSymbol</code> with current stable APIs</li>
+    </ul>
+
     <h3>1.0.3</h3>
     <ul>
         <li><b>Redesigned Settings</b> — New minimal inline settings panel with sliders, depth track indicators, reset-to-defaults, and clearer labels</li>
