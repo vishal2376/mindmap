@@ -80,7 +80,7 @@ class GraphAnalyzer(
         } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
             throw ce
         } catch (e: Exception) {
-            LOG.error("Error building graph", e)
+            LOG.error("Error building graph", e); com.mindmap.plugin.DebugLog.error("Error building graph", e)
         }
 
         debug { "Graph build complete in ${System.currentTimeMillis() - startTime}ms — total: ${nodes.size} nodes, ${edges.size} edges" }

@@ -3,6 +3,7 @@ package com.mindmap.plugin.ui
 import com.google.gson.GsonBuilder
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
+import com.mindmap.plugin.DebugLog
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
@@ -77,7 +78,7 @@ class JsBridge(
             try {
                 handleRawMessage(request)
             } catch (e: Exception) {
-                LOG.error("JS bridge handler error", e)
+                LOG.error("JS bridge handler error", e); DebugLog.error("JS bridge handler error", e)
             }
             null
         }
@@ -101,7 +102,7 @@ class JsBridge(
                         }
                     }
                 } catch (e: Exception) {
-                    LOG.error("Failed to initialize JS bridge", e)
+                    LOG.error("Failed to initialize JS bridge", e); DebugLog.error("Failed to initialize JS bridge", e)
                 }
             }
         }
@@ -122,7 +123,7 @@ class JsBridge(
                     }
                 }
             } catch (e: Exception) {
-                LOG.error("Failed to load HTML", e)
+                LOG.error("Failed to load HTML", e); DebugLog.error("Failed to load HTML", e)
             }
         }
     }
@@ -152,7 +153,7 @@ class JsBridge(
                     browser.cefBrowser.url, 0
                 )
             } catch (e: Exception) {
-                LOG.error("Failed to send history state", e)
+                LOG.error("Failed to send history state", e); DebugLog.error("Failed to send history state", e)
             }
         }
     }
@@ -174,11 +175,11 @@ class JsBridge(
                             browser.cefBrowser.url, 0
                         )
                     } catch (e: Exception) {
-                        LOG.error("Failed to execute $jsFunction", e)
+                        LOG.error("Failed to execute $jsFunction", e); DebugLog.error("Failed to execute $jsFunction", e)
                     }
                 }
             } catch (e: Exception) {
-                LOG.error("Failed to encode graph data for $jsFunction", e)
+                LOG.error("Failed to encode graph data for $jsFunction", e); DebugLog.error("Failed to encode graph data for $jsFunction", e)
             }
         }
     }
@@ -276,7 +277,7 @@ class JsBridge(
             loadHandler = null
             jsQuery.dispose()
         } catch (e: Exception) {
-            LOG.error("Error disposing JsBridge", e)
+            LOG.error("Error disposing JsBridge", e); DebugLog.error("Error disposing JsBridge", e)
         }
     }
 }

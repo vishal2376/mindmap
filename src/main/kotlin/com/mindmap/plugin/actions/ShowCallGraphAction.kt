@@ -5,6 +5,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.ReadAction
+import com.mindmap.plugin.DebugLog
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -65,12 +66,12 @@ class ShowCallGraphAction : AnAction() {
                     } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                         throw ce
                     } catch (ex: Exception) {
-                        LOG.error("Failed to generate mindmap", ex)
+                        LOG.error("Failed to generate mindmap", ex); DebugLog.error("Failed to generate mindmap", ex)
                     }
                 }
             })
         } catch (ex: Exception) {
-            LOG.error("Mindmap action failed", ex)
+            LOG.error("Mindmap action failed", ex); DebugLog.error("Mindmap action failed", ex)
         }
     }
 

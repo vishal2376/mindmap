@@ -32,6 +32,15 @@ object DebugLog {
         } catch (_: Exception) { }
     }
 
+    /** Always writes to log file regardless of debug toggle — used for crashes and errors. */
+    fun error(msg: String, throwable: Throwable? = null) {
+        try {
+            val timestamp = LocalDateTime.now().format(formatter)
+            val stackTrace = throwable?.let { "\n${it.stackTraceToString()}" } ?: ""
+            logFile.appendText("[$timestamp] ERROR: $msg$stackTrace\n")
+        } catch (_: Exception) { }
+    }
+
     fun clear() {
         try {
             if (logFile.exists()) logFile.writeText("")

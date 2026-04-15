@@ -151,11 +151,11 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                             OpenFileDescriptor(result.third, result.first, result.second).navigate(true)
                         }
                     } catch (e: Exception) {
-                        LOG.error("Failed to open editor", e)
+                        LOG.error("Failed to open editor", e); DebugLog.error("Failed to open editor", e)
                     }
                 }
             } catch (e: Exception) {
-                LOG.error("Failed to navigate to node", e)
+                LOG.error("Failed to navigate to node", e); DebugLog.error("Failed to navigate to node", e)
             }
         }
     }
@@ -179,7 +179,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                 } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                     throw ce
                 } catch (ex: Exception) {
-                    LOG.error("Failed to expand node", ex)
+                    LOG.error("Failed to expand node", ex); DebugLog.error("Failed to expand node", ex)
                 }
             }
         })
@@ -213,7 +213,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                 } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                     throw ce
                 } catch (ex: Exception) {
-                    LOG.error("Failed to trace node", ex)
+                    LOG.error("Failed to trace node", ex); DebugLog.error("Failed to trace node", ex)
                 }
             }
         })
@@ -251,7 +251,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                 bridge.dispose()
                 browser.dispose()
             } catch (e: Exception) {
-                LOG.error("Error during dispose", e)
+                LOG.error("Error during dispose", e); DebugLog.error("Error during dispose", e)
             }
         }
     }
