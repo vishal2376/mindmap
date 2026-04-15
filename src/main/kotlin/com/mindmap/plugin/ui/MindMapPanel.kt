@@ -14,8 +14,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.Disposable
 import com.intellij.psi.PsiElement
 import com.intellij.ui.jcef.JBCefBrowser
+import com.mindmap.plugin.DebugLog
 import com.mindmap.plugin.analysis.GraphAnalyzer
 import com.mindmap.plugin.analysis.GraphData
+import com.mindmap.plugin.analysis.NodeType
 import com.mindmap.plugin.analysis.merge
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import java.awt.BorderLayout
@@ -36,6 +38,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     private val history = GraphHistory()
     @Volatile private var isDisposed = false
     @Volatile private var currentGraphData: GraphData? = null
+    @Volatile private var debugMode = false
 
     // A single volatile reference to an immutable snapshot ensures background threads always
     // read outbound+inbound as a consistent pair. Separate @Volatile fields would let a
@@ -52,6 +55,8 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         private val LOG = Logger.getInstance(MindMapPanel::class.java)
     }
 
+    private fun debug(msg: () -> String) { if (debugMode) DebugLog.log(msg()) }
+
     init {
         add(browser.component, BorderLayout.CENTER)
         bridge.setup { updateGraph(currentGraphData ?: return@setup) }
@@ -63,8 +68,10 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
      * Use [pushGraph] instead when navigating within an existing session (expand/re-center).
      */
     fun updateGraph(data: GraphData) {
+        debug { "New graph received — root: ${data.nodes.find { it.type == NodeType.ROOT }?.name}, nodes: ${data.nodes.size}, edges: ${data.edges.size}" }
         currentGraphData = data
         if (!bridge.isReady) {
+            debug { "Browser not ready yet — graph queued, will render when JCEF finishes loading" }
             bridge.markPending(data)
             return
         }
@@ -84,6 +91,12 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
             is JsBridge.MessageEvent.Restart     -> SwingUtilities.invokeLater { if (!isDisposed) handleRestart() }
             is JsBridge.MessageEvent.SetDepth    -> depths = depths.copy(outbound = event.outbound, inbound = event.inbound)
             is JsBridge.MessageEvent.SetRetraceDepth -> depths = depths.copy(retraceOutbound = event.outbound, retraceInbound = event.inbound)
+            is JsBridge.MessageEvent.SetDebug -> {
+                debugMode = event.enabled
+                DebugLog.enabled = event.enabled
+                if (event.enabled) DebugLog.log("Debug mode enabled — log file: ${DebugLog.logFilePath}")
+                else DebugLog.log("Debug mode disabled")
+            }
         }
     }
 
@@ -114,12 +127,18 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
     // Once we have the virtual file and offset, we hand off to the EDT for actual navigation.
     private fun handleNavigate(nodeId: String) {
         if (isDisposed) return
+        debug { "Navigate requested — clicking node to open in editor (id: $nodeId)" }
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 val result = ReadAction.compute<Triple<VirtualFile, Int, Project>?, RuntimeException> {
-                    val psiElement = currentGraphData?.nodes?.find { it.id == nodeId }?.psiElement ?: return@compute null
-                    if (!psiElement.isValid) return@compute null
-                    val virtualFile = psiElement.containingFile?.virtualFile ?: return@compute null
+                    val node = currentGraphData?.nodes?.find { it.id == nodeId }
+                    val psiElement = node?.psiElement
+                    if (node == null) { debug { "Navigate failed — node ID not found in current graph data, may have been cleared" }; return@compute null }
+                    if (psiElement == null) { debug { "Navigate failed — PSI element missing for '${node.name}', function reference was lost after graph serialization" }; return@compute null }
+                    if (!psiElement.isValid) { debug { "Navigate failed — PSI element for '${node.name}' is stale, file was likely modified since graph was built" }; return@compute null }
+                    val virtualFile = psiElement.containingFile?.virtualFile
+                    if (virtualFile == null) { debug { "Navigate failed — '${node.name}' has no file on disk, may be an in-memory or generated class" }; return@compute null }
+                    debug { "Navigate success — opening '${node.name}' at ${virtualFile.name}:offset=${psiElement.textOffset}" }
                     Triple(virtualFile, psiElement.textOffset, project)
                 } ?: return@executeOnPooledThread
 
@@ -132,29 +151,35 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                             OpenFileDescriptor(result.third, result.first, result.second).navigate(true)
                         }
                     } catch (e: Exception) {
-                        LOG.error("Failed to open editor", e)
+                        LOG.error("Failed to open editor", e); DebugLog.error("Failed to open editor", e)
                     }
                 }
             } catch (e: Exception) {
-                LOG.error("Failed to navigate to node", e)
+                LOG.error("Failed to navigate to node", e); DebugLog.error("Failed to navigate to node", e)
             }
         }
     }
 
     private fun handleExpand(nodeId: String) {
         if (isDisposed) return
-        val psiElement = history.findPsiElement(nodeId) ?: return
+        debug { "Expand requested — rebuilding graph centered on node (id: $nodeId)" }
+        val psiElement = history.findPsiElement(nodeId)
+        if (psiElement == null) { debug { "Expand failed — no valid PSI element found in current or past graph history for this node" }; return }
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Generating Mindmap...", true) {
             override fun run(indicator: ProgressIndicator) {
                 try {
                     if (isDisposed) return
-                    if (!ReadAction.compute<Boolean, RuntimeException> { psiElement.isValid }) return
+                    if (!ReadAction.compute<Boolean, RuntimeException> { psiElement.isValid }) {
+                        debug { "Expand failed — PSI element became stale, file was modified since graph was built" }; return
+                    }
+                    val startTime = System.currentTimeMillis()
                     val newData = analyzeElement(psiElement, indicator)
+                    debug { "Expand complete — analyzed in ${System.currentTimeMillis() - startTime}ms, result: ${newData.nodes.size} nodes, ${newData.edges.size} edges" }
                     SwingUtilities.invokeLater { if (!isDisposed) pushGraph(newData) }
                 } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                     throw ce
                 } catch (ex: Exception) {
-                    LOG.error("Failed to expand node", ex)
+                    LOG.error("Failed to expand node", ex); DebugLog.error("Failed to expand node", ex)
                 }
             }
         })
@@ -162,16 +187,23 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
 
     private fun handleTrace(nodeId: String) {
         if (isDisposed) return
-        val psiElement = history.findPsiElement(nodeId) ?: return
+        debug { "Trace requested — merging callers/callees of node into current graph (id: $nodeId)" }
+        val psiElement = history.findPsiElement(nodeId)
+        if (psiElement == null) { debug { "Trace failed — no valid PSI element found in current or past graph history for this node" }; return }
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Tracing function...", true) {
             override fun run(indicator: ProgressIndicator) {
                 try {
                     if (isDisposed) return
-                    if (!ReadAction.compute<Boolean, RuntimeException> { psiElement.isValid }) return
+                    if (!ReadAction.compute<Boolean, RuntimeException> { psiElement.isValid }) {
+                        debug { "Trace failed — PSI element became stale, file was modified since graph was built" }; return
+                    }
                     val function = psiElement as? KtNamedFunction ?: return
                     val d = depths
-                    val traceData = GraphAnalyzer(project, d.retraceOutbound, d.retraceInbound).buildGraph(function, indicator)
+                    debug { "Tracing '${function.name}' — outbound depth: ${d.retraceOutbound}, inbound depth: ${d.retraceInbound}" }
+                    val startTime = System.currentTimeMillis()
+                    val traceData = GraphAnalyzer(project, d.retraceOutbound, d.retraceInbound, debugMode).buildGraph(function, indicator)
                     val mergedData = (currentGraphData ?: return).merge(traceData)
+                    debug { "Trace complete — analyzed in ${System.currentTimeMillis() - startTime}ms, merged graph: ${mergedData.nodes.size} nodes, ${mergedData.edges.size} edges" }
                     SwingUtilities.invokeLater {
                         if (isDisposed) return@invokeLater
                         currentGraphData = mergedData
@@ -181,7 +213,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                 } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
                     throw ce
                 } catch (ex: Exception) {
-                    LOG.error("Failed to trace node", ex)
+                    LOG.error("Failed to trace node", ex); DebugLog.error("Failed to trace node", ex)
                 }
             }
         })
@@ -191,11 +223,12 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         val function = element as? KtNamedFunction
             ?: throw IllegalArgumentException("Element is not a KtNamedFunction: ${element.javaClass.simpleName}")
         val d = depths
-        return GraphAnalyzer(project, d.outbound, d.inbound).buildGraph(function, indicator)
+        return GraphAnalyzer(project, d.outbound, d.inbound, debugMode).buildGraph(function, indicator)
     }
 
     private fun handleHistoryBack() {
         val data = history.back() ?: return
+        debug { "History back — viewing graph ${history.position} of ${history.total} (${data.nodes.size} nodes)" }
         currentGraphData = data
         bridge.sendGraph(data)
         sendHistoryState()
@@ -203,6 +236,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
 
     private fun handleHistoryForward() {
         val data = history.forward() ?: return
+        debug { "History forward — viewing graph ${history.position} of ${history.total} (${data.nodes.size} nodes)" }
         currentGraphData = data
         bridge.sendGraph(data)
         sendHistoryState()
@@ -217,7 +251,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                 bridge.dispose()
                 browser.dispose()
             } catch (e: Exception) {
-                LOG.error("Error during dispose", e)
+                LOG.error("Error during dispose", e); DebugLog.error("Error during dispose", e)
             }
         }
     }
