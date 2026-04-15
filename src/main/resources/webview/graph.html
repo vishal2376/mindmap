@@ -450,11 +450,8 @@
             height: 13px
         }
 
-        .thb-btn[data-tip]::after {
-            content: attr(data-tip);
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
+        #btnTip {
+            position: fixed;
             font: 11px/1 inherit;
             color: #cdd6f4;
             background: #313244;
@@ -465,10 +462,10 @@
             pointer-events: none;
             opacity: 0;
             transition: opacity .15s;
-            z-index: 20
+            z-index: 9999
         }
 
-        .thb-btn[data-tip]:hover::after {
+        #btnTip.v {
             opacity: 1
         }
 
@@ -1536,6 +1533,7 @@
 </head>
 
 <body>
+    <div id="btnTip"></div>
 
     <div id="toolbar">
         <div class="vsw">
@@ -2583,7 +2581,19 @@
                 D.nodes.forEach(n => { if ((n.children?.length > 0) || (n.parents?.length > 0)) tColl.add(n.id) });
                 rTree();
             });
-
+            const _btnTip = document.getElementById('btnTip');
+            hb.querySelectorAll('.thb-btn[data-tip]').forEach(btn => {
+                btn.addEventListener('mouseenter', () => {
+                    const r = btn.getBoundingClientRect();
+                    _btnTip.textContent = btn.dataset.tip;
+                    _btnTip.style.top = (r.bottom + 4) + 'px';
+                    const tipW = _btnTip.offsetWidth;
+                    const left = r.left + r.width / 2 - tipW / 2;
+                    _btnTip.style.left = Math.max(4, Math.min(left, window.innerWidth - tipW - 4)) + 'px';
+                    _btnTip.classList.add('v');
+                });
+                btn.addEventListener('mouseleave', () => _btnTip.classList.remove('v'));
+            });
 
             $tc.appendChild(mkTR(root, 0, false, false, false, []));
             rSub($tc, root.id, nm, cm, pm, 0, new Set([root.id]), []);
