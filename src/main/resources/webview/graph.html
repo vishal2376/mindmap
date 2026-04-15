@@ -454,6 +454,28 @@
             content: attr(data-tip);
             position: absolute;
             top: calc(100% + 4px);
+            right: 0;
+            font: 11px/1 inherit;
+            color: #cdd6f4;
+            background: #313244;
+            border: 1px solid #45475a;
+            border-radius: 4px;
+            padding: 4px 8px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .15s;
+            z-index: 20
+        }
+
+        .thb-btn[data-tip]:hover::after {
+            opacity: 1
+        }
+
+        .thb-btn[data-tip]::after {
+            content: attr(data-tip);
+            position: absolute;
+            top: calc(100% + 4px);
             left: 50%;
             transform: translateX(-50%);
             font: 11px/1 inherit;
