@@ -32,7 +32,8 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 class GraphAnalyzer(
     private val project: Project,
     private val maxOutboundDepth: Int = 3,
-    private val maxInboundDepth: Int = 2
+    private val maxInboundDepth: Int = 2,
+    private val debugMode: Boolean = false
 ) {
 
     companion object {
@@ -42,11 +43,16 @@ class GraphAnalyzer(
         private const val MAX_INBOUND_REFS = 30
     }
 
+    private fun debug(msg: () -> String) { if (debugMode) LOG.info("[Mindmap Debug] ${msg()}") }
+
     /** Builds and returns the full call graph. Must be called on a background thread. */
     fun buildGraph(function: KtNamedFunction, indicator: ProgressIndicator? = null): GraphData {
         val nodes = mutableMapOf<String, CallGraphNode>()
         val edges = mutableListOf<CallGraphEdge>()
         val edgeKeys = HashSet<String>()
+        val startTime = System.currentTimeMillis()
+
+        debug { "buildGraph: root=${function.name}, file=${function.containingFile?.name}, outDepth=$maxOutboundDepth, inDepth=$maxInboundDepth" }
 
         try {
             ReadAction.run<RuntimeException> {
@@ -57,6 +63,7 @@ class GraphAnalyzer(
                 if (function.bodyExpression != null) {
                     analyzeOutbound(function, nodes, edges, edgeKeys, 1, indicator)
                 } else {
+                    debug { "buildGraph: root has no body, searching implementations" }
                     for (impl in findImplementations(function)) {
                         if (nodes.size >= MAX_NODES) break
                         val implId = getFunctionId(impl)
@@ -65,8 +72,10 @@ class GraphAnalyzer(
                         analyzeOutbound(impl, nodes, edges, edgeKeys, 2, indicator)
                     }
                 }
+                debug { "buildGraph: outbound done — ${nodes.size} nodes, ${edges.size} edges" }
                 indicator?.text = "Finding callers..."
                 analyzeInbound(function, nodes, edges, edgeKeys, 1, indicator)
+                debug { "buildGraph: inbound done — ${nodes.size} nodes, ${edges.size} edges" }
             }
         } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
             throw ce
@@ -74,6 +83,7 @@ class GraphAnalyzer(
             LOG.error("Error building graph", e)
         }
 
+        debug { "buildGraph: completed in ${System.currentTimeMillis() - startTime}ms — ${nodes.size} nodes, ${edges.size} edges" }
         return GraphData(nodes.values.toList(), edges)
     }
 
