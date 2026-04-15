@@ -14,6 +14,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.Disposable
 import com.intellij.psi.PsiElement
 import com.intellij.ui.jcef.JBCefBrowser
+import com.mindmap.plugin.DebugLog
 import com.mindmap.plugin.analysis.GraphAnalyzer
 import com.mindmap.plugin.analysis.GraphData
 import com.mindmap.plugin.analysis.NodeType
@@ -54,7 +55,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         private val LOG = Logger.getInstance(MindMapPanel::class.java)
     }
 
-    private fun debug(msg: () -> String) { if (debugMode) LOG.info("[Mindmap Debug] ${msg()}") }
+    private fun debug(msg: () -> String) { if (debugMode) DebugLog.log(msg()) }
 
     init {
         add(browser.component, BorderLayout.CENTER)
@@ -92,7 +93,9 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
             is JsBridge.MessageEvent.SetRetraceDepth -> depths = depths.copy(retraceOutbound = event.outbound, retraceInbound = event.inbound)
             is JsBridge.MessageEvent.SetDebug -> {
                 debugMode = event.enabled
-                LOG.info("Mindmap debug mode ${if (event.enabled) "enabled" else "disabled"}")
+                DebugLog.enabled = event.enabled
+                if (event.enabled) DebugLog.log("Debug mode enabled — log file: ${DebugLog.logFilePath}")
+                else DebugLog.log("Debug mode disabled")
             }
         }
     }

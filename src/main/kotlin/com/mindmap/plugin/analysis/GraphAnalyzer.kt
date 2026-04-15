@@ -43,7 +43,7 @@ class GraphAnalyzer(
         private const val MAX_INBOUND_REFS = 30
     }
 
-    private fun debug(msg: () -> String) { if (debugMode) LOG.info("[Mindmap Debug] ${msg()}") }
+    private fun debug(msg: () -> String) { if (debugMode) com.mindmap.plugin.DebugLog.log(msg()) }
 
     /** Builds and returns the full call graph. Must be called on a background thread. */
     fun buildGraph(function: KtNamedFunction, indicator: ProgressIndicator? = null): GraphData {
