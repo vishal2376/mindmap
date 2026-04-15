@@ -412,6 +412,86 @@
             margin-left: auto
         }
 
+        .thb-btns {
+            display: flex;
+            gap: 4px;
+            margin-left: 6px;
+            flex-shrink: 0
+        }
+
+        .thb-btn {
+            position: relative;
+            width: 24px;
+            height: 22px;
+            display: grid;
+            place-items: center;
+            background: rgba(166,173,200,.06);
+            border: 1px solid rgba(166,173,200,.15);
+            border-radius: 5px;
+            color: var(--tx4);
+            cursor: pointer;
+            padding: 0;
+            transition: background .15s, border-color .15s, color .15s
+        }
+
+        .thb-btn:hover {
+            background: rgba(137,180,250,.12);
+            border-color: rgba(137,180,250,.35);
+            color: var(--accent)
+        }
+
+        .thb-btn:active {
+            background: rgba(137,180,250,.2);
+            transform: scale(.95)
+        }
+
+        .thb-btn svg {
+            width: 13px;
+            height: 13px
+        }
+
+        #btnTip {
+            position: fixed;
+            font: 11px/1 inherit;
+            color: #cdd6f4;
+            background: #313244;
+            border: 1px solid #45475a;
+            border-radius: 4px;
+            padding: 4px 8px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .15s;
+            z-index: 9999
+        }
+
+        #btnTip.v {
+            opacity: 1
+        }
+
+        .thb-btn[data-tip]::after {
+            content: attr(data-tip);
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            font: 11px/1 inherit;
+            color: #cdd6f4;
+            background: #313244;
+            border: 1px solid #45475a;
+            border-radius: 4px;
+            padding: 4px 8px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .15s;
+            z-index: 20
+        }
+
+        .thb-btn[data-tip]:hover::after {
+            opacity: 1
+        }
+
         .tg {
             padding: 0;
             position: relative
@@ -512,28 +592,41 @@
             min-width: 0
         }
 
-        .trf {
-            font: 400 11px/1 inherit;
-            color: var(--tx4);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 140px;
-            margin-left: 8px
-        }
-
         .trr {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             flex-shrink: 0;
             margin-left: auto
         }
 
-        .trloc {
+        .tr-info {
+            display: flex;
+            align-items: center;
+            gap: 4px;
             font: 10px/1 'JetBrains Mono', monospace;
-            color: var(--tx5);
-            opacity: 0.8
+            color: #bac2de;
+            background: rgba(166,173,200,.1);
+            border-radius: 3px;
+            padding: 2px 5px;
+            white-space: nowrap;
+            max-width: 160px;
+            overflow: hidden
+        }
+
+        .tr-info-file {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #a6adc8
+        }
+
+        .tr-info-sep {
+            color: #585b70
+        }
+
+        .tr-info-loc {
+            flex-shrink: 0;
+            color: #cdd6f4
         }
 
         .t-guide {
@@ -1440,6 +1533,7 @@
 </head>
 
 <body>
+    <div id="btnTip"></div>
 
     <div id="toolbar">
         <div class="vsw">
@@ -2479,9 +2573,27 @@
 
             const hb = document.createElement('div'); hb.className = 'thb';
             const visCount = D.nodes.filter(n => !sf || mS(n)).length;
-            hb.innerHTML = `<div class="thb-i">${_iFn}</div><div class="thb-t">${esc(root.name || 'anonymous')}</div><div class="thb-s">${esc(root.fileName || '')}</div><div class="thb-c">${visCount} node${visCount !== 1 ? 's' : ''}${sf ? ' matched' : ''}</div>`;
+            hb.innerHTML = `<div class="thb-i">${_iFn}</div><div class="thb-t">${esc(root.name || 'anonymous')}</div><div class="thb-s">${esc(root.fileName || '')}</div><div class="thb-c">${visCount} node${visCount !== 1 ? 's' : ''}${sf ? ' matched' : ''}</div><div class="thb-btns"><button class="thb-btn" id="tCollapseAll" data-tip="Collapse All"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7,14 12,9 17,14"/><polyline points="7,21 12,16 17,21"/><line x1="7" y1="3" x2="17" y2="3"/></svg></button><button class="thb-btn" id="tExpandAll" data-tip="Expand All"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7,10 12,15 17,10"/><polyline points="7,3 12,8 17,3"/><line x1="7" y1="21" x2="17" y2="21"/></svg></button></div>`;
             $tc.appendChild(hb);
-
+            document.getElementById('tExpandAll')?.addEventListener('click', () => { tColl.clear(); rTree() });
+            document.getElementById('tCollapseAll')?.addEventListener('click', () => {
+                if (!D) return;
+                D.nodes.forEach(n => { if ((n.children?.length > 0) || (n.parents?.length > 0)) tColl.add(n.id) });
+                rTree();
+            });
+            const _btnTip = document.getElementById('btnTip');
+            hb.querySelectorAll('.thb-btn[data-tip]').forEach(btn => {
+                btn.addEventListener('mouseenter', () => {
+                    const r = btn.getBoundingClientRect();
+                    _btnTip.textContent = btn.dataset.tip;
+                    _btnTip.style.top = (r.bottom + 4) + 'px';
+                    const tipW = _btnTip.offsetWidth;
+                    const left = r.left + r.width / 2 - tipW / 2;
+                    _btnTip.style.left = Math.max(4, Math.min(left, window.innerWidth - tipW - 4)) + 'px';
+                    _btnTip.classList.add('v');
+                });
+                btn.addEventListener('mouseleave', () => _btnTip.classList.remove('v'));
+            });
 
             $tc.appendChild(mkTR(root, 0, false, false, false, []));
             rSub($tc, root.id, nm, cm, pm, 0, new Set([root.id]), []);
@@ -2606,14 +2718,13 @@
             const c = gc(n.type, n.depth, n.isLibrary);
             const cc = hk ? (cl ? '' : 'e') : 'l';
             row.style.paddingLeft = (10 + dep * 16) + 'px';
+            const hasInfo = n.fileName || n.loc > 0;
+            const infoHtml = hasInfo ? `<div class="tr-info">${n.fileName ? `<span class="tr-info-file">${esc(n.fileName)}</span>` : ''}${n.fileName && n.loc > 0 ? '<span class="tr-info-sep">·</span>' : ''}${n.loc > 0 ? `<span class="tr-info-loc">${n.loc}L</span>` : ''}</div>` : '';
             row.innerHTML = _mkGuideHtml(dep, isLast, cont) + `
         <span class="trc ${cc}">${_iChev}</span>
         <span class="tri-c" style="color:${c}">${_nodeIcon(n)}</span>
         <span class="trn">${esc(n.name || 'anon')}</span>
-        ${n.fileName ? `<span class="trf">${esc(n.fileName)}</span>` : ''}
-        <div class="trr">
-            ${n.loc > 0 ? `<span class="trloc">${n.loc}L</span>` : ''}
-        </div>
+        <div class="trr">${infoHtml}</div>
     `;
             _attachTreeRowEvents(row, n, hk);
             return row;
