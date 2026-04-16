@@ -1590,10 +1590,9 @@
                 <line x1="10.5" y1="10.5" x2="14" y2="14" />
             </svg><input id="sin" placeholder="Filter nodes…" /></button>
         <div class="sep"></div>
-        <button class="tb" id="bres" data-t="Restart / Clear" data-k="R"><svg viewBox="0 0 16 16" fill="none"
-                stroke="currentColor" stroke-width="1.8">
-                <path d="M1 8a7 7 0 1 0 1.5-4.5" />
-                <polyline points="1 1 1 4 4 4" />
+        <button class="tb" id="bres" data-t="Clear" data-k="R"><svg viewBox="0 0 16 16" fill="none"
+                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 4h10M6 4V3a1 1 0 011-1h2a1 1 0 011 1v1M5 4l.5 8.5a1 1 0 001 .5h3a1 1 0 001-.5L11 4"/>
             </svg></button>
         <button class="tb" id="bhelp" data-t="Shortcuts" data-k="?"><svg viewBox="0 0 16 16" fill="none"
                 stroke="currentColor" stroke-width="1.5">
@@ -1609,13 +1608,16 @@
             <div class="lr2"></div><span class="lt2">Analyzing…</span>
         </div>
         <div id="es">
-            <svg class="ei" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="14" cy="14" r="6" />
-                <circle cx="34" cy="14" r="6" />
-                <circle cx="24" cy="36" r="6" />
-                <line x1="18" y1="18" x2="21" y2="31" />
-                <line x1="30" y1="18" x2="27" y2="31" />
-                <line x1="19" y1="12" x2="29" y2="12" />
+            <svg class="ei" viewBox="0 0 48 48" fill="none" stroke-width="1.5">
+                <line x1="24" y1="24" x2="10" y2="10" stroke="#a6e3a1" stroke-width="2" opacity=".5"/>
+                <line x1="24" y1="24" x2="38" y2="10" stroke="#89b4fa" stroke-width="2" opacity=".5"/>
+                <line x1="24" y1="24" x2="10" y2="38" stroke="#89b4fa" stroke-width="2" opacity=".5"/>
+                <line x1="24" y1="24" x2="38" y2="38" stroke="#89b4fa" stroke-width="2" opacity=".5"/>
+                <circle cx="24" cy="24" r="5" fill="#f5c2e7" stroke="#f5c2e7" stroke-width="1"/>
+                <circle cx="10" cy="10" r="3.5" fill="#a6e3a1" stroke="#a6e3a1" stroke-width="1"/>
+                <circle cx="38" cy="10" r="3.5" fill="#89b4fa" stroke="#89b4fa" stroke-width="1"/>
+                <circle cx="10" cy="38" r="3.5" fill="#89b4fa" stroke="#89b4fa" stroke-width="1"/>
+                <circle cx="38" cy="38" r="3.5" fill="#89b4fa" stroke="#89b4fa" stroke-width="1"/>
             </svg>
             <div class="et">No call graph generated</div>
             <div class="ed">Place cursor on a Kotlin function and use the shortcut</div>
@@ -1624,14 +1626,16 @@
                 <span class="ek-plus">+</span>
                 <kbd>G</kbd>
             </div>
-            <a href="#" class="el"
-                onclick="_send({type:'navigate',url:'https://vishal2376.github.io/mindmap'});return false;">
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
-                    style="width:12px;height:12px">
-                    <path d="M10 2h4v4M6 10l8-8M13 14H2V3h5" />
-                </svg>
-                Checkout Website
-            </a>
+            <div class="sm-btn-row" style="margin-top:12px;width:240px">
+                <button class="sm-btn sm-btn-web" onclick="_send({type:'navigate',url:'https://vishal2376.github.io/mindmap'})">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c-2 2.2-2.5 4.2-2.5 6.5s.5 4.3 2.5 6.5c2-2.2 2.5-4.2 2.5-6.5S10 3.7 8 1.5z"/></svg>
+                    Website
+                </button>
+                <button class="sm-btn sm-btn-report" onclick="_send({type:'navigate',url:'https://github.com/vishal2376/mindmap/issues'})">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><line x1="8" y1="5" x2="8" y2="8.5"/><circle cx="8" cy="11" r=".5" fill="currentColor"/></svg>
+                    Report Bug
+                </button>
+            </div>
         </div>
         <div id="gc"></div>
         <div id="tc"></div>
@@ -1655,11 +1659,8 @@
             <div id="li"></div>
         </div>
         <div id="zc" class="h">
-            <button class="zb on" id="bpan" data-t="Pan tool" data-k="H"><svg viewBox="0 0 16 16" fill="currentColor"
-                    xmlns="http://www.w3.org/2000/svg">
-                    <path
-                        d="M9 1a1 1 0 011 1v3.586l.293-.293a1 1 0 111.414 1.414L10 8.414V11a3 3 0 01-6 0V7a1 1 0 012 0v1h.5V3a1 1 0 011-1h0a1 1 0 011 1v3H9V2a1 1 0 011-1z"
-                        opacity="0.9" />
+            <button class="zb on" id="bpan" data-t="Pan tool" data-k="H"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9V4a1 1 0 012 0v4M8 8V3a1 1 0 012 0v5M10 8V4a1 1 0 012 0v5.5M12 9.5V7a1 1 0 012 0v4a5 5 0 01-5 5H8a5 5 0 01-5-5V6a1 1 0 012 0v3"/>
                 </svg></button>
             <button class="zb" id="bsel" data-t="Select tool" data-k="V"><svg viewBox="0 0 16 16" fill="none"
                     stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
