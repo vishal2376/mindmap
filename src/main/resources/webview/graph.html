@@ -788,13 +788,13 @@
         }
 
         /* ── SETTINGS MODAL ── */
-        #sOy {
+        #sOy, #fOy {
             display: none; position: fixed; inset: 0;
             background: rgba(0,0,0,.65); backdrop-filter: blur(8px);
             z-index: 1200; align-items: center; justify-content: center;
         }
-        #sOy.s { display: flex; }
-        #sOy.s .mdl { transform: scale(1); opacity: 1; }
+        #sOy.s, #fOy.s { display: flex; }
+        #sOy.s .mdl, #fOy.s .mdl { transform: scale(1); opacity: 1; }
         .smdl { width: 400px; max-width: calc(100vw - 32px); }
         .smhd {
             padding: 20px 24px 16px; border-bottom: 1px solid var(--bd);
@@ -1595,11 +1595,9 @@
                 <path d="M1 8a7 7 0 1 0 1.5-4.5" />
                 <polyline points="1 1 1 4 4 4" />
             </svg></button>
-        <button class="tb" id="bhelp" data-t="Shortcuts" data-k="?"><svg viewBox="0 0 16 16" fill="none"
-                stroke="currentColor" stroke-width="1.5">
-                <circle cx="8" cy="8" r="6" />
-                <path d="M6 6c0-1.1.9-2 2-2s2 .9 2 2c0 1.5-2 2-2 2v1" />
-                <circle cx="8" cy="12" r="0.8" fill="currentColor" stroke="none" />
+        <button class="tb" id="bfilt" data-t="Filter functions" data-k="F"><svg viewBox="0 0 16 16" fill="none"
+                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1.5 3h13M3.5 6.5h9M5.5 10h5M7 13.5h2"/>
             </svg></button>
         <button class="tb" id="bset" data-t="Settings"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M13.2 10a1.2 1.2 0 0 0 .24 1.32l.04.04a1.46 1.46 0 0 1-2.06 2.06l-.04-.04a1.2 1.2 0 0 0-1.32-.24 1.2 1.2 0 0 0-.73 1.1V14.5a1.45 1.45 0 1 1-2.9 0v-.06A1.2 1.2 0 0 0 5.66 13a1.2 1.2 0 0 0-1.32.24l-.04.04a1.46 1.46 0 0 1-2.06-2.06l.04-.04A1.2 1.2 0 0 0 2.52 9.8a1.2 1.2 0 0 0-1.1-.73H1.5a1.45 1.45 0 1 1 0-2.9h.06A1.2 1.2 0 0 0 2.9 5.66a1.2 1.2 0 0 0-.24-1.32l-.04-.04a1.46 1.46 0 0 1 2.06-2.06l.04.04A1.2 1.2 0 0 0 6.04 2.52a1.2 1.2 0 0 0 .73-1.1V1.5a1.45 1.45 0 1 1 2.9 0v.06a1.2 1.2 0 0 0 .73 1.1 1.2 1.2 0 0 0 1.32-.24l.04-.04a1.46 1.46 0 0 1 2.06 2.06l-.04.04A1.2 1.2 0 0 0 13.52 6a1.2 1.2 0 0 0 1.1.73H14.5a1.45 1.45 0 1 1 0 2.9h-.06a1.2 1.2 0 0 0-1.1.73z"/></svg></button>
     </div>
@@ -1729,6 +1727,32 @@
     <div id="toast"><span class="td" id="tdot"></span><span id="ttx"></span></div>
     <div id="selbox"></div>
 
+    <div id="fOy" onclick="if(event.target===this)this.classList.remove('s')">
+        <div class="mdl smdl">
+            <div class="smhd">
+                <div class="smhd-ttl">Filter Functions</div>
+                <button class="mc" id="fCl"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg></button>
+            </div>
+            <div class="smbd">
+                <div class="sm-sec">
+                    <div class="sm-sec-desc">Control which functions appear in the call graph.</div>
+                    <div class="srow" style="justify-content:space-between">
+                        <span class="srow-lbl">Include @Test functions</span>
+                        <label class="sm-toggle">
+                            <input type="checkbox" id="fTest">
+                            <span class="sm-toggle-track"></span>
+                        </label>
+                    </div>
+                    <div class="sm-sec-desc">When off, functions with @Test annotation are excluded from the graph.</div>
+                </div>
+                <div class="sm-ft">
+                    <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm.75 10.5h-1.5v-5h1.5v5zm0-6.5h-1.5V3.5h1.5V5z"/></svg>
+                    Changes apply on next graph generation
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="sOy" onclick="if(event.target===this)this.classList.remove('s')">
         <div class="mdl smdl">
             <div class="smhd">
@@ -1803,6 +1827,10 @@
                         Report Bug
                     </button>
                 </div>
+                <button class="sm-btn sm-btn-reset" id="sShortcuts" style="flex:none">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M6 6c0-1.1.9-2 2-2s2 .9 2 2c0 1.5-2 2-2 2v1"/><circle cx="8" cy="12" r=".8" fill="currentColor" stroke="none"/></svg>
+                    Keyboard Shortcuts
+                </button>
 
                 <div class="sm-ft">
                     <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm.75 10.5h-1.5v-5h1.5v5zm0-6.5h-1.5V3.5h1.5V5z"/></svg>
@@ -1899,7 +1927,8 @@
         const $gc = $('gc'), $tc = $('tc'), $ld = $('ld'), $es = $('es');
         const $bg = $('bg'), $bt = $('bt'), $bbk = $('bbk'), $bfw = $('bfw'), $hbg = $('hbg');
         const $bcn = $('bcn'), $sbn = $('sbn'), $sin = $('sin');
-        const $bhelp = $('bhelp'), $bres = $('bres'), $bset = $('bset');
+        const $bfilt = $('bfilt'), $bres = $('bres'), $bset = $('bset');
+        const $fOy = $('fOy'), $fCl = $('fCl');
         const $sOy = $('sOy'), $sCl = $('sCl');
         const $doutV = $('doutV'), $dinV = $('dinV');
         const $routV = $('routV'), $rinV = $('rinV');
@@ -1970,7 +1999,17 @@
         document.addEventListener('click', e => { if (sOpen && !$sbn.contains(e.target)) { sOpen = false; $sbn.classList.remove('op'); sf = ''; $sin.value = ''; filtAll() } });
 
         // Help Modal
-        $bhelp.addEventListener('click', () => $mOy.classList.add('s'));
+        // Filter panel
+        $bfilt.addEventListener('click', () => $fOy.classList.add('s'));
+        $fCl.addEventListener('click', () => $fOy.classList.remove('s'));
+        let _excludeTests = true;
+        const $fTest = document.getElementById('fTest');
+        $fTest.addEventListener('change', () => {
+            _excludeTests = !$fTest.checked;
+            _send({ type: 'set_exclude_tests', enabled: _excludeTests });
+        });
+        // Shortcuts button moved inside settings
+        $('sShortcuts').addEventListener('click', () => { $sOy.classList.remove('s'); $mOy.classList.add('s') });
         $mCl.addEventListener('click', () => $mOy.classList.remove('s'));
         $mOy.addEventListener('click', e => { if (e.target === $mOy) $mOy.classList.remove('s') });
 
@@ -3044,6 +3083,7 @@
             }
 
             if (e.key === 'Escape') {
+                if ($fOy.classList.contains('s')) { $fOy.classList.remove('s'); return }
                 if ($mOy.classList.contains('s')) { $mOy.classList.remove('s'); return }
                 if (sOpen) { sOpen = false; $sbn.classList.remove('op'); sf = ''; $sin.value = ''; $sin.blur(); filtAll(); return }
                 if (cv === 'graph' && net) { net.unselectAll(); selCount = 0; updateShortcuts(); return }
@@ -3051,6 +3091,7 @@
             }
 
             if (e.key === '?' || e.key === '¿') { $mOy.classList.add('s'); return }
+            if (e.key === 'f' || e.key === 'F') { $fOy.classList.add('s'); return }
             if (e.key === 'r' || e.key === 'R') { resetGraph(); return }
             if (e.key === 'h' || e.key === 'H') { setPanMode(true); return }
             if (e.key === 'v' || e.key === 'V') { setPanMode(false); return }

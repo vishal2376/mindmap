@@ -33,7 +33,8 @@ class GraphAnalyzer(
     private val project: Project,
     private val maxOutboundDepth: Int = 3,
     private val maxInboundDepth: Int = 2,
-    private val debugMode: Boolean = false
+    private val debugMode: Boolean = false,
+    private val excludeTests: Boolean = true
 ) {
 
     companion object {
@@ -44,6 +45,13 @@ class GraphAnalyzer(
     }
 
     private fun debug(msg: () -> String) { if (debugMode) com.mindmap.plugin.DebugLog.log(msg()) }
+
+    private fun isTestFunction(function: KtNamedFunction): Boolean {
+        return function.annotationEntries.any {
+            val name = it.shortName?.asString() ?: return@any false
+            name == "Test" || name == "ParameterizedTest" || name == "RepeatedTest"
+        }
+    }
 
     /** Builds and returns the full call graph. Must be called on a background thread. */
     fun buildGraph(function: KtNamedFunction, indicator: ProgressIndicator? = null): GraphData {
@@ -154,6 +162,7 @@ class GraphAnalyzer(
         currentDepth: Int,
         indicator: ProgressIndicator?
     ) {
+        if (excludeTests && isTestFunction(targetPsi)) return
         val targetId = getFunctionId(targetPsi)
         val isLibrary = !isSourceCode(targetPsi)
         if (!nodes.containsKey(targetId)) nodes[targetId] = createNode(targetPsi, NodeType.OUTBOUND, currentDepth, isLibrary)
@@ -208,6 +217,7 @@ class GraphAnalyzer(
             if (nodes.size >= MAX_NODES) break
             try {
                 val callerFunction = PsiTreeUtil.getParentOfType(ref.element, KtNamedFunction::class.java) ?: continue
+                if (excludeTests && isTestFunction(callerFunction)) continue
                 val callerId = getFunctionId(callerFunction)
                 val isLibrary = !isSourceCode(callerFunction)
 

@@ -65,6 +65,8 @@ class JsBridge(
         data class SetRetraceDepth(val outbound: Int, val inbound: Int) : MessageEvent()
         /** User toggled debug mode in settings. */
         data class SetDebug(val enabled: Boolean) : MessageEvent()
+        /** User toggled test function exclusion in filter panel. */
+        data class SetExcludeTests(val enabled: Boolean) : MessageEvent()
     }
 
     /**
@@ -223,6 +225,7 @@ class JsBridge(
                 MessageEvent.SetRetraceDepth(out, inn)
             }
             "set_debug" -> MessageEvent.SetDebug(msg.enabled ?: false)
+            "set_exclude_tests" -> MessageEvent.SetExcludeTests(msg.enabled ?: true)
             else -> {
                 LOG.debug("Unknown JS message type: ${msg.type}")
                 null
