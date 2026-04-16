@@ -3186,7 +3186,7 @@
             } else if (e.deltaMode === 0) {
                 // Trackpad scroll; drop sub-pixel momentum tail
                 if (Math.abs(e.deltaY) < 1) return;
-                _zoomAt(mx, my, Math.pow(0.996, e.deltaY));
+                _zoomAt(mx, my, Math.pow(0.992, e.deltaY));
             } else {
                 // Mouse wheel
                 _zoomAt(mx, my, Math.pow(0.85, e.deltaY / 3));
