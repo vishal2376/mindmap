@@ -47,7 +47,8 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         val outbound: Int = 3,
         val inbound: Int = 2,
         val retraceOutbound: Int = 1,
-        val retraceInbound: Int = 1
+        val retraceInbound: Int = 1,
+        val excludeTests: Boolean = true
     )
     @Volatile private var depths = DepthSettings()
 
@@ -91,6 +92,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
             is JsBridge.MessageEvent.Restart     -> SwingUtilities.invokeLater { if (!isDisposed) handleRestart() }
             is JsBridge.MessageEvent.SetDepth    -> depths = depths.copy(outbound = event.outbound, inbound = event.inbound)
             is JsBridge.MessageEvent.SetRetraceDepth -> depths = depths.copy(retraceOutbound = event.outbound, retraceInbound = event.inbound)
+            is JsBridge.MessageEvent.SetExcludeTests -> depths = depths.copy(excludeTests = event.enabled)
             is JsBridge.MessageEvent.SetDebug -> {
                 debugMode = event.enabled
                 DebugLog.enabled = event.enabled
@@ -201,7 +203,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
                     val d = depths
                     debug { "Tracing '${function.name}' — outbound depth: ${d.retraceOutbound}, inbound depth: ${d.retraceInbound}" }
                     val startTime = System.currentTimeMillis()
-                    val traceData = GraphAnalyzer(project, d.retraceOutbound, d.retraceInbound, debugMode).buildGraph(function, indicator)
+                    val traceData = GraphAnalyzer(project, d.retraceOutbound, d.retraceInbound, debugMode, d.excludeTests).buildGraph(function, indicator)
                     val mergedData = (currentGraphData ?: return).merge(traceData)
                     debug { "Trace complete — analyzed in ${System.currentTimeMillis() - startTime}ms, merged graph: ${mergedData.nodes.size} nodes, ${mergedData.edges.size} edges" }
                     SwingUtilities.invokeLater {
@@ -223,7 +225,7 @@ class MindMapPanel(private val project: Project) : JPanel(BorderLayout()), Dispo
         val function = element as? KtNamedFunction
             ?: throw IllegalArgumentException("Element is not a KtNamedFunction: ${element.javaClass.simpleName}")
         val d = depths
-        return GraphAnalyzer(project, d.outbound, d.inbound, debugMode).buildGraph(function, indicator)
+        return GraphAnalyzer(project, d.outbound, d.inbound, debugMode, d.excludeTests).buildGraph(function, indicator)
     }
 
     private fun handleHistoryBack() {
