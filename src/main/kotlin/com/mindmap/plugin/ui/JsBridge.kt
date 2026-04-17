@@ -114,10 +114,15 @@ class JsBridge(
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 val htmlContent = javaClass.getResource("/webview/graph.html")?.readText()
+                val logoSvg = javaClass.getResource("/icons/mindmapActionIcon.svg")?.readText().orEmpty()
+                // Inject the action-icon SVG into the welcome screen so the logo stays in sync
+                // with the tool-window icon. Add our ei class so welcome-screen CSS sizes it.
+                val logoWithClass = logoSvg.replaceFirst("<svg", "<svg class=\"ei\"")
+                val finalHtml = htmlContent?.replace("<!--WELCOME_LOGO-->", logoWithClass)
                 SwingUtilities.invokeLater {
                     if (isDisposed) return@invokeLater
-                    if (htmlContent != null) {
-                        browser.loadHTML(htmlContent)
+                    if (finalHtml != null) {
+                        browser.loadHTML(finalHtml)
                     } else {
                         LOG.warn("Could not load graph.html from resources")
                     }
