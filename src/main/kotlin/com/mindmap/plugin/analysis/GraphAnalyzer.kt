@@ -304,7 +304,8 @@ class GraphAnalyzer(
             depth = depth,
             isLibrary = isLibrary,
             loc = callable.lineCount,
-            qualifiedName = callable.qualifiedName ?: (callable.name ?: "anonymous")
+            qualifiedName = callable.qualifiedName ?: (callable.name ?: "anonymous"),
+            isNameAmbiguous = callable.isNameAmbiguous
         ).also { it.psiElement = callable }
     }
 

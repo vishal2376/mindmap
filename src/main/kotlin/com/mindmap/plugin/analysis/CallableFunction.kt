@@ -3,6 +3,7 @@ package com.mindmap.plugin.analysis
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiMethod
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 
@@ -99,6 +100,12 @@ sealed interface CallableFunction {
      */
     val signatureDisplay: String
 
+    /**
+     * `true` when [name] alone says nothing about which callable this is (e.g. Kotlin
+     * `operator fun invoke`), so the UI should always show [containingFile] next to it.
+     */
+    val isNameAmbiguous: Boolean
+
     /** Kotlin wrapper. Compiled unconditionally — Kotlin module is a hard dep. */
     data class Kotlin(val fn: KtNamedFunction) : CallableFunction {
         override val name: String? get() = fn.name
@@ -124,6 +131,7 @@ sealed interface CallableFunction {
                 val ret = fn.typeReference?.text?.let { ": $it" } ?: ""
                 return "${fn.name}($params)$ret"
             }
+        override val isNameAmbiguous: Boolean get() = fn.hasModifier(KtTokens.OPERATOR_KEYWORD)
     }
 
     /**
@@ -156,5 +164,6 @@ sealed interface CallableFunction {
                 val ret = ": ${m.returnType?.presentableText ?: "void"}"
                 return "${m.name}($params)$ret"
             }
+        override val isNameAmbiguous: Boolean get() = false
     }
 }
