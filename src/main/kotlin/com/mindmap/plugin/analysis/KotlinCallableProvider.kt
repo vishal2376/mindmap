@@ -9,13 +9,16 @@ import com.intellij.psi.search.searches.OverridingMethodsSearch
 import com.intellij.psi.search.searches.ReferencesSearch
 import com.intellij.psi.search.searches.SuperMethodsSearch
 import com.intellij.psi.util.PsiTreeUtil
-import org.jetbrains.kotlin.analysis.api.analyze
+import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.resolution.singleFunctionCallOrNull
 import org.jetbrains.kotlin.analysis.api.resolution.symbol
 import org.jetbrains.kotlin.asJava.toLightMethods
 import org.jetbrains.kotlin.asJava.unwrapped
 import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtNamedFunction
+import java.lang.reflect.InvocationTargetException
+import java.lang.reflect.Method
 
 /**
  * [CallableProvider] for Kotlin.
@@ -48,6 +51,35 @@ class KotlinCallableProvider : CallableProvider {
         // Per-call cap so widely-used functions can't blow up the outbound phase;
         // GraphAnalyzer still applies the global MAX_NODES on top of this.
         private const val MAX_CALLS_PER_FUNCTION = 50
+
+        // `analyze {}` is an inline function: Kotlin splices its *compiled* body
+        // directly into our bytecode, baking in whatever internal KaSessionProvider
+        // overloads existed in the SDK used to compile. Those internal overloads are
+        // not ABI-stable across IDE releases (binary-incompatible on older IDEs with
+        // NoSuchMethodError on KaSessionProvider's lifecycle methods). The public entry
+        // point `AnalyzeKt.analyze(KtElement, Function1)` itself IS stable, so we call
+        // it reflectively instead -- that avoids inlining, so the call resolves against
+        // whatever Kotlin plugin is actually loaded in the running IDE rather than the
+        // one we compiled against.
+        private val analyzeMethod: Method? by lazy {
+            try {
+                Class.forName("org.jetbrains.kotlin.analysis.api.AnalyzeKt")
+                    .getMethod("analyze", KtElement::class.java, Function1::class.java)
+            } catch (e: ReflectiveOperationException) {
+                LOG.warn("Kotlin Analysis API analyze() entry point not found", e)
+                null
+            }
+        }
+    }
+
+    private fun <R> analyzeCompat(element: KtElement, action: (KaSession) -> R): R? {
+        val method = analyzeMethod ?: return null
+        @Suppress("UNCHECKED_CAST")
+        return try {
+            method.invoke(null, element, action) as R
+        } catch (e: InvocationTargetException) {
+            throw e.cause ?: e
+        }
     }
 
     override val languageId: String = "kotlin"
@@ -64,11 +96,12 @@ class KotlinCallableProvider : CallableProvider {
     }
 
     /**
-     * Resolves every [KtCallExpression] in the body using `analyze {}`.
+     * Resolves every [KtCallExpression] in the body using `analyze {}` (invoked via
+     * [analyzeCompat], see its doc for why).
      *
      * `resolveToCall()` is a `KaSession` extension — the call must happen **inside** the
-     * `analyze { … }` block, otherwise the Kotlin compiler rejects it. Downstream work
-     * (wrapping into a [CallableFunction]) can happen after the block since it only
+     * `with(session) { … }` block, otherwise the Kotlin compiler rejects it. Downstream
+     * work (wrapping into a [CallableFunction]) can happen after the block since it only
      * touches plain PSI.
      *
      * If the resolved target is a `PsiMethod` (Kotlin calling Java), we wrap it as
@@ -85,18 +118,20 @@ class KotlinCallableProvider : CallableProvider {
 
         val results = mutableListOf<CallableFunction>()
         try {
-            analyze(fn) {
-                for (callExpr in calls) {
-                    try {
-                        val resolved =
-                            callExpr.resolveToCall()?.singleFunctionCallOrNull() ?: continue
-                        val targetPsi = resolved.symbol.psi ?: continue
-                        val wrapped = wrapResolvedTarget(targetPsi) ?: continue
-                        results.add(wrapped)
-                    } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
-                        throw ce
-                    } catch (e: Exception) {
-                        LOG.debug("Skipped unresolved outbound call", e)
+            analyzeCompat(fn) { session ->
+                with(session) {
+                    for (callExpr in calls) {
+                        try {
+                            val resolved =
+                                callExpr.resolveToCall()?.singleFunctionCallOrNull() ?: continue
+                            val targetPsi = resolved.symbol.psi ?: continue
+                            val wrapped = wrapResolvedTarget(targetPsi) ?: continue
+                            results.add(wrapped)
+                        } catch (ce: com.intellij.openapi.progress.ProcessCanceledException) {
+                            throw ce
+                        } catch (e: Exception) {
+                            LOG.debug("Skipped unresolved outbound call", e)
+                        }
                     }
                 }
             }
