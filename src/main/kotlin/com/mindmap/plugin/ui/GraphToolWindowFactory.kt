@@ -86,12 +86,20 @@ class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
     }
 
     private fun createJcefErrorPanel(): JPanel =
-        buildErrorPanel("JCEF Not Available", jcefInstructionsHtml())
+        buildErrorPanel(
+            "JCEF Not Available",
+            jcefInstructionsHtml(),
+            "Web Browser (JCEF) plugin" to "https://plugins.jetbrains.com/plugin/31360-web-browser-jcef-"
+        )
 
     private fun createCrashErrorPanel(t: Throwable): JPanel =
         buildErrorPanel("Failed to Load Mindmap", crashInstructionsHtml(t))
 
-    private fun buildErrorPanel(title: String, bodyHtml: String): JPanel {
+    private fun buildErrorPanel(
+        title: String,
+        bodyHtml: String,
+        extraLink: Pair<String, String>? = null
+    ): JPanel {
         val outer = JPanel(GridBagLayout()).apply { background = BG }
         val card = buildInnerCard()
         card.add(JLabel(title).apply {
@@ -101,6 +109,12 @@ class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
         card.add(Box.createVerticalStrut(12))
         card.add(JLabel(bodyHtml).apply { alignmentX = Component.CENTER_ALIGNMENT })
         card.add(Box.createVerticalStrut(16))
+        extraLink?.let { (text, url) ->
+            card.add(com.intellij.ui.components.BrowserLink(text, url).apply {
+                alignmentX = Component.CENTER_ALIGNMENT; foreground = BLUE
+            })
+            card.add(Box.createVerticalStrut(8))
+        }
         card.add(
             com.intellij.ui.components.BrowserLink(
                 "Not working? Checkout help",
@@ -135,12 +149,11 @@ class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
         "<html><div style='text-align:center;width:260px;color:#cdd6f4;font-family:sans-serif;font-size:12px;line-height:1.6;'>" +
                 "Mindmap requires <b style='color:#bac2de;'>Chromium (JCEF)</b>.<br><br>" +
                 "<div style='text-align:left;display:inline-block;'>" +
-                "<b style='color:#89b4fa;'>1. Go to <b>Help → Find Action</b><br>" +
-                "<b style='color:#89b4fa;'>2.</b> Search: <i>\"Choose Boot Java Runtime\"</i><br>" +
-                "<b style='color:#89b4fa;'>3.</b> Select latest runtime with <b>JCEF</b><br>" +
+                "<b style='color:#89b4fa;'>1.</b> Go to <b>Settings → Plugins → Marketplace</b><br>" +
+                "<b style='color:#89b4fa;'>2.</b> Search: <i>\"Web Browser (JCEF)\"</i><br>" +
+                "<b style='color:#89b4fa;'>3.</b> Install the plugin<br>" +
                 "<b style='color:#89b4fa;'>4.</b> Restart IDE<br>" +
-                "</div><br><br>" +
-                "<span style='color:#6c7086;font-size:11px;'>(IntelliJ IDEA includes JCEF by default)</span>" +
+                "</div>" +
                 "</div></html>"
 
     private fun crashInstructionsHtml(t: Throwable): String {
