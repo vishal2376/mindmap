@@ -2274,7 +2274,7 @@
         // (carried on `qualifiedName`) over the bare method name.
         const baseName = (_showClassPrefix && n.qualifiedName) ? n.qualifiedName : (isRoot ? (n.name || 'anonymous') : (n.name || 'anon'));
         const label = escL(baseName);
-        const fullLabel = isDup && n.fileName ? label + '\n_' + escL(n.fileName) + '_' : label;
+        const fullLabel = (isDup || n.isNameAmbiguous) && n.fileName ? label + '\n_' + escL(n.fileName) + '_' : label;
 
         const level = isRoot ? 0 : n.type === 'INBOUND' ? -(n.depth || 1) : (n.depth || 1);
         return {

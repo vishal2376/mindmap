@@ -39,6 +39,8 @@ enum class NodeType {
  * @property isLibrary True if the function lives outside project source (e.g. stdlib,
  *   third-party). Library nodes are shown but not recursed into to keep the graph bounded.
  * @property loc Approximate line count of the function body, shown as a size hint in the UI.
+ * @property isNameAmbiguous True if the name alone is meaningless (e.g. Kotlin operators like
+ *   `invoke`); the UI then always shows [fileName] next to it, not just for duplicate names.
  * @property children IDs of outbound nodes called by this function.
  * @property parents IDs of inbound nodes that call this function.
  * @property psiElement Backend-only handle used for IDE navigation, expand, and trace.
@@ -57,6 +59,7 @@ data class CallGraphNode(
     val isLibrary: Boolean = false,
     val loc: Int = 0,
     val qualifiedName: String = "",
+    val isNameAmbiguous: Boolean = false,
     val children: MutableList<String> = mutableListOf(),
     val parents: MutableList<String> = mutableListOf()
 ) {
